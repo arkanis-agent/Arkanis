@@ -113,6 +113,81 @@ class GoalUpdateData(BaseModel):
 class StrategyToggleRequest(BaseModel):
     enabled: bool
 
+class CreateAgentRequest(BaseModel):
+    agent_id: str
+    role: str
+    persona: str = ""
+    allowed_tools: list = []
+
+# =========================================================================
+#  AGENT CONTROL CENTER ENDPOINTS
+# =========================================================================
+
+@app.get("/agents")
+async def list_agents():
+    """List all agents with full state for the Control Center."""
+    data = agent_bus.get_observability_data()
+    return data
+
+@app.post("/agents/create")
+async def create_agent(request: CreateAgentRequest):
+    """Create a new custom agent with a specific role and toolset."""
+    from core.custom_agent import CustomAgent
+    try:
+        new_agent = CustomAgent.create(
+            agent_id=request.agent_id,
+            role=request.role,
+            persona=request.persona,
+            allowed_tools=request.allowed_tools,
+        )
+        return {"status": "success", "agent": new_agent.to_dict()}
+    except ValueError as e:
+        raise HTTPException(status_code=409, detail=str(e))
+    except Exception as e:
+        logger.error(f"Failed to create agent: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/agents/{agent_id}/pause")
+async def pause_agent(agent_id: str):
+    """Pause a running agent."""
+    success = agent_bus.pause_agent(agent_id)
+    if not success:
+        raise HTTPException(status_code=404, detail=f"Agente '{agent_id}' não encontrado ou não suporta pause.")
+    return {"status": "paused", "agent_id": agent_id}
+
+@app.post("/agents/{agent_id}/resume")
+async def resume_agent(agent_id: str):
+    """Resume a paused agent.""" 
+    success = agent_bus.resume_agent(agent_id)
+    if not success:
+        raise HTTPException(status_code=404, detail=f"Agente '{agent_id}' não encontrado.")
+    return {"status": "resumed", "agent_id": agent_id}
+
+@app.post("/agents/{agent_id}/stop")
+async def stop_agent(agent_id: str):
+    """Stop and remove a custom agent, or reset a core agent."""
+    success = agent_bus.stop_agent(agent_id)
+    if not success:
+        raise HTTPException(status_code=404, detail=f"Agente '{agent_id}' não encontrado.")
+    return {"status": "stopped", "agent_id": agent_id}
+
+@app.get("/agents/{agent_id}/logs")
+async def get_agent_logs(agent_id: str):
+    """Get full log history for a specific agent."""
+    detail = agent_bus.get_agent_detail(agent_id)
+    if not detail:
+        raise HTTPException(status_code=404, detail=f"Agente '{agent_id}' não encontrado.")
+    agent_instance = agent_bus.get_agent(agent_id)
+    full_logs = getattr(agent_instance, "logs", []) if agent_instance else []
+    return {"agent_id": agent_id, "logs": full_logs}
+
+@app.get("/tools/available")
+async def list_available_tools():
+    """List all registered tools for agent creation UI."""
+    from tools.registry import registry as tool_registry
+    tools = tool_registry.list_tools()
+    return {"tools": [{"name": k, "description": v} for k, v in tools.items()]}
+
 
 @app.get("/models")
 async def get_models():
