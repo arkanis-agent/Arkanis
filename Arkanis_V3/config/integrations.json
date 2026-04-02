@@ -1,7 +1,7 @@
 {
   "telegram": {
-    "enabled": false,
-    "token": ""
+    "enabled": true,
+    "token": "8525008503:AAHkw6NDvzd_JqqcuF9IwPKU-yCRLGn0z0g"
   },
   "supabase": {
     "enabled": false,
