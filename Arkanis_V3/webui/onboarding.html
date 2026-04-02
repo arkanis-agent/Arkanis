@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ARKANIS V3.1 - Onboarding</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Outfit:wght@300;400;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #05070a;
+            --card-bg: rgba(13, 17, 23, 0.8);
+            --accent-color: #00f2ff;
+            --accent-glow: rgba(0, 242, 255, 0.3);
+            --text-main: #e6edf3;
+            --text-dim: #8b949e;
+            --border-color: rgba(255, 255, 255, 0.1);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Outfit', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            overflow: hidden;
+            background: radial-gradient(circle at center, #0a1018 0%, #05070a 100%);
+        }
+
+        .container {
+            width: 100%;
+            max-width: 500px;
+            padding: 40px;
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 24px;
+            backdrop-filter: blur(20px);
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+            animation: fadeIn 0.8s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .logo {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 2.5rem;
+            letter-spacing: 4px;
+            background: linear-gradient(90deg, #00f2ff, #7000ff);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 10px;
+        }
+
+        .sub {
+            color: var(--text-dim);
+            font-size: 0.9rem;
+            letter-spacing: 1px;
+        }
+
+        .form-group {
+            margin-bottom: 25px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 10px;
+            color: var(--accent-color);
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        select, input {
+            width: 100%;
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            color: white;
+            font-size: 1rem;
+            outline: none;
+            transition: all 0.3s;
+        }
+
+        select:focus, input:focus {
+            border-color: var(--accent-color);
+            box-shadow: 0 0 10px var(--accent-glow);
+        }
+
+        .btn {
+            width: 100%;
+            padding: 18px;
+            background: linear-gradient(90deg, #00f2ff, #0056cc);
+            border: none;
+            border-radius: 12px;
+            color: white;
+            font-weight: 700;
+            cursor: pointer;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            transition: transform 0.2s, box-shadow 0.2s;
+            margin-top: 10px;
+        }
+
+        .btn:hover {
+            transform: scale(1.02);
+            box-shadow: 0 0 20px var(--accent-glow);
+        }
+
+        .status {
+            text-align: center;
+            margin-top: 20px;
+            font-size: 0.8rem;
+            color: #ff4d4d;
+            height: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1 class="logo">ARKANIS</h1>
+            <p class="sub">V3.1 - INITIAL ONBOARDING</p>
+        </div>
+
+        <div class="form-group">
+            <label for="model">Active Intelligence Model</label>
+            <select id="model">
+                <option value="llama3.2:3b">Llama 3.2 (3B) - Optimized</option>
+                <option value="llama3.1:8b">Llama 3.1 (8B) - Standard</option>
+                <option value="mistral">Mistral (7B)</option>
+                <option value="phi3:mini">Phi-3 Mini (3.8B)</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label for="telegram">Telegram Bot Token (Optional)</label>
+            <input type="text" id="telegram" placeholder="Paste your token here...">
+        </div>
+
+        <button class="btn" id="finish">Finalize Installation</button>
+        <div class="status" id="status"></div>
+    </div>
+
+    <script>
+        document.getElementById('finish').addEventListener('click', async () => {
+            const model = document.getElementById('model').value;
+            const telegram = document.getElementById('telegram').value;
+            const statusDiv = document.getElementById('status');
+
+            statusDiv.textContent = "Finalizing...";
+            statusDiv.style.color = "var(--accent-color)";
+
+            try {
+                const response = await fetch('/onboarding/finalize', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        model_id: model,
+                        telegram_token: telegram || null
+                    })
+                });
+
+                const data = await response.json();
+                if (data.status === 'success') {
+                    statusDiv.textContent = "Configuration saved. Redirecting...";
+                    statusDiv.style.color = "#00ff88";
+                    setTimeout(() => {
+                        window.location.href = "/";
+                    }, 1500);
+                } else {
+                    statusDiv.textContent = "Error saving config.";
+                    statusDiv.style.color = "#ff4d4d";
+                }
+            } catch (err) {
+                statusDiv.textContent = "Connection error.";
+                statusDiv.style.color = "#ff4d4d";
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,16 @@
+{
+  "telegram": {
+    "enabled": false,
+    "token": ""
+  },
+  "supabase": {
+    "enabled": false,
+    "url": "",
+    "anon_key": "",
+    "service_role_key": ""
+  },
+  "tavily": {
+    "enabled": false,
+    "api_key": ""
+  }
+}

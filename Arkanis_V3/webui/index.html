@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html class="dark" lang="pt-BR">
+<head>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>ARKANIS AI | Inteligência de Elite</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;700;800&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+    <script id="tailwind-config">
+          tailwind.config = {
+            darkMode: "class",
+            theme: {
+              extend: {
+                colors: {
+                  "error-dim": "#9f0519",
+                  "on-tertiary-fixed-variant": "#6c1a6c",
+                  "on-error": "#ffefee",
+                  "error": "#b31b25",
+                  "outline-variant": "#a5adc6",
+                  "tertiary-dim": "#7f2d7e",
+                  "surface-container-lowest": "#0b0e14",
+                  "on-primary": "#f2f1ff",
+                  "surface-bright": "#1a1f2e",
+                  "surface": "#060e20",
+                  "on-secondary-fixed": "#324053",
+                  "secondary-dim": "#435164",
+                  "inverse-surface": "#f6f6ff",
+                  "on-background": "#e2e7ff",
+                  "tertiary-container": "#f797f0",
+                  "on-primary-container": "#001a63",
+                  "outline": "#6f768e",
+                  "on-error-container": "#570008",
+                  "surface-container-highest": "#1e293b",
+                  "surface-container": "#0f172a",
+                  "secondary-fixed": "#d5e3fc",
+                  "on-surface-variant": "#a5adc6",
+                  "on-tertiary-fixed": "#400042",
+                  "surface-variant": "#1e293b",
+                  "background": "#060e20",
+                  "inverse-on-surface": "#959cb5",
+                  "on-surface": "#f1f5f9",
+                  "surface-dim": "#020617",
+                  "secondary-container": "#1e293b",
+                  "on-primary-fixed": "#000000",
+                  "inverse-primary": "#6a89ff",
+                  "error-container": "#fb5151",
+                  "primary-dim": "#0040cb",
+                  "on-secondary-fixed-variant": "#4e5c71",
+                  "on-primary-fixed-variant": "#002278",
+                  "surface-container-high": "#111827",
+                  "tertiary-fixed-dim": "#e88ae1",
+                  "secondary-fixed-dim": "#c7d5ed",
+                  "primary-container": "#0049e6",
+                  "tertiary": "#8d3a8b",
+                  "primary": "#0049e6",
+                  "on-secondary-container": "#d1d5db",
+                  "primary-fixed": "#829bff",
+                  "on-tertiary": "#ffeef8",
+                  "surface-container-low": "#0f172a",
+                  "tertiary-fixed": "#f797f0",
+                  "surface-tint": "#0049e6",
+                  "primary-fixed-dim": "#6e8cff",
+                  "on-tertiary-container": "#610e63",
+                  "secondary": "#4e5c71",
+                  "on-secondary": "#edf3ff"
+                },
+                fontFamily: {
+                  "headline": ["Manrope"],
+                  "body": ["Inter"],
+                  "label": ["Inter"]
+                },
+                borderRadius: {"DEFAULT": "1rem", "lg": "2rem", "xl": "3rem", "full": "9999px"},
+              },
+            },
+          }
+    </script>
+    <style>
+      body {
+        background-color: #060e20;
+        color: #f1f5f9;
+        font-family: 'Inter', sans-serif;
+      }
+      .glass-effect {
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+      }
+      .no-line-border {
+        border: none !important;
+      }
+      .material-symbols-outlined {
+        font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+      }
+      .custom-scrollbar::-webkit-scrollbar {
+        width: 4px;
+      }
+      .custom-scrollbar::-webkit-scrollbar-track {
+        background: transparent;
+      }
+      .custom-scrollbar::-webkit-scrollbar-thumb {
+        background: #1e293b;
+        border-radius: 10px;
+      }
+      #activityTickerText.fade {
+        animation: fadeText 3s infinite;
+      }
+      @keyframes fadeText {
+        0% { opacity: 0; transform: translateY(5px); }
+        10% { opacity: 1; transform: translateY(0); }
+        90% { opacity: 1; transform: translateY(0); }
+        100% { opacity: 0; transform: translateY(-5px); }
+      }
+    </style>
+</head>
+<body class="overflow-hidden">
+    <!-- TopNavBar -->
+    <header class="fixed top-0 left-64 right-0 h-16 flex justify-between items-center px-8 z-50 bg-slate-950/85 backdrop-blur-xl shadow-sm dark:shadow-none">
+        <div class="flex items-center gap-6">
+            <!-- Model Selector Dropdown -->
+            <div class="relative">
+                <button id="activeModelBtn" class="flex items-center gap-2.5 px-4 py-2 bg-slate-800/70 border border-white/10 rounded-lg hover:bg-slate-700/70 hover:border-white/20 transition-all">
+                    <span class="material-symbols-outlined text-[15px] text-blue-400" style="font-variation-settings:'FILL' 1;">smart_toy</span>
+                    <div class="flex flex-col items-start min-w-[110px] max-w-[170px]">
+                        <span id="currentModelName" class="text-[11px] font-bold text-slate-100 leading-tight truncate w-full">CARREGANDO...</span>
+                        <span id="currentModelProvider" class="text-[9px] text-slate-500 leading-tight">--</span>
+                    </div>
+                    <span id="modelFreeBadge" class="hidden text-[8px] font-bold px-1.5 py-0.5 rounded-sm bg-emerald-500/15 text-emerald-400 border border-emerald-500/20 whitespace-nowrap">FREE</span>
+                    <span class="material-symbols-outlined text-[13px] text-slate-500 ml-1">expand_more</span>
+                </button>
+                <div id="modelDropdown" class="absolute top-full left-0 mt-1.5 w-[420px] bg-[#0d1117] border border-white/8 rounded-xl shadow-2xl overflow-hidden hidden z-[60]">
+                    <!-- Search + filters -->
+                    <div class="p-3 border-b border-white/5 bg-slate-900/70 space-y-2.5">
+                        <div class="relative">
+                            <span class="material-symbols-outlined absolute left-2.5 top-1/2 -translate-y-1/2 text-[14px] text-slate-500 pointer-events-none">search</span>
+                            <input id="modelSearchInput" type="text" placeholder="Buscar modelo..." autocomplete="off"
+                                class="w-full bg-slate-800/80 border border-white/8 rounded-lg pl-8 pr-3 py-2 text-[12px] text-white placeholder-slate-500 focus:outline-none focus:border-blue-500/50 transition-colors">
+                        </div>
+                        <div class="flex items-center gap-1.5">
+                            <button class="model-filter active px-2.5 py-1 rounded-full text-[10px] font-bold bg-blue-500/20 text-blue-300 border border-blue-500/30" data-filter="all">Todos</button>
+                            <button class="model-filter px-2.5 py-1 rounded-full text-[10px] font-bold bg-white/5 text-slate-400 border border-white/10 hover:bg-emerald-500/10 hover:text-emerald-400 hover:border-emerald-500/20 transition-all" data-filter="free">Gratuitos</button>
+                            <button class="model-filter px-2.5 py-1 rounded-full text-[10px] font-bold bg-white/5 text-slate-400 border border-white/10 hover:bg-amber-500/10 hover:text-amber-400 hover:border-amber-500/20 transition-all" data-filter="paid">Pagos</button>
+                            <button id="refreshModelsBtn" class="ml-auto flex items-center gap-1 text-[10px] text-slate-500 hover:text-blue-400 transition-colors whitespace-nowrap">
+                                <span class="material-symbols-outlined text-[13px]">cloud_download</span>Atualizar OR
+                            </button>
+                        </div>
+                    </div>
+                    <!-- Model list -->
+                    <div id="modelListContainer" class="overflow-y-auto max-h-[360px] custom-scrollbar p-1.5">
+                        <div class="text-center py-10 text-slate-600 text-xs">Clique em "Atualizar OR" para buscar modelos</div>
+                    </div>
+                    <!-- Hidden legacy containers kept for JS compat -->
+                    <div id="cloudModelsList" class="hidden"></div>
+                    <div id="localModelsList" class="hidden"></div>
+                    <div id="orFreeModelsList" class="hidden"></div>
+                    <div id="orFreeSection" class="hidden"></div>
+                </div>
+            </div>
+
+            <!-- Auto Model Strategy Toggle -->
+            <div class="flex items-center gap-2 ml-4 px-3 py-1.5 border border-white/5 rounded-lg bg-black/20">
+                <span class="material-symbols-outlined text-sm text-purple-400">smart_toy</span>
+                <span class="text-[11px] font-bold text-slate-400 mr-2">AUTO STRATEGY</span>
+                <label class="relative inline-flex items-center cursor-pointer">
+                    <input type="checkbox" id="autoStrategyToggle" class="sr-only peer">
+                    <div class="w-7 h-4 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-purple-500"></div>
+                </label>
+            </div>
+
+            
+            <nav class="flex gap-8 items-center font-manrope text-sm tracking-tight font-medium">
+                <a class="text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400 pb-1" href="#">Insights</a>
+                <a class="text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 transition-colors" href="#">Biblioteca</a>
+            </nav>
+        </div>
+        <div class="flex items-center gap-4">
+            <button class="p-2 hover:bg-slate-900 rounded-lg transition-all active:scale-95 duration-200">
+                <span class="material-symbols-outlined text-slate-400">notifications</span>
+            </button>
+            <button class="p-2 hover:bg-slate-900 rounded-lg transition-all active:scale-95 duration-200">
+                <span class="material-symbols-outlined text-slate-400">settings</span>
+            </button>
+            <div class="w-8 h-8 rounded-full overflow-hidden ml-2 ring-2 ring-primary/20">
+                <img alt="Avatar" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBDqLm4aTLeSm5HAXt2de0eEXxA637naKJx2Baf1xAWtlF84ZnPYEUBVl5fME84LZxU9YXC7-Exa6Q8MbG5M9PnyTMYatO8iyVjd2KMvUWwDr3XcWMV5PJAXZ7gB9qra6iBGzzuBY-DU--63lerKMOnbnckTovth7LJsTWab8LRbspjIhrdIzc_lAwhWChGYG4PDjA13GABBEhqOUGzrBzlmVKM-GnzcD4bSAS7oQe70mvlKva4XMqULVTSnfOe5WgISa9b2M9BnNY"/>
+            </div>
+        </div>
+    </header>
+
+    <!-- SideNavBar -->
+    <aside class="flex flex-col h-full py-6 px-4 fixed left-0 top-0 z-40 h-screen w-64 bg-slate-900/50 backdrop-blur-md border-r-0">
+        <div class="flex items-center gap-3 px-4 mb-10">
+            <div class="w-10 h-10 bg-primary rounded-xl flex items-center justify-center">
+                <span class="material-symbols-outlined text-white text-2xl" style="font-variation-settings: 'FILL' 1;">bolt</span>
+            </div>
+            <div>
+                <h1 class="font-manrope font-extrabold text-blue-700 dark:text-blue-400 text-xl leading-none">ARKANIS</h1>
+                <p class="text-[10px] text-slate-500 uppercase tracking-widest font-bold">Inteligência de Elite</p>
+            </div>
+        </div>
+        <nav class="flex-1 space-y-2 overflow-y-auto custom-scrollbar">
+            <a class="bg-white dark:bg-slate-800 text-blue-600 dark:text-blue-400 shadow-sm rounded-xl px-4 py-3 flex items-center gap-3 font-inter text-sm font-medium transition-all ease-out duration-300 transform" href="#">
+                <span class="material-symbols-outlined">chat</span>
+                Chat
+            </a>
+            <a class="text-slate-500 dark:text-slate-400 px-4 py-3 flex items-center gap-3 hover:bg-slate-100 dark:hover:bg-slate-800/80 transition-all rounded-xl font-inter text-sm font-medium" href="#">
+                <span class="material-symbols-outlined">history</span>
+                Histórico
+            </a>
+            <a class="text-slate-500 dark:text-slate-400 px-4 py-3 flex items-center gap-3 hover:bg-slate-100 dark:hover:bg-slate-800/80 transition-all rounded-xl font-inter text-sm font-medium" href="#">
+                <span class="material-symbols-outlined">analytics</span>
+                Análises
+            </a>
+            <a id="navLogs" class="text-slate-500 dark:text-slate-400 px-4 py-3 flex items-center gap-3 hover:bg-slate-100 dark:hover:bg-slate-800/80 transition-all rounded-xl font-inter text-sm font-medium" href="#">
+                <span class="material-symbols-outlined">terminal</span>
+                Log do Sistema
+            </a>
+            <a id="navTasks" class="text-slate-500 dark:text-slate-400 px-4 py-3 flex items-center gap-3 hover:bg-slate-100 dark:hover:bg-slate-800/80 transition-all rounded-xl font-inter text-sm font-medium" href="#">
+                <span class="material-symbols-outlined">schedule</span>
+                Agentes e Tarefas
+            </a>
+            <a id="navProviders" class="text-slate-500 dark:text-slate-400 px-4 py-3 flex items-center gap-3 hover:bg-slate-100 dark:hover:bg-slate-800/80 transition-all rounded-xl font-inter text-sm font-medium" href="#">
+                <span class="material-symbols-outlined">api</span>
+                Providers / APIs
+            </a>
+        </nav>
+        <div class="mt-auto pt-6 space-y-2">
+            <div id="statusPanel" class="bg-slate-800/50 rounded-xl p-3 mb-2 border border-blue-500/10">
+                <div class="flex items-center gap-2 mb-1">
+                    <span id="statusBadge" class="w-2 h-2 bg-green-500 rounded-full"></span>
+                    <span id="statusText" class="text-[10px] text-slate-400 font-bold uppercase">IDLE</span>
+                </div>
+                <p id="agentModeText" class="text-[9px] text-slate-500 font-medium">MODE: MANUAL</p>
+                <p id="agentCycleText" class="text-[9px] text-slate-500 font-medium">CYCLE: 0/5</p>
+            </div>
+            <div class="bg-primary/10 rounded-2xl p-4 mb-4">
+                <p class="text-xs text-blue-400 font-bold uppercase tracking-wider mb-2">Upgrade para Pro</p>
+                <p class="text-xs text-slate-400 leading-relaxed mb-3">Tenha acesso aos modelos GPT-4 e Claude 3 Opus.</p>
+                <button class="w-full bg-primary text-white text-xs font-bold py-2 rounded-lg hover:bg-primary-dim transition-colors">Assinar Agora</button>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="ml-64 pt-16 h-screen flex flex-col bg-background relative">
+        <!-- Messages Area -->
+        <section id="chatDisplay" class="flex-1 overflow-y-auto px-8 md:px-24 py-12 custom-scrollbar">
+            <div class="max-w-4xl mx-auto space-y-10">
+                <!-- Welcome Screen -->
+                <div id="welcomeScreen" class="text-center py-12 space-y-4">
+                    <h2 class="text-4xl md:text-5xl font-headline font-extrabold text-on-surface tracking-tight">
+                        Olá, eu sou <span class="text-primary">ARKANIS</span>.
+                    </h2>
+                    <p class="text-on-surface-variant text-lg font-body max-w-xl mx-auto">
+                        Como posso elevar sua produtividade hoje? Estou pronto para analisar dados, criar conteúdo ou resolver problemas complexos.
+                    </p>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 pb-12 pt-10">
+                        <button class="suggestion-card p-6 bg-surface-container-low rounded-lg text-left hover:bg-surface-container transition-all group border border-outline-variant/5" data-action="auto: Analisar estrutura do diretório atual">
+                            <span class="material-symbols-outlined text-primary mb-3">analytics</span>
+                            <h3 class="text-on-surface font-bold text-sm mb-1">Análise de Ambiente</h3>
+                            <p class="text-on-surface-variant text-xs leading-relaxed">Eu verifico todos os arquivos e dou um reporte técnico.</p>
+                        </button>
+                        <button class="suggestion-card p-6 bg-surface-container-low rounded-lg text-left hover:bg-surface-container transition-all group border border-outline-variant/5" data-action="auto: Buscar últimas notícias de tecnologia e salvar em tech_news.txt">
+                            <span class="material-symbols-outlined text-primary mb-3">auto_awesome</span>
+                            <h3 class="text-on-surface font-bold text-sm mb-1">Web Research</h3>
+                            <p class="text-on-surface-variant text-xs leading-relaxed">Eu busco na rede, resumo e arquivo autonomamente.</p>
+                        </button>
+                        <button class="suggestion-card p-6 bg-surface-container-low rounded-lg text-left hover:bg-surface-container transition-all group border border-outline-variant/5" data-action="auto: Ler server.py e sugerir melhorias de segurança">
+                            <span class="material-symbols-outlined text-primary mb-3">code</span>
+                            <h3 class="text-on-surface font-bold text-sm mb-1">Audit de Código</h3>
+                            <p class="text-on-surface-variant text-xs leading-relaxed">Cole seu código e eu encontrarei falhas e sugerirei melhorias.</p>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Providers & Models Panel (Hidden by default) -->
+        <section id="providersPanel" class="hidden flex-1 overflow-y-auto p-10 custom-scrollbar">
+            <div class="max-w-5xl mx-auto space-y-8 pb-24">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h2 class="text-3xl font-headline font-extrabold text-on-surface">Configurações & Integrações</h2>
+                        <p class="text-on-surface-variant text-sm mt-1">Gerencie seus provedores de API, modelos e conexões externas.</p>
+                    </div>
+                </div>
+
+                <!-- Tabs Navigation -->
+                <div class="flex border-b border-white/10 gap-8">
+                    <button id="tabLlmsBtn" class="py-3 text-sm font-bold text-blue-400 border-b-2 border-primary transition-all">
+                        Modelos & APIs
+                    </button>
+                    <button id="tabIntegrationsBtn" class="py-3 text-sm font-bold text-slate-500 border-b-2 border-transparent hover:text-slate-300 transition-all">
+                        Integrações Externas
+                    </button>
+                    
+                    <button id="saveConfigBtn" class="ml-auto bg-primary hover:bg-primary-dim text-white px-5 py-2 mb-2 rounded-xl text-xs font-bold flex items-center gap-2 transition-all shadow-lg shadow-primary/20">
+                        <span class="material-symbols-outlined text-sm">save</span>
+                        Salvar Alterações
+                    </button>
+                </div>
+
+                <!-- LLMs Content Tab -->
+                <div id="tabLlmsContent" class="space-y-8 block">
+
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <!-- Provider Cards will be injected here by script.js -->
+                    <div id="providerCardsContainer" class="col-span-full grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+                </div>
+
+                <div class="bg-slate-900/40 rounded-2xl border border-white/5 p-6 mt-8">
+                    <h3 class="text-lg font-bold text-on-surface mb-4 flex items-center gap-2">
+                        <span class="material-symbols-outlined text-primary">category</span>
+                        Modelos Disponíveis
+                    </h3>
+                        <div id="modelsListTable" class="space-y-2">
+                            <!-- Table injected here -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Integrations Content Tab -->
+                <div id="tabIntegrationsContent" class="space-y-8 hidden">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6" id="integrationCardsContainer">
+                        <!-- Integration Cards will be injected here by script.js -->
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- Tasks Panel (Hidden by default) -->
+        <section id="tasksPanel" class="hidden flex-1 overflow-y-auto p-10 custom-scrollbar">
+            <div class="max-w-5xl mx-auto space-y-8 pb-24">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h2 class="text-3xl font-headline font-extrabold text-on-surface">Agentes & Tarefas Contínuas</h2>
+                        <p class="text-on-surface-variant text-sm mt-1">Crie rotinas autônomas, monitoramentos e gatilhos.</p>
+                    </div>
+                </div>
+
+                <div class="bg-slate-900/40 rounded-2xl border border-white/5 mt-4 overflow-hidden">
+                    <button id="governorToggleBtn" class="w-full flex items-center justify-between px-6 py-4 hover:bg-white/3 transition-colors">
+                        <h3 class="text-base font-bold text-on-surface flex items-center gap-2">
+                            <span class="material-symbols-outlined text-primary text-[18px]">monitoring</span>
+                            Governor (Resource & Costs)
+                        </h3>
+                        <span id="governorChevron" class="material-symbols-outlined text-slate-500 text-[18px] transition-transform duration-200">expand_more</span>
+                    </button>
+                    <div id="governorBody" class="hidden px-6 pb-5">
+                        <div id="governorContainer" class="flex flex-wrap gap-4 text-sm">
+                            <!-- Governor dynamic data injected here -->
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-slate-900/40 rounded-2xl border border-white/5 mt-4 overflow-hidden">
+                    <button id="goalsToggleBtn" class="w-full flex items-center justify-between px-6 py-4 hover:bg-white/3 transition-colors">
+                        <h3 class="text-base font-bold text-on-surface flex items-center gap-2">
+                            <span class="material-symbols-outlined text-primary text-[18px]">flag</span>
+                            Objetivos Globais
+                        </h3>
+                        <div class="flex items-center gap-3">
+                            <button id="showCreateGoalModalBtn" class="text-xs font-bold bg-primary/20 text-primary px-3 py-1 rounded hover:bg-primary/40 transition-colors" onclick="event.stopPropagation()">+ Novo</button>
+                            <span id="goalsChevron" class="material-symbols-outlined text-slate-500 text-[18px] transition-transform duration-200">expand_more</span>
+                        </div>
+                    </button>
+                    <div id="goalsBody" class="hidden px-6 pb-5">
+                        <div id="goalsListContainer" class="space-y-4">
+                            <!-- Goals dynamically injected -->
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-slate-900/40 rounded-2xl border border-white/5 p-6 mt-4">
+                    <h3 class="text-lg font-bold text-on-surface mb-4 flex items-center gap-2">
+                        <span class="material-symbols-outlined text-primary">add_task</span>
+                        Nova Tarefa Contínua
+                    </h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-400 mb-1">Descrição / Comando</label>
+                            <input type="text" id="newTaskDesc" class="w-full bg-slate-800 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-primary" placeholder="ex: Monitore o preço do Bitcoin...">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-400 mb-1">Status de Disparo</label>
+                            <div class="flex gap-2">
+                                <select id="newTaskType" class="bg-slate-800 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-primary">
+                                    <option value="interval">Por Intervalo</option>
+                                    <option value="condition">Por Condição</option>
+                                </select>
+                                <input type="number" id="newTaskInterval" class="w-24 bg-slate-800 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-primary" placeholder="Segs" value="300">
+                            </div>
+                        </div>
+                        <div class="col-span-1">
+                            <label class="block text-xs font-bold text-slate-400 mb-1">Condição (Opcional)</label>
+                            <input type="text" id="newTaskCondition" class="w-full bg-slate-800 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-primary" placeholder="ex: Bitcoin abaixo de 90k">
+                        </div>
+                        <div class="col-span-1">
+                            <label class="block text-xs font-bold text-slate-400 mb-1">Objetivo Relacionado (Opcional)</label>
+                            <select id="newTaskGoalId" class="w-full bg-slate-800 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-primary">
+                                <option value="">Nenhum Objetivo</option>
+                            </select>
+                        </div>
+                    </div>
+                    <button id="createTaskBtn" class="mt-4 bg-primary hover:bg-primary-dim text-white px-5 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition-all">
+                        <span class="material-symbols-outlined text-sm">play_arrow</span>
+                        Iniciar Tarefa
+                    </button>
+                </div>
+
+                <div class="bg-slate-900/40 rounded-2xl border border-white/5 p-6">
+                    <h3 class="text-lg font-bold text-on-surface mb-4 flex items-center gap-2">
+                        <span class="material-symbols-outlined text-primary">view_list</span>
+                        Tarefas Ativas
+                    </h3>
+                    <div id="tasksListContainer" class="space-y-4">
+                        <!-- Tasks dynamically injected -->
+                    </div>
+                </div>
+
+                <div class="bg-slate-900/40 rounded-2xl border border-white/5 p-6 mt-4">
+                    <h3 class="text-lg font-bold text-on-surface mb-4 flex items-center gap-2">
+                        <span class="material-symbols-outlined text-primary">forum</span>
+                        Agent Communication Bus
+                    </h3>
+                    <div id="busLogsContainer" class="h-48 overflow-y-auto custom-scrollbar bg-black/40 rounded-xl p-4 font-mono text-[11px] text-slate-300 space-y-2 border border-white/10">
+                        <div class="text-slate-500 italic">No communication yet.</div>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- Log Drawer (Hidden by default) -->
+        <div id="logDrawer" class="absolute left-8 right-24 bottom-32 bg-slate-900/95 backdrop-blur-2xl border border-white/5 rounded-xl p-6 hidden z-50 transform transition-transform duration-300 translate-y-full">
+            <div class="flex justify-between items-center mb-4 border-b border-white/5 pb-2">
+                <span class="text-xs font-bold text-blue-400 tracking-widest uppercase">Motor Debug Logs</span>
+                <button id="closeLogDrawer" class="text-slate-500 hover:text-white transition-colors">
+                    <span class="material-symbols-outlined text-sm">close</span>
+                </button>
+            </div>
+            <div id="logDrawerContent" class="h-48 overflow-y-auto custom-scrollbar font-mono text-[11px] space-y-1">
+                <!-- Full logs here -->
+            </div>
+        </div>
+
+        <!-- Input Area -->
+        <footer class="p-8 md:px-24 pb-10">
+            <div class="max-w-4xl mx-auto">
+                <div class="relative group">
+                    <!-- Activity Ticker -->
+                    <div id="activityTickerContainer" class="flex items-center justify-between gap-4 mb-4 px-4 py-2 bg-blue-500/5 rounded-full border border-blue-500/10">
+                        <div class="flex items-center gap-3 overflow-hidden flex-1">
+                            <span class="material-symbols-outlined text-blue-500 text-sm animate-pulse">monitoring</span>
+                            <div id="activityTickerText" class="text-[11px] text-blue-400 font-medium whitespace-nowrap overflow-hidden transition-all duration-500">Pronto para novas ordens.</div>
+                        </div>
+                        <button id="logToggleBtn" class="flex items-center gap-1 text-[10px] font-bold text-slate-500 hover:text-blue-400 transition-colors">
+                            LOGS <span class="material-symbols-outlined text-xs">keyboard_arrow_up</span>
+                        </button>
+                    </div>
+
+                    <!-- Main Input -->
+                    <div class="bg-surface-container-lowest/85 backdrop-blur-xl rounded-xl shadow-2xl ring-1 ring-white/5 flex items-center p-2 pl-6">
+                        <textarea id="userInput" class="flex-1 bg-transparent border-none focus:ring-0 text-on-surface placeholder-on-surface-variant/60 font-body py-3 resize-none custom-scrollbar max-h-48" placeholder="Pergunte algo à ARKANIS..." rows="1"></textarea>
+                        <div class="flex items-center gap-2 pr-2">
+                            <button class="p-2.5 rounded-lg text-on-surface-variant hover:bg-surface-container-high transition-all">
+                                <span class="material-symbols-outlined">attach_file</span>
+                            </button>
+                            <button id="voiceBtn" class="p-2.5 rounded-lg text-on-surface-variant hover:bg-surface-container-high transition-all">
+                                <span class="material-symbols-outlined">mic</span>
+                            </button>
+                            <button id="sendBtn" class="bg-primary hover:bg-primary-dim text-white p-3 rounded-xl flex items-center justify-center transition-all active:scale-95 shadow-lg shadow-primary/20">
+                                <span class="material-symbols-outlined">arrow_upward</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </footer>
+    </main>
+
+    <!-- Floating UI decoration -->
+    <div class="fixed -bottom-48 -right-48 w-96 h-96 bg-primary/10 blur-[120px] rounded-full pointer-events-none z-0"></div>
+    <div class="fixed top-24 -left-24 w-64 h-64 bg-blue-500/5 blur-[100px] rounded-full pointer-events-none z-0"></div>
+
+    <script src="script.js"></script>
+</body>
+</html>

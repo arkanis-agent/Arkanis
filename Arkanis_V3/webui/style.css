@@ -1,0 +1,124 @@
+/* Arkanis V3.1 - Extra UI Logic and Animations */
+
+/* Custom Scrollbar for the dark theme */
+.custom-scrollbar::-webkit-scrollbar {
+    width: 6px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+    background: #1e293b;
+    border-radius: 10px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: #334155;
+}
+
+/* Activity Ticker Fade Animation */
+.ticker-fade {
+    animation: tickerFade 4s ease-in-out;
+}
+
+@keyframes tickerFade {
+    0% { opacity: 0; transform: translateY(8px); }
+    10% { opacity: 1; transform: translateY(0); }
+    90% { opacity: 1; transform: translateY(0); }
+    100% { opacity: 0; transform: translateY(-8px); }
+}
+
+/* Log Drawer Animations */
+#logDrawer.open {
+    display: block;
+    transform: translateY(0);
+}
+
+#logDrawer.hidden {
+    display: none;
+    transform: translateY(100%);
+}
+
+/* Chat Message Styling */
+.message-user {
+    align-self: flex-end;
+    background: #1e293b;
+    color: #f1f5f9;
+    border-radius: 1rem 1rem 0 1rem;
+    padding: 1rem 1.5rem;
+    max-width: 80%;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+.message-bot {
+    align-self: flex-start;
+    background: #0f172a;
+    color: #f1f5f9;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 1rem 1rem 1rem 0;
+    padding: 1.5rem 2rem;
+    max-width: 85%;
+}
+
+.message-bot i {
+    color: #0049e6;
+}
+
+/* Log Entry Styling */
+.log-entry {
+    border-left: 2px solid transparent;
+    padding-left: 8px;
+    margin-bottom: 4px;
+}
+
+.log-planner { border-left-color: #3b82f6; color: #93c5fd; }
+.log-executor { border-left-color: #10b981; color: #a7f3d0; }
+.log-critic { border-left-color: #ec4899; color: #fbcfe8; }
+.log-system { border-left-color: #06b6d4; color: #a5f3fc; }
+.log-error { border-left-color: #ef4444; color: #fecaca; }
+
+/* Utility Classes */
+.no-scrollbar::-webkit-scrollbar {
+    display: none;
+}
+.no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
+
+/* Providers Panel Extra Styles */
+#providersPanel {
+    animation: fadeIn 0.4s ease-out;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* Custom Toggle Switch for andru.ia pattern */
+.peer-checked\:bg-primary:checked ~ .peer-checked\:bg-primary {
+    background-color: #0049e6;
+}
+
+/* Fix for standard tailwind peer-checked if needed, 
+   but we used custom classes in index.html */
+
+input:checked ~ .peer-checked\:bg-primary {
+    background-color: #0049e6 !important;
+}
+
+.suggestion-card {
+    cursor: pointer;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.suggestion-card:hover {
+    border-color: rgba(59, 130, 246, 0.3);
+    background: rgba(59, 130, 246, 0.05);
+}
+
+/* Model Table Row Hover */
+#modelsListTable > div:hover {
+    background: rgba(59, 130, 246, 0.05);
+    border-color: rgba(59, 130, 246, 0.2);
+}

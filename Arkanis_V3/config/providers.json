@@ -1,0 +1,225 @@
+{
+  "providers": {
+    "openrouter": {
+      "name": "OpenRouter",
+      "enabled": true,
+      "api_key": "",
+      "endpoint": "https://openrouter.ai/api/v1/chat/completions"
+    },
+    "ollama": {
+      "name": "Ollama",
+      "enabled": true,
+      "endpoint": "http://localhost:11434/api/chat"
+    },
+    "lm_studio": {
+      "name": "LM Studio",
+      "enabled": false,
+      "endpoint": "http://localhost:1234/v1/chat/completions"
+    },
+    "vllm": {
+      "name": "vLLM",
+      "enabled": false,
+      "endpoint": "http://localhost:8000/v1/chat/completions"
+    },
+    "openai": {
+      "name": "OpenAI",
+      "enabled": false,
+      "api_key": "",
+      "endpoint": "https://api.openai.com/v1/chat/completions"
+    },
+    "anthropic": {
+      "name": "Anthropic",
+      "enabled": false,
+      "api_key": "",
+      "endpoint": "https://api.anthropic.com/v1/messages"
+    },
+    "moonshot": {
+      "name": "Moonshot AI (Kimi)",
+      "enabled": false,
+      "api_key": "",
+      "endpoint": "https://api.moonshot.cn/v1/chat/completions"
+    },
+    "google": {
+      "name": "Google Gemini",
+      "enabled": false,
+      "api_key": "",
+      "endpoint": "https://generativelanguage.googleapis.com/v1beta/openai/deployments/chat/completions"
+    },
+    "minimax": {
+      "name": "MiniMax",
+      "enabled": false,
+      "api_key": "",
+      "endpoint": "https://api.minimax.chat/v1/chat/completions"
+    },
+    "xai": {
+      "name": "xAI (Grok)",
+      "enabled": false,
+      "api_key": "",
+      "endpoint": "https://api.x.ai/v1/chat/completions"
+    },
+    "mistral": {
+      "name": "Mistral AI",
+      "enabled": false,
+      "api_key": "",
+      "endpoint": "https://api.mistral.ai/v1/chat/completions"
+    },
+    "qwen": {
+      "name": "Qwen (Alibaba)",
+      "enabled": false,
+      "api_key": "",
+      "endpoint": "https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions"
+    },
+    "glm": {
+      "name": "GLM (Zhipu AI)",
+      "enabled": false,
+      "api_key": "",
+      "endpoint": "https://open.bigmodel.cn/api/paas/v4/chat/completions"
+    },
+    "bedrock": {
+      "name": "Amazon Bedrock",
+      "enabled": false,
+      "api_key": "",
+      "endpoint": ""
+    },
+    "qianfan": {
+      "name": "Baidu Qianfan",
+      "enabled": false,
+      "api_key": "",
+      "endpoint": ""
+    },
+    "venice": {
+      "name": "Venice AI",
+      "enabled": false,
+      "api_key": "",
+      "endpoint": "https://api.venice.ai/api/v1/chat/completions"
+    },
+    "copilot": {
+      "name": "GitHub Copilot",
+      "enabled": false,
+      "api_key": "",
+      "endpoint": "http://localhost:5000/v1/chat/completions"
+    }
+  },
+  "models": [
+    {
+      "id": "cognitivecomputations/dolphin-mistral-24b-venice-edition:free",
+      "name": "Mistral 24B (Free)",
+      "provider": "openrouter",
+      "enabled": true
+    },
+    {
+      "id": "google/gemma-3-27b-it:free",
+      "name": "Gemma 3 27B (Free)",
+      "provider": "openrouter",
+      "enabled": true
+    },
+    {
+      "id": "openai/gpt-4o",
+      "name": "GPT-4o",
+      "provider": "openai",
+      "enabled": true
+    },
+    {
+      "id": "openai/gpt-4o-mini",
+      "name": "GPT-4o Mini",
+      "provider": "openai",
+      "enabled": true
+    },
+    {
+      "id": "openai/gpt-5.4",
+      "name": "GPT-5.4 (Speculative)",
+      "provider": "openai",
+      "enabled": false
+    },
+    {
+      "id": "claude-3-5-sonnet-latest",
+      "name": "Claude 3.5 Sonnet",
+      "provider": "anthropic",
+      "enabled": true
+    },
+    {
+      "id": "claude-3-opus-latest",
+      "name": "Claude 3 Opus",
+      "provider": "anthropic",
+      "enabled": true
+    },
+    {
+      "id": "claude-4-6",
+      "name": "Claude 4.6 (Next-Gen)",
+      "provider": "anthropic",
+      "enabled": false
+    },
+    {
+      "id": "kimi-2.5",
+      "name": "Kimi K2.5",
+      "provider": "moonshot",
+      "enabled": true
+    },
+    {
+      "id": "gemini-2.5-pro",
+      "name": "Gemini 2.5 Pro",
+      "provider": "google",
+      "enabled": true
+    },
+    {
+      "id": "gemini-3-pro",
+      "name": "Gemini 3 Pro",
+      "provider": "google",
+      "enabled": true
+    },
+    {
+      "id": "minimax-m2.5",
+      "name": "MiniMax M2.5",
+      "provider": "minimax",
+      "enabled": true
+    },
+    {
+      "id": "grok-beta",
+      "name": "Grok Beta",
+      "provider": "xai",
+      "enabled": true
+    },
+    {
+      "id": "mistral-large-latest",
+      "name": "Mistral Large",
+      "provider": "mistral",
+      "enabled": true
+    },
+    {
+      "id": "qwen-max",
+      "name": "Qwen Max",
+      "provider": "qwen",
+      "enabled": true
+    },
+    {
+      "id": "glm-4",
+      "name": "GLM 4.7",
+      "provider": "glm",
+      "enabled": true
+    },
+    {
+      "id": "venice-pro",
+      "name": "Venice Pro",
+      "provider": "venice",
+      "enabled": true
+    },
+    {
+      "id": "copilot-v2",
+      "name": "Copilot V2",
+      "provider": "copilot",
+      "enabled": false
+    },
+    {
+      "id": "anthropic/claude-3-haiku",
+      "name": "Claude 3 Haiku (OR)",
+      "provider": "openrouter",
+      "enabled": true
+    },
+    {
+      "id": "llama3.2:3b",
+      "name": "Llama 3.2 3B (Ollama)",
+      "provider": "ollama",
+      "enabled": true
+    }
+  ]
+}

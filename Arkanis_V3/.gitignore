@@ -1,0 +1,55 @@
+# Secrets & Environment
+.env
+.env.bak
+*.bak
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+dist/
+build/
+*.egg
+
+# Virtual Environments
+venv/
+.venv/
+env/
+
+# Local Libraries (installed by install_whisper.sh)
+libs/
+
+# Runtime-generated wrappers
+arkanis_wrap.sh
+
+# Config with secrets (populated at runtime via WebUI/install)
+# config/ is included — providers.json is a safe template
+
+# Logs
+logs/
+*.log
+
+# Model weights (large binary files)
+*.bin
+*.gguf
+*.pt
+*.pth
+
+# Screenshots (runtime artifacts)
+screenshots/*.png
+core/test_screenshot.png
+tests/audio_samples/
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# IDEs
+.idea/
+.vscode/
+*.swp
+*.swo
