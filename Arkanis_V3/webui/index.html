@@ -327,19 +327,23 @@
             </div>
         </section>
 
-        <!-- Observability Panel (System Watch) -->
+        <!-- Agent Control Center (Observability V2) -->
         <section id="observabilityPanel" class="hidden flex-1 overflow-y-auto p-10 custom-scrollbar">
             <div class="max-w-6xl mx-auto space-y-8 pb-24">
+                <!-- Header -->
                 <div class="flex items-center justify-between">
                     <div>
-                        <h2 class="text-3xl font-headline font-extrabold text-on-surface">System</h2>
-                        <p class="text-on-surface-variant text-sm mt-1">Observabilidade em tempo real do ecossistema Arkanis.</p>
+                        <h2 class="text-3xl font-headline font-extrabold text-on-surface">Agent Control Center</h2>
+                        <p class="text-on-surface-variant text-sm mt-1">Monitore, controle e crie agentes em tempo real.</p>
                     </div>
                     <div class="flex items-center gap-3">
                         <div class="flex items-center gap-2 px-3 py-1.5 bg-emerald-500/10 border border-emerald-500/20 rounded-full">
                             <span class="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></span>
                             <span class="text-[10px] font-bold text-emerald-400">Live</span>
                         </div>
+                        <button id="openCreateAgentModal" class="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-xl text-xs font-bold transition-all shadow-lg shadow-blue-600/20">
+                            <span class="material-symbols-outlined text-sm">add</span> Novo Agente
+                        </button>
                         <button id="refreshObservabilityBtn" class="flex items-center gap-2 bg-slate-800 hover:bg-slate-700 text-slate-300 px-4 py-2 rounded-xl text-xs font-bold transition-all">
                             <span class="material-symbols-outlined text-sm">cached</span> Atualizar
                         </button>
@@ -347,18 +351,22 @@
                 </div>
 
                 <!-- Stats Summary -->
-                <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+                <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
                     <div class="bg-slate-900/40 border border-white/5 p-5 rounded-2xl">
-                        <p class="text-[9px] font-bold text-slate-500 uppercase tracking-widest mb-1">Total Agentes</p>
+                        <p class="text-[9px] font-bold text-slate-500 uppercase tracking-widest mb-1">Total</p>
                         <p id="obsTotalAgents" class="text-3xl font-extrabold text-white">0</p>
                     </div>
                     <div class="bg-slate-900/40 border border-white/5 p-5 rounded-2xl">
-                        <p class="text-[9px] font-bold text-slate-500 uppercase tracking-widest mb-1">Ativos</p>
+                        <p class="text-[9px] font-bold text-slate-500 uppercase tracking-widest mb-1">Executando</p>
                         <p id="obsActiveAgents" class="text-3xl font-extrabold text-blue-400">0</p>
                     </div>
                     <div class="bg-slate-900/40 border border-white/5 p-5 rounded-2xl">
-                        <p class="text-[9px] font-bold text-slate-500 uppercase tracking-widest mb-1">IDLE</p>
+                        <p class="text-[9px] font-bold text-slate-500 uppercase tracking-widest mb-1">Idle</p>
                         <p id="obsIdleAgents" class="text-3xl font-extrabold text-slate-400">0</p>
+                    </div>
+                    <div class="bg-slate-900/40 border border-white/5 p-5 rounded-2xl">
+                        <p class="text-[9px] font-bold text-slate-500 uppercase tracking-widest mb-1">Pausados</p>
+                        <p id="obsPausedAgents" class="text-3xl font-extrabold text-amber-400">0</p>
                     </div>
                     <div class="bg-slate-900/40 border border-white/5 p-5 rounded-2xl">
                         <p class="text-[9px] font-bold text-slate-500 uppercase tracking-widest mb-1">Erros</p>
@@ -366,13 +374,13 @@
                     </div>
                 </div>
 
-                <!-- Agents Cards List -->
+                <!-- Agent Cards Grid -->
                 <div class="space-y-4">
                     <h3 class="text-[11px] font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2">
                         <span class="material-symbols-outlined text-sm">hub</span> Agentes Registrados
                     </h3>
-                    <div id="obsAgentsGrid" class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <!-- Agent Cards injected here -->
+                    <div id="obsAgentsGrid" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+                        <!-- Rich Agent Cards injected by script.js -->
                     </div>
                 </div>
 
@@ -392,16 +400,50 @@
                                 </tr>
                             </thead>
                             <tbody id="obsEventsTable" class="divide-y divide-white/5 text-slate-300">
-                                <!-- Row demo -->
-                                <tr>
-                                    <td colspan="4" class="px-6 py-12 text-center text-slate-600 italic">Nenhum evento registrado ainda.</td>
-                                </tr>
+                                <tr><td colspan="4" class="px-6 py-12 text-center text-slate-600 italic">Nenhum evento registrado ainda.</td></tr>
                             </tbody>
                         </table>
                     </div>
                 </div>
             </div>
         </section>
+
+        <!-- Create Agent Modal -->
+        <div id="createAgentModal" class="fixed inset-0 z-[60] hidden items-center justify-center bg-black/60 backdrop-blur-sm">
+            <div class="bg-slate-900 border border-white/10 rounded-2xl p-8 w-full max-w-lg shadow-2xl mx-4 max-h-[80vh] overflow-y-auto custom-scrollbar">
+                <div class="flex items-center justify-between mb-6">
+                    <h3 class="text-xl font-headline font-extrabold text-white">Criar Novo Agente</h3>
+                    <button id="closeCreateAgentModal" class="text-slate-500 hover:text-white transition-colors">
+                        <span class="material-symbols-outlined">close</span>
+                    </button>
+                </div>
+                <div class="space-y-5">
+                    <div>
+                        <label class="text-[10px] font-bold text-slate-500 uppercase tracking-widest block mb-1.5">ID do Agente</label>
+                        <input id="newAgentId" type="text" placeholder="ex: pesquisador_web" class="w-full bg-slate-800 border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder-slate-500 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none" />
+                    </div>
+                    <div>
+                        <label class="text-[10px] font-bold text-slate-500 uppercase tracking-widest block mb-1.5">Função / Especialização</label>
+                        <input id="newAgentRole" type="text" placeholder="ex: Pesquisador Web, Dev Python, Analista de Dados" class="w-full bg-slate-800 border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder-slate-500 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none" />
+                    </div>
+                    <div>
+                        <label class="text-[10px] font-bold text-slate-500 uppercase tracking-widest block mb-1.5">Persona / Instruções</label>
+                        <textarea id="newAgentPersona" rows="3" placeholder="Descreva o comportamento e as regras deste agente..." class="w-full bg-slate-800 border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder-slate-500 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none resize-none"></textarea>
+                    </div>
+                    <div>
+                        <label class="text-[10px] font-bold text-slate-500 uppercase tracking-widest block mb-2">Ferramentas Permitidas</label>
+                        <div id="toolCheckboxes" class="grid grid-cols-2 gap-2 max-h-40 overflow-y-auto custom-scrollbar bg-slate-800/50 rounded-xl p-3 border border-white/5">
+                            <!-- Tool checkboxes injected by JS -->
+                            <p class="text-slate-500 text-xs italic col-span-2">Carregando ferramentas...</p>
+                        </div>
+                    </div>
+                    <button id="submitCreateAgent" class="w-full bg-blue-600 hover:bg-blue-500 text-white py-3 rounded-xl font-bold text-sm transition-all shadow-lg shadow-blue-600/20 flex items-center justify-center gap-2">
+                        <span class="material-symbols-outlined text-sm">rocket_launch</span> Criar e Ativar
+                    </button>
+                    <p id="createAgentError" class="text-rose-400 text-xs text-center hidden"></p>
+                </div>
+            </div>
+        </div>
 
         <!-- Log Drawer (Hidden by default) -->
         <div id="logDrawer" class="absolute left-8 right-24 bottom-32 bg-slate-900/95 backdrop-blur-2xl border border-white/5 rounded-xl p-6 hidden z-50 transform transition-transform duration-300 translate-y-full">
