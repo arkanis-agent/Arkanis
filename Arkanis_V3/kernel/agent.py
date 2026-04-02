@@ -203,7 +203,7 @@ Formule uma resposta natural, amigável e conversacional."""
             context += f"\n\n[OBJETIVOS GLOBAIS DO SISTEMA (GOAL MANAGER)]:\n{goals_str}"
 
         # 2. Planning with Critic Gate
-        max_refinements = 2
+        max_refinements = 3
         refine_count = 0
         final_plan = None
         
