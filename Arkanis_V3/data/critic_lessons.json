@@ -86,10 +86,12 @@
         "lessons": [
             "Erro no parsing do Plano JSON",
             "O plano não inclui os comandos necessários para criar o diretório 'Diego' na Área de Trabalho do usuário.",
-            "Falta o comando para criar o diretório 'Diego' na Área de Trabalho do usuário."
+            "Falta o comando para criar o diretório 'Diego' na Área de Trabalho do usuário.",
+            "O plano não contém os comandos necessários para criar o diretório 'Diego' na Área de Trabalho do usuário.",
+            "Falta o comando para criar o diretório 'Diego' na Área de Trabalho do usuário"
         ],
-        "fail_count": 4,
-        "last_seen": "Thu Apr  2 16:50:50 2026"
+        "fail_count": 8,
+        "last_seen": "Thu Apr  2 19:02:16 2026"
     },
     {
         "goal_pattern": "Analise o arquivo Arkanis_V3/core/agents/critic_agent.py. Descobrimos que pedidos legítimos vindos do Telegram estão sendo rejeitados com erro de \"forma segura\". Atualize o SYSTEM_PROMPT do Auditor para ser mais resiliente e pragmático, especialmente para pedidos de UI e Telegram, garantindo que ele não bloqueie pedidos legítimos.",

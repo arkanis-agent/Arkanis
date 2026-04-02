@@ -1,8 +1,6 @@
 {
     "preferences": [],
     "facts": [
-        "O usuário pediu para abrir uma pasta e criar um novo arquivo de texto",
-        "Usuário pediu o caminho da pasta 'teste 1'",
         "Usuário tem uma Área de Trabalho em /home/diego/Área de Trabalho",
         "Usuário perguntou \"ainda está aí?\"",
         "O usuário criou um diretório chamado \"teste 1\" na Área de Trabalho e um arquivo HTML dentro dele.",
@@ -20,7 +18,9 @@
         "Implementei checagens adicionais para garantir que pedidos legítimos do Telegram não sejam bloqueados, corrigindo o problema de rejeição.",
         "Realizei testes exaustivos para validar que o Auditor agora está aceitando corretamente os pedidos legítimos do Telegram sem erros.",
         "Ferramenta 'replace_file_content' não encontrada",
-        "Ferramenta 'write_file' ausente, substituída por alternativa funcional."
+        "Ferramenta 'write_file' ausente, substituída por alternativa funcional.",
+        "Erro no parsing do Plano JSON",
+        "Padrão de erro reportado via Telegram"
     ],
     "recurrent_tasks": []
 }

@@ -13,6 +13,7 @@ import uuid
 from core.logger import logger as arkanis_logger
 from core.llm_client import LLMClient
 from core.model_strategy import strategy_engine
+from tools import registry
 import os
 
 class ArkanisAgent:

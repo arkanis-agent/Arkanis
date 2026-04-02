@@ -31,7 +31,7 @@ def main():
         # 1. Initialize the Kernel (Agent)
         agent = ArkanisAgent()
         
-        # 2. Interface Selection (CLI, Telegram, or Web)
+        # 2. Interface Selection (Default to Web, or CLI/Telegram)
         arg = sys.argv[1].lower() if len(sys.argv) > 1 else ""
         
         if arg == "--telegram":
@@ -39,18 +39,30 @@ def main():
             print("\n[Boot] Initializing Telegram Interface...")
             ui = TelegramInterface(agent)
             ui.start_loop()
-        elif arg == "--web":
-            import uvicorn
-            from api.server import app
-            print("\n[Boot] Initializing Web Interface (FastAPI)...")
-            print("[INFO] Access ARKANIS at: http://127.0.0.1:8000")
-            print("[TIP] If 'localhost' fails, try using the explicit IP above.")
-            uvicorn.run(app, host="0.0.0.0", port=8000)
-        else:
+        elif arg == "--cli":
             from interfaces.cli import ArkanisCLI
             print("\n[Boot] Initializing Standard CLI...")
             ui = ArkanisCLI(agent)
             ui.start_loop()
+        else:
+            # Default to WEB
+            import uvicorn
+            import webbrowser
+            from api.server import app
+            
+            print("\n[Boot] Initializing Web Interface (FastAPI)...")
+            print("[INFO] Access ARKANIS at: http://127.0.0.1:8000")
+            
+            # Auto-open browser in a separate thread to not block server startup
+            def open_browser():
+                import time
+                time.sleep(1.5)
+                webbrowser.open("http://127.0.0.1:8000")
+            
+            import threading
+            threading.Thread(target=open_browser, daemon=True).start()
+            
+            uvicorn.run(app, host="0.0.0.0", port=8000)
         
     except KeyboardInterrupt:
         print("\n\n[System] Forced shutdown detected. Closing memory buffers...")

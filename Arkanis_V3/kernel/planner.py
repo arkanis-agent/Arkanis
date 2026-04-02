@@ -124,9 +124,18 @@ FORMATO EXIGIDO:
     def _parse_plan(self, raw_response: str) -> List[Dict[str, Any]]:
         """Safely parse JSON from LLM response with RegEx fallback."""
         try:
-            # Clean possible markdown code blocks
-            clean_json = re.sub(r'```json\n?|\n?```', '', raw_response).strip()
-            parsed = json.loads(clean_json)
+            # 1. Look for the first '[' and last ']' to extract the JSON array
+            # This handles models that add text before or after the JSON
+            match = re.search(r'(\[.*\])', raw_response, re.DOTALL)
+            if match:
+                content = match.group(0)
+                # Clean possible markdown noise within the matched block
+                content = re.sub(r'```json\n?|```\n?|```', '', content).strip()
+                parsed = json.loads(content)
+            else:
+                # Direct attempt if no brackets found (standard simple object)
+                clean_json = re.sub(r'```json\n?|```\n?|```', '', raw_response).strip()
+                parsed = json.loads(clean_json)
             
             # Ensure the result is always a list for the executor
             if isinstance(parsed, dict):
@@ -135,14 +144,17 @@ FORMATO EXIGIDO:
                 return []
             return parsed
         except (json.JSONDecodeError, TypeError):
-            # Fallback patterns if JSON is slightly malformed
-            match = re.search(r'\[.*\]', raw_response, re.DOTALL)
-            if match:
-                try:
-                    return json.loads(match.group())
-                except: pass
+            # Fallback patterns if JSON is slightly malformed or has stray text
+            try:
+                # Attempt to find any valid JSON list in the string
+                all_lists = re.findall(r'(\[.*?\])', raw_response, re.DOTALL)
+                for item in all_lists:
+                    try:
+                        return json.loads(item)
+                    except: continue
+            except: pass
             
-            return [{"tool": "print_message", "args": {"message": "Erro crítico no parsing do Plano JSON."}}]
+            return [{"tool": "print_message", "args": {"message": "Erro crítico no parsing do Plano JSON. Resposta do modelo foi inválida para o formato de engenharia."}}]
 
     def plan(self, user_input: str, recent_context: str = "Nenhum histórico recente.", task_hint: Optional[str] = None) -> List[Dict[str, Any]]:
         """Main execution flow for planning."""
