@@ -1,6 +1,7 @@
 import threading
-from typing import Dict, List, Any
+from typing import Dict, List, Any, Optional
 from datetime import datetime
+
 
 class AgentBus:
     def __init__(self):
@@ -18,6 +19,54 @@ class AgentBus:
             if agent_id in self._agents:
                 del self._agents[agent_id]
 
+    def get_agent(self, agent_id: str) -> Optional[Any]:
+        with self._lock:
+            return self._agents.get(agent_id)
+
+    def list_agent_ids(self) -> List[str]:
+        with self._lock:
+            return list(self._agents.keys())
+
+    def pause_agent(self, agent_id: str) -> bool:
+        """Signal an agent to pause between cycles."""
+        with self._lock:
+            agent = self._agents.get(agent_id)
+            if agent and hasattr(agent, "pause_requested"):
+                agent.status = "paused"
+                agent.pause_requested.set()
+                return True
+            return False
+
+    def resume_agent(self, agent_id: str) -> bool:
+        """Signal a paused agent to resume."""
+        with self._lock:
+            agent = self._agents.get(agent_id)
+            if agent and hasattr(agent, "pause_requested"):
+                agent.status = "idle"
+                agent.pause_requested.clear()
+                if hasattr(agent, "resume_requested"):
+                    agent.resume_requested.set()
+                return True
+            return False
+
+    def stop_agent(self, agent_id: str) -> bool:
+        """Signal an agent to stop and unregister it (only for custom agents)."""
+        with self._lock:
+            agent = self._agents.get(agent_id)
+            if not agent:
+                return False
+            # Signal stop if possible
+            if hasattr(agent, "stop_requested"):
+                agent.stop_requested.set()
+            if hasattr(agent, "pause_requested"):
+                agent.resume_requested.set()  # Unblock if paused
+            # Only remove non-core agents from registry
+            if getattr(agent, "is_custom", False):
+                del self._agents[agent_id]
+            else:
+                agent.status = "idle"
+            return True
+
     def send_message(self, from_agent: str, to_agent: str, content: str) -> bool:
         with self._lock:
             if to_agent in self._agents:
@@ -30,10 +79,8 @@ class AgentBus:
                     "content": content,
                     "type": "direct"
                 }
-                # Add to agent's inbox
                 if hasattr(target, "inbox"):
                     target.inbox.append(msg)
-                    
                 self._record_history(msg)
                 return True
             return False
@@ -51,7 +98,6 @@ class AgentBus:
             for aid, target in self._agents.items():
                 if aid != from_agent and hasattr(target, "inbox"):
                     target.inbox.append(msg)
-                    
             self._record_history(msg)
 
     def _record_history(self, msg: Dict[str, Any]):
@@ -59,31 +105,54 @@ class AgentBus:
         if len(self.message_history) > self.max_history:
             self.message_history.pop(0)
 
+    def get_agent_detail(self, agent_id: str) -> Optional[Dict[str, Any]]:
+        """Return full detail snapshot of a single agent for the Control Center."""
+        with self._lock:
+            instance = self._agents.get(agent_id)
+            if not instance:
+                return None
+            return self._build_agent_snapshot(agent_id, instance)
+
+    def _build_agent_snapshot(self, aid: str, instance: Any) -> Dict[str, Any]:
+        """Build a rich status snapshot from any agent instance."""
+        status = getattr(instance, "status", "idle")
+        recent_logs = getattr(instance, "logs", [])
+        # Return only last 5 log entries for the card mini-feed
+        mini_logs = recent_logs[-5:] if recent_logs else []
+
+        return {
+            "id": aid,
+            "status": status.lower() if isinstance(status, str) else "idle",
+            "mode": getattr(instance, "mode", "manual").upper(),
+            "cycle": getattr(instance, "current_cycle", 0),
+            "current_action": getattr(instance, "current_action", "Idle"),
+            "role": getattr(instance, "role", "Agente Principal"),
+            "allowed_tools": getattr(instance, "allowed_tools", []),
+            "is_custom": getattr(instance, "is_custom", False),
+            "logs": mini_logs,
+            "last_seen": datetime.now().strftime("%H:%M:%S"),
+        }
+
     def get_observability_data(self) -> Dict[str, Any]:
         """Provides a real-time snapshot of the system state for the WebUI."""
         with self._lock:
-            agents_snapshot = []
-            for aid, instance in self._agents.items():
-                # Extract relevant metadata from the agent instance
-                state = {
-                    "id": aid,
-                    "status": getattr(instance, "status", "idle").lower(),
-                    "mode": getattr(instance, "mode", "manual").upper(),
-                    "cycle": getattr(instance, "current_cycle", 0),
-                    "last_seen": datetime.now().strftime("%H:%M:%S") # Placeholder for activity
-                }
-                agents_snapshot.append(state)
-            
+            agents_snapshot = [
+                self._build_agent_snapshot(aid, inst)
+                for aid, inst in self._agents.items()
+            ]
+
             return {
                 "agents": agents_snapshot,
-                "history": self.message_history[-20:], # Only latest 20 for UI
+                "history": self.message_history[-20:],
                 "stats": {
                     "total": len(agents_snapshot),
-                    "active": len([a for a in agents_snapshot if a["status"] != "idle"]),
+                    "active": len([a for a in agents_snapshot if a["status"] == "running"]),
                     "idle": len([a for a in agents_snapshot if a["status"] == "idle"]),
-                    "errors": 0 # Placeholder for future health checks
+                    "paused": len([a for a in agents_snapshot if a["status"] == "paused"]),
+                    "errors": len([a for a in agents_snapshot if a["status"] == "error"]),
                 }
             }
+
 
 # Singleton global instance
 agent_bus = AgentBus()

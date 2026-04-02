@@ -36,6 +36,12 @@ class ArkanisAgent:
         self.auto_results = []
         self.logs = [] # Log buffer for WebUI
         
+        # Agent Identity & Capabilities (for Control Center)
+        self.role = "Agente Principal"
+        self.current_action = "Idle"
+        self.allowed_tools = []  # Empty = all tools allowed
+        self.is_custom = False   # True for user-created agents
+        
         # Threading/Control Events
         self.stop_requested = threading.Event()
         self.pause_requested = threading.Event()
@@ -189,6 +195,8 @@ Gere o relatório de execução técnico e direto."""
 
     def _handle_manual_mode(self, user_input: str) -> str:
         """Process user input manually: Context -> Plan -> Execute -> Remember."""
+        self.status = "running"
+        self.current_action = "Preparando contexto..."
         # Check for Awakening
         data_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data")
         awakened_file = os.path.join(data_dir, ".awakened")
@@ -217,12 +225,14 @@ Gere o relatório de execução técnico e direto."""
             context += f"\n\n[OBJETIVOS GLOBAIS DO SISTEMA (GOAL MANAGER)]:\n{goals_str}"
 
         # 2. Planning with Critic Gate
+        self.current_action = "Planejando estratégia..."
         task_hint = strategy_engine.classify_task(user_input, len(context))
         max_refinements = 3
         refine_count = 0
         final_plan = None
         
         while refine_count <= max_refinements:
+            self.current_action = f"Planejando (Tentativa {refine_count + 1})..."
             self.log(f"Iniciando planejamento (Tentativa {refine_count + 1}) para: '{user_input}'", "planner")
             plan = self.planner.plan(user_input, recent_context=context, task_hint=task_hint)
             
@@ -231,6 +241,7 @@ Gere o relatório de execução técnico e direto."""
                 self.log(f"Passo {i}: {tool}", "planner")
 
             # CRITIC GATE (Pre-Execution)
+            self.current_action = "Auditoria do plano (Crítico)..."
             self.log("Critic analisando plano antes da execução...", "critic")
             critic_report = self.critic.evaluate_plan(goal=user_input, plan=plan, context=context, soul=self.planner.agent_identity)
             
@@ -261,6 +272,7 @@ Gere o relatório de execução técnico e direto."""
                 return "Não consegui processar o pedido de forma segura no momento. Pode tentar de outra forma?"
 
         # 3. Execution (Fixed Plan)
+        self.current_action = "Executando plano..."
         self.log("Executando plano validado...", "executor")
         results = self.executor.execute_plan(final_plan)
         
@@ -271,6 +283,7 @@ Gere o relatório de execução técnico e direto."""
             self.log(f"Resultado: {res[:100]}...", "executor")
 
         # 4. Format response with SOUL personality
+        self.current_action = "Formatando resposta..."
         self.log("Formatando resposta com SOUL...", "system")
         response = self._format_response_with_soul(user_input, results, task_hint=task_hint)
 
@@ -284,6 +297,8 @@ Gere o relatório de execução técnico e direto."""
                 f.write("awakened")
             self.log("Agente despertou com sucesso.", "success")
 
+        self.status = "idle"
+        self.current_action = "Idle"
         return response
 
     def _handle_auto_mode(self, goal: str) -> str:
