@@ -1,6 +1,6 @@
 from kernel.planner import Planner
 from kernel.executor import Executor
-from kernel.critic import Critic
+from core.agents.critic_agent import CriticAgent
 from modules.memory.short_term import session_memory
 from rich import print as rprint
 from rich.panel import Panel
@@ -21,7 +21,7 @@ class ArkanisAgent:
         self.id = agent_id if agent_id else "main"
         self.planner = Planner()
         self.executor = Executor()
-        self.critic = Critic()
+        self.critic = CriticAgent()
         self.memory = session_memory
         
         # Agent Control State
@@ -183,17 +183,43 @@ Formule uma resposta natural e amigável."""
             goals_str = "\n".join([f"- Goal [{g.id}]: {g.description} | Progresso: {g.progress}%" for g in active_goals])
             context += f"\n\n[OBJETIVOS GLOBAIS DO SISTEMA (GOAL MANAGER)]:\n{goals_str}"
 
-        # 2. Planning
-        self.log(f"Iniciando planejamento para: '{user_input}'", "planner")
-        plan = self.planner.plan(user_input, recent_context=context)
+        # 2. Planning with Critic Gate
+        max_refinements = 2
+        refine_count = 0
+        final_plan = plan
+        
+        while refine_count <= max_refinements:
+            self.log(f"Iniciando planejamento (Tentativa {refine_count + 1}) para: '{user_input}'", "planner")
+            plan = self.planner.plan(user_input, recent_context=context)
+            
+            for i, step in enumerate(plan, 1):
+                tool = step.get('tool', 'unknown')
+                self.log(f"Passo {i}: {tool}", "planner")
 
-        for i, step in enumerate(plan, 1):
-            tool = step.get('tool', 'unknown')
-            self.log(f"Passo {i}: {tool}", "planner")
+            # CRITIC GATE (Pre-Execution)
+            self.log("Critic analisando plano antes da execução...", "critic")
+            critic_report = self.critic.evaluate_plan(goal=user_input, plan=plan, context=context, soul=self.planner.agent_identity)
+            
+            decision = critic_report.get("decision", "improve")
+            if decision == "approve":
+                self.log("Plano APROVADO pelo Auditor Sênior.", "success")
+                final_plan = plan
+                break
+            elif decision == "improve" and refine_count < max_refinements:
+                self.log(f"🔄 Auditor sugeriu melhorias (Refinamento {refine_count + 1}/2).", "critic")
+                for issue in critic_report.get("issues", []):
+                    self.log(f"⚠️ {issue}", "critic")
+                # Feedback loop: add critic suggestion to context for next planning attempt
+                context += f"\n\n[FEEDBACK DO AUDITOR]: {critic_report.get('improved_plan')}"
+                refine_count += 1
+                continue
+            else:
+                self.log(f"🔴 Auditor REJEITOU o plano: {critic_report.get('final_suggestion')}", "error")
+                return f"Execução abortada por segurança: {critic_report.get('final_suggestion')}"
 
-        # 3. Execution
-        self.log("Executando plano...", "executor")
-        results = self.executor.execute_plan(plan)
+        # 3. Execution (Fixed Plan)
+        self.log("Executando plano validado...", "executor")
+        results = self.executor.execute_plan(final_plan)
 
         for res in results:
             self.log(f"Resultado: {res[:100]}...", "executor")
@@ -259,65 +285,55 @@ Formule uma resposta natural e amigável."""
                 goals_str = "\n".join([f"- Goal [{g.id}]: {g.description} | Progresso: {g.progress}%" for g in active_goals])
                 context += f"\n\n[OBJETIVOS GLOBAIS DO SISTEMA (GOAL MANAGER)]:\n{goals_str}"
                 
+            # --- PLANNING & CRITIC GATE ---
+            max_refinements = 2
+            refine_count = 0
+            final_plan = None
+            
             auto_prompt = (
                 f"OBJETIVO GLOBAL A SER ATINGIDO: {goal}\n\n"
                 f"Verifique o CONTEXTO RECENTE. Se o objetivo já foi 100% atingido pelos resultados anteriores, "
                 f"você DEVE retornar APENAS a ferramenta 'print_message' indicando conclusão exata.\n"
-                f"Se ainda faltam ações, retorne os próximos passos lógicos. Não repita ferramentas que já foram concluídas com sucesso na memória."
+                f"Se ainda faltam ações, retorne os próximos passos lógicos."
             )
-            
-            self.log("Replanejando passos para atingir objetivo...", "planner")
-            plan = self.planner.plan(auto_prompt, recent_context=context)
-            
-            for i, step in enumerate(plan, 1):
-                tool = step.get('tool', 'unknown')
-                self.log(f"Step {i}: {tool}", "planner")
-            
-            self.log("Processando execução do ciclo...", "executor")
-            results = self.executor.execute_plan(plan)
+
+            while refine_count <= max_refinements:
+                self.log(f"Replanejando passos (Tentativa {refine_count + 1})...", "planner")
+                plan = self.planner.plan(auto_prompt, recent_context=context)
+                
+                # CRITIC GATE (Pre-Execution Audit)
+                critic_report = self.critic.evaluate_plan(goal=goal, plan=plan, context=context, soul=self.planner.agent_identity)
+                
+                decision = critic_report.get("decision", "improve")
+                if decision == "approve":
+                    self.log("Ciclo aprovado para execução.", "success")
+                    final_plan = plan
+                    break
+                elif decision == "improve" and refine_count < max_refinements:
+                    self.log(f"🔄 Auditor solicitou melhorias (Refinamento {refine_count + 1}/2).", "critic")
+                    context += f"\n\n[AUDITOR FEEDBACK]: {critic_report.get('improved_plan')}"
+                    refine_count += 1
+                else:
+                    self.log(f"⚠️ Auditor REJEITOU o ciclo: {critic_report.get('final_suggestion')}", "error")
+                    self.status = "failed"
+                    return f"Ciclo interrompido por segurança: {critic_report.get('final_suggestion')}"
+
+            # --- EXECUTION ---
+            self.log("Processando execução do ciclo validado...", "executor")
+            results = self.executor.execute_plan(final_plan)
             combined_result = "\n".join(results)
             self.auto_results.extend(results)
             
             for res in results:
                 self.log(f"Log: {res[:100]}...", "executor")
             
-            self.memory.add_interaction(user_input=f"Ciclo Auto {self.current_cycle} - {goal}", plan=plan, result=combined_result)
+            self.memory.add_interaction(user_input=f"Ciclo Auto {self.current_cycle} - {goal}", plan=final_plan, result=combined_result)
             
-            # --- CRITIC LAYER ---
-            self.log("Critic avaliando resultados do ciclo (Auditoria Sênior)...", "critic")
-            context = self.memory.get_context()
-            critic_report = self.critic.evaluate(
-                goal=goal,
-                plan=plan,
-                result=combined_result,
-                memory_context=context,
-                soul=self.planner.agent_identity
-            )
-            
-            # Extract structured feedback
-            decision = critic_report.get("decision", "improve")
-            risk = critic_report.get("risk_level", "medium")
-            confidence = critic_report.get("confidence", 0.0)
-            
-            # Log Auditor findings
-            self.log(f"Auditoria: {decision.upper()} | Risco: {risk.upper()} | Confiança: {confidence}", "critic")
-            
-            if critic_report.get("issues"):
-                for issue in critic_report["issues"][:3]: # Log top 3 issues
-                    self.log(f"⚠️ Alerta: {issue}", "critic")
-            
-            if critic_report.get("improvements"):
-                for imp in critic_report["improvements"][:2]:
-                    self.log(f"💡 Sugestão: {imp}", "critic")
-
-            if decision == "approve":
-                # Decision logic: if this was the final action or objective achieved
-                if "objetivo atingido" in combined_result.lower() or "finalizado" in combined_result.lower():
-                    self.log("Sucesso aprovado pelo Auditor Sênior. Finalizando.", "critic")
-                    self.status = "completed"
-                    break
-                else:
-                    self.log("Progresso aprovado. Continuando ciclo...", "critic")
+            # Final check for objective completion vs progress
+            if "objetivo atingido" in combined_result.lower() or "finalizado" in combined_result.lower():
+                self.log("Objetivo atingido com sucesso.", "success")
+                self.status = "completed"
+                break
             
             elif decision == "reject":
                 self.log("⚠️ Auditor Sênior Rejeitou a Saída (Risco ou Erro). Abortando.", "error")
