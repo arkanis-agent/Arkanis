@@ -220,13 +220,12 @@ async function sendVoiceMessage(blob) {
     addBotMessage('<div class="flex items-center gap-2"><span class="animate-pulse">Transcrevendo áudio...</span></div>', thinkingId);
 
     // 2. Upload to backend
-    const formData = new FormData();
-    formData.append('file', blob, 'web_audio.wav');
-
     try {
-        const response = await fetch('/voice_message', {
-            method: 'POST',
-            body: formData
+        // Send raw binary to avoid python-multipart dependency
+        const response = await fetch('/voice_message', { 
+            method: 'POST', 
+            body: blob,
+            headers: { 'Content-Type': 'audio/webm' }
         });
         
         const data = await response.json();
@@ -1512,7 +1511,48 @@ if (navChat) {
     navChat.addEventListener('click', (e) => {
         e.preventDefault();
         showChat();
+        updateTopNav('chat');
     });
+}
+
+const topNavChat = document.getElementById('topNavChat');
+const topNavObs = document.getElementById('topNavObs');
+
+if (topNavChat) {
+    topNavChat.addEventListener('click', () => {
+        showChat();
+        updateTopNav('chat');
+    });
+}
+
+if (topNavObs) {
+    topNavObs.addEventListener('click', () => {
+        showObservability();
+        updateTopNav('obs');
+    });
+}
+
+function updateTopNav(activeId) {
+    if (!topNavChat || !topNavObs) return;
+    
+    const activeClasses = ['text-blue-600', 'dark:text-blue-400', 'border-b-2', 'border-blue-600', 'dark:border-blue-400', 'pb-1'];
+    const inactiveClasses = ['text-slate-500', 'dark:text-slate-400', 'hover:text-slate-800', 'dark:hover:text-slate-200', 'transition-colors'];
+
+    if (activeId === 'chat') {
+        topNavChat.classList.add(...activeClasses);
+        topNavChat.classList.remove(...inactiveClasses);
+        topNavObs.classList.remove(...activeClasses);
+        topNavObs.classList.add(...inactiveClasses);
+        topNavChat.classList.remove('cursor-pointer');
+        topNavObs.classList.add('cursor-pointer');
+    } else {
+        topNavObs.classList.add(...activeClasses);
+        topNavObs.classList.remove(...inactiveClasses);
+        topNavChat.classList.remove(...activeClasses);
+        topNavChat.classList.add(...inactiveClasses);
+        topNavObs.classList.remove('cursor-pointer');
+        topNavChat.classList.add('cursor-pointer');
+    }
 }
 
 const newChatBtn = document.querySelector('aside nav a'); // Fallback for the lightning bolt logo or generic links
@@ -1651,7 +1691,11 @@ function renderObservability(data) {
 }
 
 // Initial Listeners
-navObservability.addEventListener('click', (e) => { e.preventDefault(); showObservability(); });
+navObservability.addEventListener('click', (e) => { 
+    e.preventDefault(); 
+    showObservability(); 
+    updateTopNav('obs');
+});
 document.getElementById('refreshObservabilityBtn').addEventListener('click', fetchObservabilityData);
 
 // Intervals

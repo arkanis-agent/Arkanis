@@ -1,7 +1,9 @@
 import os
 import sys
+import anyio
+import logging
 from typing import Dict, Any, Optional
-from fastapi import FastAPI, HTTPException, UploadFile, File
+from fastapi import FastAPI, HTTPException, Request
 
 # Load .env before any module imports so singletons (router, config_manager) pick up env vars
 _env_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), ".env")
@@ -31,6 +33,7 @@ import threading
 from pydantic import BaseModel
 import requests
 
+logger = logging.getLogger("uvicorn")
 app = FastAPI(title="ARKANIS V3 API")
 
 @app.middleware("http")
@@ -159,72 +162,83 @@ async def toggle_strategy(request: StrategyToggleRequest):
 
 @app.post("/message")
 async def handle_message(request: MessageRequest):
-    # ... (remains the same)
     """Router for messages to the agent."""
     try:
         # Clear logs before a new major request to keep the feed fresh
         if not request.text.startswith("status"):
             agent.logs = []
             
-        response = agent.handle_input(request.text)
+        # Execute the blocking agent logic in a separate thread to keep FastAPI responsive
+        response = await anyio.to_thread.run_sync(agent.handle_input, request.text)
         return {"response": response}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/voice_message")
-async def handle_voice_message(file: UploadFile = File(...)):
-    """Transcribes an uploaded audio file and processes it as an agent command."""
+async def handle_voice_message(request: Request):
+    """Transcribes an uploaded raw audio body and processes it as an agent command."""
     import uuid
     import json
     from tools.registry import registry
     
-    # 1. Save uploaded file to temp
-    ext = file.filename.split(".")[-1] if "." in file.filename else "ogg"
-    tmp_path = os.path.join("V3", "data", f"web_voice_{uuid.uuid4().hex[:8]}.{ext}")
+    # 1. Save raw body to temp
+    # Browsers typically send webm from MediaRecorder
+    tmp_path = os.path.join("V3", "data", f"web_voice_{uuid.uuid4().hex[:8]}.webm")
     os.makedirs(os.path.dirname(tmp_path), exist_ok=True)
     
     try:
+        content = await request.body()
+        if not content:
+            raise HTTPException(status_code=400, detail="Empty audio content.")
+            
         with open(tmp_path, "wb") as f:
-            content = await file.read()
             f.write(content)
         
-        # 2. Transcribe via Tool (now using the async variant)
+        # 2. Transcribe via Tool
         stt_tool = registry.get_tool("speech_to_text")
         if not stt_tool:
             raise HTTPException(status_code=500, detail="STT Tool not registered.")
         
-        # Use execute_async to prevent blocking the worker thread
-        result_json = await stt_tool.execute_async(audio_path=tmp_path)
-        res = json.loads(result_json)
+        # stt_tool.execute_async returns a JSON string or dict
+        stt_result_raw = await stt_tool.execute_async(temp_input=tmp_path)
         
-        if os.path.exists(tmp_path):
-            os.remove(tmp_path)
-            
-        if "error" in res:
-            raise HTTPException(status_code=500, detail=res["error"])
-        
-        text = res.get("text", "")
+        if isinstance(stt_result_raw, str):
+            try:
+                stt_result = json.loads(stt_result_raw)
+            except:
+                stt_result = {"text": stt_result_raw, "status": "success"}
+        else:
+            stt_result = stt_result_raw
+
+        text = stt_result.get("text", "")
         if not text:
             # Check if it was just silence caught by VAD
-            if res.get("status") == "success":
+            if stt_result.get("status") == "success":
                 return {"response": "Não detectei fala no áudio.", "transcription": ""}
             return {"response": "Não consegui entender o áudio.", "transcription": ""}
         
-        # 3. Process text via Agent
+        # 3. Process text via Agent (in separate thread)
         agent.logs = []
-        # handle_input is still sync, but we already unblocked the STT part
-        response = agent.handle_input(text)
+        response = await anyio.to_thread.run_sync(agent.handle_input, text)
         
         return {
             "response": response,
             "transcription": text,
-            "metrics": res.get("metrics", {})
+            "metrics": stt_result.get("metrics", {})
         }
         
     except Exception as e:
+        logger.error(f"Error in handle_voice_message: {str(e)}")
         if os.path.exists(tmp_path):
             os.remove(tmp_path)
         raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        # Cleanup temp file
+        if os.path.exists(tmp_path):
+            try:
+                os.remove(tmp_path)
+            except:
+                pass
 
 @app.get("/status", response_model=AgentStatusResponse)
 async def get_status():
