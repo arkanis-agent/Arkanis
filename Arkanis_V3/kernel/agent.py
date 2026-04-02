@@ -138,13 +138,13 @@ class ArkanisAgent:
 {soul}
 
 REGRAS DE RESPOSTA:
-- Responda sempre em Português do Brasil
-- Seja natural, direto e amigável — nunca robótico ou formal demais
-- Nunca exiba JSON cru — interprete e apresente dados de forma conversacional
-- Se o resultado for uma data/hora, integre naturalmente na resposta
-- Se for uma lista de arquivos, apresente de forma organizada e útil
-- Se for erro de ferramenta, explique o que aconteceu de forma simples
-- Mantenha respostas concisas mas completas"""
+- Responda sempre em Português do Brasil.
+- Seja natural, direto e amigável — nunca robótico ou formal demais.
+- Nunca exiba JSON cru — interprete e apresente dados de forma conversacional.
+- GROUNDING CRÍTICO: Nunca invente links, notícias ou fatos que não foram explicitamente retornados pelas ferramentas.
+- GROUNDING CRÍTICO: Se uma ferramenta falhar (timeout, erro 404, etc), relate a impossibilidade de forma simples: "Não consegui acessar a página X" em vez de inventar detalhes do erro.
+- PROIBIÇÃO: Nunca use placeholders como [key point], [Summarized point] ou similares. Se não houver informação, não diga nada.
+- Mantenha respostas concisas mas completas."""
 
         user_prompt = f"""O usuário disse: "{user_input}"
 

@@ -138,8 +138,78 @@ class HttpPostTool(BaseTool):
         except Exception as e:
             return f"Error: HTTP POST failed -> {str(e)}"
 
+class WebSearchTool(BaseTool):
+    """A tool to search the web for information using DuckDuckGo."""
+    @property
+    def name(self) -> str: return "web_search"
+    @property
+    def description(self) -> str: return "Search the internet for news, information, or current events. Use this BEFORE fetching specific URLs."
+    @property
+    def arguments(self) -> Dict[str, str]:
+        return {"query": "The search query (e.g., 'latest news on US economy')"}
+    
+    def execute(self, **kwargs) -> str:
+        query = kwargs.get("query")
+        if not query: return "Error: Missing search query."
+        
+        try:
+            # DuckDuckGo Lite version for easy scraping without JS
+            url = f"https://html.duckduckgo.com/html/?q={query.replace(' ', '+')}"
+            headers = {'User-Agent': 'ArkanisOS/V3.1 (Web-Intelligence-Kernel)'}
+            response = requests.get(url, headers=headers, timeout=10)
+            response.raise_for_status()
+            
+            from html.parser import HTMLParser
+            
+            class DDGParser(HTMLParser):
+                def __init__(self):
+                    super().__init__()
+                    self.results = []
+                    self.current_title = None
+                    self.current_link = None
+                    self.in_result = False
+                    self.in_title = False
+                    self.in_snippet = False
+                    
+                def handle_starttag(self, tag, attrs):
+                    attrs_dict = dict(attrs)
+                    if tag == "div" and "result" in attrs_dict.get("class", ""):
+                        self.in_result = True
+                    if self.in_result:
+                        if tag == "a" and "result__a" in attrs_dict.get("class", ""):
+                            self.in_title = True
+                            self.current_link = attrs_dict.get("href")
+                        if tag == "a" and "result__snippet" in attrs_dict.get("class", ""):
+                            self.in_snippet = True
+                            
+                def handle_endtag(self, tag):
+                    if tag == "div" and self.in_result:
+                        if self.current_title and self.current_link:
+                            self.results.append(f"- {self.current_title}\n  URL: {self.current_link}")
+                        self.current_title = None
+                        self.current_link = None
+                        self.in_result = False
+                    if tag == "a":
+                        self.in_title = False
+                        self.in_snippet = False
+                        
+                def handle_data(self, data):
+                    if self.in_title:
+                        self.current_title = data.strip()
+            
+            parser = DDGParser()
+            parser.feed(response.text)
+            
+            if not parser.results:
+                return "No real-time results found. Try a different query."
+                
+            return "\n".join(parser.results[:5]) # Top 5 results
+        except Exception as e:
+            return f"Search Error: {str(e)}. Use direct fetch if you have a URL."
+
 # Auto-registration
 registry.register(CheckInternetTool())
 registry.register(FetchUrlTool())
 registry.register(HttpGetTool())
 registry.register(HttpPostTool())
+registry.register(WebSearchTool())
