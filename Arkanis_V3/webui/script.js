@@ -131,7 +131,14 @@ async function sendMessage(textOverride = null) {
         const data = await response.json();
         const thinkingMsg = document.getElementById(thinkingId);
         if (thinkingMsg) {
-            thinkingMsg.innerHTML = formatResponse(data.response);
+            // Use the typewriter effect for a natural feel
+            const contentDiv = thinkingMsg.querySelector('[id^="bot-content-"]');
+            if (contentDiv) {
+                contentDiv.innerHTML = ""; // Clear "Analyzing..."
+                await typeWriter(contentDiv, formatResponse(data.response));
+            } else {
+                thinkingMsg.innerHTML = formatResponse(data.response);
+            }
         }
     } catch (error) {
         console.error('Error sending message:', error);
@@ -225,14 +232,20 @@ async function sendVoiceMessage(blob) {
         const thinkingMsg = document.getElementById(thinkingId);
         
         if (thinkingMsg) {
-            if (data.transcription) {
-                // Update with transcription + response
-                thinkingMsg.innerHTML = `
-                    <div class="mb-4 p-2 bg-primary/5 border-l-2 border-primary text-[11px] italic text-slate-400">
-                        " ${data.transcription} "
-                    </div>
-                    ${formatResponse(data.response)}
-                `;
+            const contentDiv = thinkingMsg.querySelector('[id^="bot-content-"]');
+            if (contentDiv) {
+                contentDiv.innerHTML = ""; // Clear "Transcrevendo..."
+                
+                if (data.transcription) {
+                    const transcriptionHtml = `
+                        <div class="mb-4 p-2 bg-primary/5 border-l-2 border-primary text-[11px] italic text-slate-400">
+                            " ${data.transcription} "
+                        </div>
+                    `;
+                    contentDiv.innerHTML = transcriptionHtml;
+                }
+                
+                await typeWriter(contentDiv, formatResponse(data.response), true); // Append mode
             } else {
                 thinkingMsg.innerHTML = formatResponse(data.response);
             }
@@ -258,12 +271,15 @@ function addBotMessage(text, id = null) {
     wrap.className = 'flex justify-start items-start gap-4 mb-8';
     if (id) wrap.id = id;
     
+    // Create a unique internal ID for the content to target with typewriter
+    const contentId = `bot-content-${id || Date.now()}`;
+    
     wrap.innerHTML = `
         <div class="w-8 h-8 rounded-lg bg-blue-500/20 flex-shrink-0 flex items-center justify-center border border-blue-500/20">
             <span class="material-symbols-outlined text-blue-400 text-sm" style="font-variation-settings: 'FILL' 1;">bolt</span>
         </div>
         <div class="bg-slate-900/50 text-slate-200 px-8 py-6 rounded-2xl rounded-bl-none max-w-[85%] border border-white/5 shadow-xl">
-            <div id="bot-content-${id || Date.now()}" class="space-y-4 font-body leading-relaxed text-sm">${text}</div>
+            <div id="${contentId}" class="space-y-4 font-body leading-relaxed text-sm">${text}</div>
             <div class="pt-4 flex gap-2 opacity-50 hover:opacity-100 transition-opacity">
                 <button class="px-2 py-1 rounded hover:bg-white/5 text-[10px] uppercase font-bold tracking-tighter">Copiar</button>
                 <button class="px-2 py-1 rounded hover:bg-white/5 text-[10px] uppercase font-bold tracking-tighter">Regenerar</button>
@@ -272,6 +288,44 @@ function addBotMessage(text, id = null) {
     `;
     area.appendChild(wrap);
     scrollDown();
+}
+
+/**
+ * Typewriter effect with human-like cadence and reflection pauses.
+ */
+async function typeWriter(element, html, append = false) {
+    if (!append) element.innerHTML = "";
+    
+    // Split HTML into tags and text nodes
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = html;
+    const nodes = Array.from(tempDiv.childNodes);
+    
+    for (const node of nodes) {
+        if (node.nodeType === Node.TEXT_NODE) {
+            const text = node.textContent;
+            for (let i = 0; i < text.length; i++) {
+                const char = text[i];
+                element.innerHTML += char;
+                scrollDown();
+                
+                // Human-like cadence
+                let delay = 15 + Math.random() * 20;
+                
+                // Reflection Pauses (periods, commas, etc.)
+                if (char === '.' || char === '!' || char === '?') delay += 400;
+                else if (char === ',' || char === ':' || char === ';') delay += 200;
+                
+                await new Promise(resolve => setTimeout(resolve, delay));
+            }
+        } else {
+            // For HTML tags, inject them instantly but recurse if they have children
+            const clone = node.cloneNode(true);
+            element.appendChild(clone);
+            scrollDown();
+            await new Promise(resolve => setTimeout(resolve, 50));
+        }
+    }
 }
 
 function formatResponse(text) {

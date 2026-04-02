@@ -142,31 +142,49 @@ class ArkanisAgent:
 {soul}
 
 REGRAS DE RESPOSTA:
-- Responda sempre em Português do Brasil.
-- Seja natural, direto e amigável — nunca robótico ou formal demais.
-- Nunca exiba JSON cru — interprete e apresente dados de forma conversacional.
-- GROUNDING CRÍTICO: Nunca invente links, notícias ou fatos que não foram explicitamente retornados pelas ferramentas.
-- GROUNDING CRÍTICO: Se uma ferramenta falhar (timeout, erro 404, etc), relate a impossibilidade de forma simples: "Não consegui acessar a página X" em vez de inventar detalhes do erro.
-- PROIBIÇÃO: Nunca use placeholders como [key point], [Summarized point] ou similares. Se não houver informação, não diga nada.
-- Mantenha respostas concisas mas completas."""
+- Mantenha respostas concisas mas completas.
+- MEMÓRIA DE LONGO PRAZO: Se você detectar que o usuário falou o próprio nome, nome da esposa, marido, namorado(a), filhos, pets ou fatos pessoais importantes, RESPONDA confirmando que salvou e use a tag [SAVE_FACT: texto do fato] ao final da sua resposta para que o sistema registre internamente.
+- AWAKENING: Se este for o primeiro contato (indicado no prompt), use um tom de "Acabei de acordar" e pergunte como o usuário quer ser chamado e como quer te chamar.
+"""
 
         user_prompt = f"""O usuário disse: "{user_input}"
 
 Dados obtidos pelas ferramentas:
 {raw}
 
-Formule uma resposta natural e amigável."""
+Lembre-se da sua alma e personalidade:
+{soul}
+
+Formule uma resposta natural, amigável e conversacional."""
 
         llm = LLMClient()
         response = llm.generate(system_prompt=system_prompt, user_prompt=user_prompt)
+        
         if response and "[Error" not in response:
+            # Multi-line extraction of facts
+            if "[SAVE_FACT:" in response:
+                import re
+                facts = re.findall(r"\[SAVE_FACT:\s*(.*?)\]", response)
+                for f in facts:
+                    long_term_memory.add_memory("facts", f.strip())
+                # Clean tags from final response
+                response = re.sub(r"\[SAVE_FACT:\s*.*?\]", "", response).strip()
+            
             return response
         return raw  # fallback to raw if formatter fails
 
     def _handle_manual_mode(self, user_input: str) -> str:
         """Process user input manually: Context -> Plan -> Execute -> Remember."""
+        # Check for Awakening
+        data_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data")
+        awakened_file = os.path.join(data_dir, ".awakened")
+        is_first_interaction = not os.path.exists(awakened_file)
+        
         # 1. Recuperar contexto da Memória e extrair Inbox
         context = self.memory.get_context()
+        
+        if is_first_interaction:
+            context += "\n\n[SISTEMA]: ESTA É A PRIMEIRA INTERAÇÃO DO AGENTE. ACORDANDO AGORA. Use o tom de despertar e peça nomes (seu e do usuário)."
 
         # Injetar Memória de Longo Prazo
         lt_mem = long_term_memory.get_formatted_memory()
@@ -241,6 +259,13 @@ Formule uma resposta natural e amigável."""
 
         # 5. Salvar Interação Histórica Completa na Memória
         self.memory.add_interaction(user_input=user_input, plan=final_plan, result=response)
+        
+        # 6. Mark as Awakened if first time
+        if is_first_interaction:
+            os.makedirs(data_dir, exist_ok=True)
+            with open(awakened_file, "w") as f:
+                f.write("awakened")
+            self.log("Agente despertou com sucesso.", "success")
 
         return response
 

@@ -16,10 +16,17 @@
             "Não há mecanismos de continuidade da conversa ou próximos passos propostos. O plano se limita a uma única mensagem sem considerar a progressão natural do diálogo.",
             "O plano não contempla uma forma de capturar a opção selecionada pelo usuário e direcionar o diálogo de acordo com a escolha.",
             "A mensagem de boas-vindas ainda pode ser aprimorada para soar mais natural e conversar diretamente com o usuário, usando seu nome e retomando detalhes específicos da interação anterior.",
-            "A mensagem de boas-vindas ainda pode ser mais personalizada, usando o nome do usuário e retomando detalhes específicos da interação anterior."
+            "A mensagem de boas-vindas ainda pode ser mais personalizada, usando o nome do usuário e retomando detalhes específicos da interação anterior.",
+            "O plano se limita a uma única mensagem genérica de boas-vindas, sem considerar a progressão natural do diálogo ou próximos passos.",
+            "A mensagem de boas-vindas, embora cordial, ainda não está totalmente personalizada com base no contexto da interação anterior.",
+            "O plano ainda é um pouco genérico e impessoal, sem aproveitar os detalhes das interações anteriores para personalizar a mensagem.",
+            "Não há uma forma clara de capturar a escolha do usuário e direcionar o diálogo de acordo com a opção selecionada.",
+            "O plano não propõe uma progressão natural do diálogo, ficando limitado a uma única mensagem de boas-vindas.",
+            "O plano se limita a uma única mensagem de boas-vindas genérica, sem considerar a progressão natural da conversa ou próximos passos.",
+            "Não há mecanismos para capturar a escolha do usuário e direcionar o diálogo de acordo com a opção selecionada."
         ],
-        "fail_count": 3,
-        "last_seen": "Thu Apr  2 13:54:40 2026"
+        "fail_count": 6,
+        "last_seen": "Thu Apr  2 14:36:40 2026"
     },
     {
         "goal_pattern": "Crie uma pasta na área de trabalho com nome Minha alma.",
