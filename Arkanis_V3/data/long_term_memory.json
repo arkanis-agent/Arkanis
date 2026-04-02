@@ -1,0 +1,18 @@
+{
+    "preferences": [],
+    "facts": [
+        "Primeiro contato com o usuário",
+        "Nome do usuário",
+        "Usuário é administrador e desenvolvedor deste sistema",
+        "O usuário não informou o próprio nome ainda",
+        "Nome do usuário: Diego",
+        "Criou pasta \"teste 1\" na área de trabalho",
+        "Criei uma pasta chamada \"teste 1\" na Área de Trabalho do usuário e adicionei os arquivos solicitados.",
+        "O usuário reportou que a pasta \"teste 1\" está vazia.",
+        "Diego adicionou os arquivos index.html, styles.css e script.js na pasta \"teste 1\" na Área de Trabalho",
+        "o usuário criou a pasta 'teste 1' e os arquivos 'texto.txt' e 'index.html' dentro dela",
+        "O usuário pediu para abrir uma pasta e criar um novo arquivo de texto",
+        "Usuário pediu o caminho da pasta 'teste 1'"
+    ],
+    "recurrent_tasks": []
+}

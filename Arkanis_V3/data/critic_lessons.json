@@ -56,5 +56,17 @@
         ],
         "fail_count": 3,
         "last_seen": "Thu Apr  2 14:44:13 2026"
+    },
+    {
+        "goal_pattern": "Quero te chamar de R2D2 e eu sou o Diego",
+        "lessons": [
+            "Resposta genérica e impessoal, ignorando o contexto da conversa anterior",
+            "Falta de personalização e adaptação ao usuário",
+            "A resposta ainda é muito genérica e impessoal, ignorando informações importantes da conversa anterior.",
+            "Falta de personalização da interação, como referência ao nome 'Diego' e ao apelido 'R2D2' que o usuário sugeriu.",
+            "A resposta ainda carece de uma contextualização adequada, uma vez que não faz referência às interações anteriores com o usuário."
+        ],
+        "fail_count": 4,
+        "last_seen": "Thu Apr  2 15:22:42 2026"
     }
 ]

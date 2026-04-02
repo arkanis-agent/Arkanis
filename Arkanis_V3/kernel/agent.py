@@ -12,6 +12,7 @@ import threading
 import uuid
 from core.logger import logger as arkanis_logger
 from core.llm_client import LLMClient
+import os
 
 class ArkanisAgent:
     """
