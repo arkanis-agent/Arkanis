@@ -122,3 +122,168 @@ input:checked ~ .peer-checked\:bg-primary {
     background: rgba(59, 130, 246, 0.05);
     border-color: rgba(59, 130, 246, 0.2);
 }
+
+/* ============================================================
+   AGENT CONTROL CENTER — Premium Card Styles & Animations
+   ============================================================ */
+
+/* Shimmer bar for active agents */
+@keyframes shimmer {
+    0% { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
+}
+.animate-shimmer {
+    animation: shimmer 2s linear infinite;
+    background-image: linear-gradient(90deg, transparent 0%, rgba(59,130,246,0.3) 50%, transparent 100%);
+    background-size: 200% 100%;
+}
+
+/* Status ring styles */
+.agent-status-ring {
+    position: relative;
+}
+.agent-status-ring::after {
+    content: '';
+    position: absolute;
+    inset: -3px;
+    border-radius: 50%;
+    border: 2px solid transparent;
+    animation: status-pulse 2s ease-in-out infinite;
+}
+.agent-status-ring.running::after {
+    border-color: rgba(59, 130, 246, 0.5);
+}
+.agent-status-ring.paused::after {
+    border-color: rgba(245, 158, 11, 0.5);
+    animation: status-pulse-amber 2.5s ease-in-out infinite;
+}
+.agent-status-ring.error::after {
+    border-color: rgba(239, 68, 68, 0.5);
+    animation: status-pulse-red 1.5s ease-in-out infinite;
+}
+
+@keyframes status-pulse {
+    0%, 100% { opacity: 0.4; transform: scale(1); }
+    50% { opacity: 1; transform: scale(1.15); }
+}
+@keyframes status-pulse-amber {
+    0%, 100% { opacity: 0.3; }
+    50% { opacity: 0.9; }
+}
+@keyframes status-pulse-red {
+    0%, 100% { opacity: 0.3; transform: scale(1); }
+    50% { opacity: 1; transform: scale(1.1); }
+}
+
+/* Card reveal animation */
+@keyframes cardReveal {
+    from { opacity: 0; transform: translateY(12px) scale(0.97); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+}
+.agent-card {
+    animation: cardReveal 0.35s ease-out both;
+    transition: border-color 0.3s ease, box-shadow 0.3s ease, transform 0.2s ease;
+}
+.agent-card:hover {
+    border-color: rgba(59, 130, 246, 0.25);
+    box-shadow: 0 0 30px rgba(59, 130, 246, 0.08), 0 4px 20px rgba(0, 0, 0, 0.3);
+    transform: translateY(-2px);
+}
+
+/* Agent mini-log feed */
+.agent-mini-log {
+    max-height: 80px;
+    overflow-y: auto;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+.agent-mini-log::-webkit-scrollbar { display: none; }
+
+.agent-mini-log .log-line {
+    font-size: 9px;
+    font-family: 'JetBrains Mono', 'Fira Code', monospace;
+    letter-spacing: -0.3px;
+    opacity: 0.7;
+    padding: 1px 0;
+    border-left: 2px solid transparent;
+    padding-left: 6px;
+    transition: opacity 0.2s;
+}
+.agent-mini-log .log-line:hover { opacity: 1; }
+.agent-mini-log .log-line.planner { border-left-color: #3b82f6; }
+.agent-mini-log .log-line.executor { border-left-color: #10b981; }
+.agent-mini-log .log-line.critic { border-left-color: #ec4899; }
+.agent-mini-log .log-line.system { border-left-color: #06b6d4; }
+.agent-mini-log .log-line.error { border-left-color: #ef4444; color: #fca5a5; }
+
+/* Tool badge chip */
+.tool-badge {
+    font-size: 8px;
+    font-weight: 700;
+    letter-spacing: 0.3px;
+    text-transform: uppercase;
+    padding: 2px 6px;
+    border-radius: 4px;
+    background: rgba(59, 130, 246, 0.08);
+    color: #60a5fa;
+    border: 1px solid rgba(59, 130, 246, 0.12);
+    white-space: nowrap;
+}
+
+/* Control button styles */
+.agent-ctrl-btn {
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    border: 1px solid rgba(255,255,255,0.08);
+    background: rgba(255,255,255,0.03);
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+.agent-ctrl-btn:hover {
+    background: rgba(255,255,255,0.08);
+    border-color: rgba(255,255,255,0.15);
+    transform: scale(1.1);
+}
+.agent-ctrl-btn.pause:hover { background: rgba(245,158,11,0.15); border-color: rgba(245,158,11,0.3); }
+.agent-ctrl-btn.resume:hover { background: rgba(16,185,129,0.15); border-color: rgba(16,185,129,0.3); }
+.agent-ctrl-btn.stop:hover { background: rgba(239,68,68,0.15); border-color: rgba(239,68,68,0.3); }
+
+/* Agent card current action ribbon */
+.agent-action-text {
+    font-size: 10px;
+    color: #94a3b8;
+    padding: 4px 8px;
+    background: rgba(255,255,255,0.02);
+    border-radius: 6px;
+    border: 1px solid rgba(255,255,255,0.04);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* Stat card counter animation */
+@keyframes countPop {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.2); }
+    100% { transform: scale(1); }
+}
+.stat-pop {
+    animation: countPop 0.3s ease-out;
+}
+
+/* Expanded log modal overlay */
+.agent-log-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 55;
+    background: rgba(0,0,0,0.7);
+    backdrop-filter: blur(8px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    animation: fadeIn 0.2s ease-out;
+}

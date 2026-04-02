@@ -1640,7 +1640,10 @@ document.querySelectorAll('.suggestion-card').forEach(card => {
     });
 });
 
-// --- 11. Observability (System Watch) Logic ---
+// --- 11. Observability (Agent Control Center) Logic ---
+
+// Track previous stats for pop animation
+let _prevStats = { total: -1, active: -1, idle: -1, paused: -1, errors: -1 };
 
 async function fetchObservabilityData() {
     try {
@@ -1652,39 +1655,158 @@ async function fetchObservabilityData() {
     }
 }
 
-function renderObservability(data) {
-    // Update Stats
-    document.getElementById('obsTotalAgents').innerText = data.stats.total;
-    document.getElementById('obsActiveAgents').innerText = data.stats.active;
-    document.getElementById('obsIdleAgents').innerText = data.stats.idle;
-    document.getElementById('obsErrorAgents').innerText = data.stats.errors;
+function getStatusConfig(status) {
+    const map = {
+        running: { color: 'blue', bg: 'bg-blue-500', text: 'text-blue-400', border: 'border-blue-500/20', bgBadge: 'bg-blue-500/15 text-blue-400', icon: 'play_arrow', label: 'EXECUTANDO' },
+        idle:    { color: 'slate', bg: 'bg-slate-500', text: 'text-slate-400', border: 'border-slate-500/20', bgBadge: 'bg-slate-500/15 text-slate-400', icon: 'pause_circle', label: 'IDLE' },
+        paused:  { color: 'amber', bg: 'bg-amber-500', text: 'text-amber-400', border: 'border-amber-500/20', bgBadge: 'bg-amber-500/15 text-amber-400', icon: 'pause', label: 'PAUSADO' },
+        error:   { color: 'rose', bg: 'bg-rose-500', text: 'text-rose-400', border: 'border-rose-500/20', bgBadge: 'bg-rose-500/15 text-rose-400', icon: 'error', label: 'ERRO' },
+    };
+    return map[status] || map.idle;
+}
 
-    // Render Agent Cards
+function animateStatIfChanged(elId, newValue, key) {
+    const el = document.getElementById(elId);
+    if (!el) return;
+    const prev = _prevStats[key];
+    el.innerText = newValue;
+    if (prev !== -1 && prev !== newValue) {
+        el.classList.remove('stat-pop');
+        void el.offsetWidth;
+        el.classList.add('stat-pop');
+    }
+    _prevStats[key] = newValue;
+}
+
+function renderObservability(data) {
+    // Update Stats with animations
+    animateStatIfChanged('obsTotalAgents', data.stats.total, 'total');
+    animateStatIfChanged('obsActiveAgents', data.stats.active, 'active');
+    animateStatIfChanged('obsIdleAgents', data.stats.idle, 'idle');
+    animateStatIfChanged('obsPausedAgents', data.stats.paused, 'paused');
+    animateStatIfChanged('obsErrorAgents', data.stats.errors, 'errors');
+
+    // Render Rich Agent Cards
     const grid = document.getElementById('obsAgentsGrid');
     grid.innerHTML = '';
-    
-    data.agents.forEach(agent => {
-        const isActive = agent.status !== 'idle';
-        const card = document.createElement('div');
-        card.className = "bg-slate-900/40 border border-white/5 p-6 rounded-2xl relative overflow-hidden transition-all hover:border-white/10";
-        
-        card.innerHTML = `
-            <div class="flex items-center justify-between mb-4">
-                <div class="flex items-center gap-3">
-                    <div class="w-2 h-2 rounded-full ${isActive ? 'bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.6)]' : 'bg-slate-600'}"></div>
-                    <h4 class="text-sm font-bold text-white">${agent.id}</h4>
-                </div>
-                <span class="text-[9px] font-bold px-2 py-0.5 rounded bg-white/5 text-slate-500 uppercase">${agent.status}</span>
+
+    if (data.agents.length === 0) {
+        grid.innerHTML = `
+            <div class="col-span-full flex flex-col items-center justify-center py-16 text-slate-600">
+                <span class="material-symbols-outlined text-4xl mb-3 text-slate-700">smart_toy</span>
+                <p class="text-sm font-medium">Nenhum agente registrado</p>
+                <p class="text-xs mt-1">Clique em "Novo Agente" para criar um.</p>
             </div>
-            <div class="space-y-2">
-                <div class="h-1 w-full bg-white/5 rounded-full overflow-hidden">
-                    <div class="h-full bg-blue-500/50 ${isActive ? 'w-2/3 animate-shimmer' : 'w-0'}" style="background-image: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent); background-size: 200% 100%;"></div>
+        `;
+    }
+    
+    data.agents.forEach((agent, i) => {
+        const sc = getStatusConfig(agent.status);
+        const isActive = agent.status === 'running';
+        const isPaused = agent.status === 'paused';
+        const isCustom = agent.is_custom;
+
+        // Tool badges HTML
+        const toolsHtml = (agent.allowed_tools && agent.allowed_tools.length > 0)
+            ? agent.allowed_tools.slice(0, 5).map(t => `<span class="tool-badge">${t}</span>`).join('')
+              + (agent.allowed_tools.length > 5 ? `<span class="tool-badge" style="opacity:.5">+${agent.allowed_tools.length - 5}</span>` : '')
+            : '<span class="text-[8px] text-slate-600 italic">Todas as ferramentas</span>';
+
+        // Mini-log feed
+        const logsHtml = (agent.logs && agent.logs.length > 0)
+            ? agent.logs.map(l => {
+                const logType = (l.type || 'system').toLowerCase();
+                return `<div class="log-line ${logType}"><span class="text-slate-600 mr-1">${l.time || ''}</span> ${l.message || l}</div>`;
+              }).join('')
+            : '<div class="text-[9px] text-slate-700 italic px-1">Sem atividade recente</div>';
+
+        // Lifecycle control buttons
+        let controlsHtml = '';
+        if (isActive) {
+            controlsHtml = `
+                <button class="agent-ctrl-btn pause" title="Pausar agente" onclick="agentPause('${agent.id}')">
+                    <span class="material-symbols-outlined text-amber-500 text-[15px]">pause</span>
+                </button>
+            `;
+        } else if (isPaused) {
+            controlsHtml = `
+                <button class="agent-ctrl-btn resume" title="Retomar agente" onclick="agentResume('${agent.id}')">
+                    <span class="material-symbols-outlined text-emerald-500 text-[15px]">play_arrow</span>
+                </button>
+            `;
+        }
+        if (isCustom) {
+            controlsHtml += `
+                <button class="agent-ctrl-btn stop" title="Parar e remover agente" onclick="agentStop('${agent.id}')">
+                    <span class="material-symbols-outlined text-rose-500 text-[15px]">stop</span>
+                </button>
+            `;
+        }
+
+        const card = document.createElement('div');
+        card.className = `agent-card bg-slate-900/50 border border-white/5 rounded-2xl relative overflow-hidden`;
+        card.style.animationDelay = `${i * 80}ms`;
+
+        card.innerHTML = `
+            <!-- Status glow bar at top -->
+            <div class="h-[2px] w-full ${isActive ? 'bg-gradient-to-r from-transparent via-blue-500 to-transparent animate-shimmer' : isPaused ? 'bg-gradient-to-r from-transparent via-amber-500/50 to-transparent' : 'bg-white/3'}"></div>
+
+            <div class="p-5 space-y-4">
+                <!-- Header: Status dot + ID + Badge + Controls -->
+                <div class="flex items-start justify-between gap-2">
+                    <div class="flex items-center gap-3 min-w-0">
+                        <div class="w-8 h-8 rounded-lg ${isActive ? 'bg-blue-500/15' : isPaused ? 'bg-amber-500/15' : 'bg-slate-800'} flex items-center justify-center flex-shrink-0 agent-status-ring ${agent.status}">
+                            <span class="material-symbols-outlined ${sc.text} text-[16px]" style="font-variation-settings: 'FILL' 1;">${sc.icon}</span>
+                        </div>
+                        <div class="min-w-0">
+                            <h4 class="text-sm font-bold text-white truncate">${agent.id}</h4>
+                            <p class="text-[10px] ${sc.text} font-semibold">${agent.role || 'Agente Principal'}</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-1.5 flex-shrink-0">
+                        ${controlsHtml}
+                    </div>
                 </div>
-                <div class="flex justify-between text-[10px] text-slate-500 font-medium">
-                    <span>Ciclos: ${agent.cycle}</span>
-                    <span>Modo: ${agent.mode}</span>
+
+                <!-- Status Badge + Mode + Cycle Row -->
+                <div class="flex items-center gap-2 flex-wrap">
+                    <span class="text-[8px] font-bold px-2 py-0.5 rounded-md ${sc.bgBadge} uppercase tracking-wide">${sc.label}</span>
+                    <span class="text-[9px] text-slate-600 font-medium">Modo: ${agent.mode}</span>
+                    <span class="text-[9px] text-slate-600 font-medium">Ciclo: ${agent.cycle}</span>
+                    ${isCustom ? '<span class="text-[8px] font-bold px-1.5 py-0.5 rounded bg-purple-500/15 text-purple-400 border border-purple-500/15">CUSTOM</span>' : ''}
                 </div>
-                <p class="text-[9px] text-slate-600 mt-2">Visto pela última vez: ${agent.last_seen}</p>
+
+                <!-- Current Action -->
+                <div class="agent-action-text">
+                    <span class="material-symbols-outlined text-[11px] ${sc.text} mr-1 align-middle" style="font-variation-settings: 'FILL' 1;">bolt</span>
+                    ${agent.current_action || 'Idle'}
+                </div>
+
+                <!-- Progress Bar -->
+                <div class="h-[3px] w-full bg-white/5 rounded-full overflow-hidden">
+                    <div class="h-full rounded-full ${isActive ? 'bg-blue-500 w-2/3 animate-shimmer' : isPaused ? 'bg-amber-500/40 w-1/2' : 'w-0'}" style="transition: width 0.5s ease;"></div>
+                </div>
+
+                <!-- Tools Section -->
+                <div>
+                    <p class="text-[8px] font-bold text-slate-600 uppercase tracking-widest mb-1.5">Ferramentas</p>
+                    <div class="flex flex-wrap gap-1">${toolsHtml}</div>
+                </div>
+
+                <!-- Mini Activity Log -->
+                <div>
+                    <div class="flex items-center justify-between mb-1">
+                        <p class="text-[8px] font-bold text-slate-600 uppercase tracking-widest">Atividade</p>
+                        <button class="text-[8px] text-slate-600 hover:text-blue-400 transition-colors font-bold" onclick="showAgentFullLog('${agent.id}')">VER TUDO</button>
+                    </div>
+                    <div class="agent-mini-log bg-black/20 rounded-lg p-2 border border-white/3">${logsHtml}</div>
+                </div>
+
+                <!-- Footer: Last Seen -->
+                <div class="flex items-center justify-between text-[9px] text-slate-700 pt-1 border-t border-white/3">
+                    <span>Visto: ${agent.last_seen}</span>
+                    <span class="w-1.5 h-1.5 rounded-full ${isActive ? 'bg-blue-500 animate-pulse' : 'bg-slate-700'}"></span>
+                </div>
             </div>
         `;
         grid.appendChild(card);
@@ -1696,7 +1818,8 @@ function renderObservability(data) {
         tableBody.innerHTML = '<tr><td colspan="4" class="px-6 py-12 text-center text-slate-600 italic">Nenhum evento registrado ainda.</td></tr>';
     } else {
         tableBody.innerHTML = '';
-        data.history.reverse().forEach(msg => {
+        // Show latest first, only reverse a copy
+        [...data.history].reverse().forEach(msg => {
             const row = document.createElement('tr');
             row.className = "hover:bg-white/2 transition-colors";
             row.innerHTML = `
@@ -1708,6 +1831,193 @@ function renderObservability(data) {
             tableBody.appendChild(row);
         });
     }
+}
+
+// --- Agent Lifecycle Controls ---
+
+async function agentPause(agentId) {
+    try {
+        const r = await fetch(`/agents/${agentId}/pause`, { method: 'POST' });
+        if (r.ok) { 
+            fetchObservabilityData();
+            showToast(`Agente "${agentId}" pausado.`, 'amber');
+        }
+    } catch (e) { console.error('Pause failed:', e); }
+}
+
+async function agentResume(agentId) {
+    try {
+        const r = await fetch(`/agents/${agentId}/resume`, { method: 'POST' });
+        if (r.ok) { 
+            fetchObservabilityData();
+            showToast(`Agente "${agentId}" retomado.`, 'emerald');
+        }
+    } catch (e) { console.error('Resume failed:', e); }
+}
+
+async function agentStop(agentId) {
+    if (!confirm(`Tem certeza que deseja parar e remover o agente "${agentId}"?`)) return;
+    try {
+        const r = await fetch(`/agents/${agentId}/stop`, { method: 'POST' });
+        if (r.ok) { 
+            fetchObservabilityData();
+            showToast(`Agente "${agentId}" removido.`, 'rose');
+        }
+    } catch (e) { console.error('Stop failed:', e); }
+}
+
+// Inline toast notification
+function showToast(msg, color = 'blue') {
+    const toast = document.createElement('div');
+    toast.className = `fixed bottom-6 right-6 z-[70] flex items-center gap-2 px-5 py-3 rounded-xl text-sm font-bold text-${color}-400 bg-${color}-500/10 border border-${color}-500/20 shadow-2xl backdrop-blur-xl`;
+    toast.style.animation = 'cardReveal 0.3s ease-out';
+    toast.innerHTML = `<span class="material-symbols-outlined text-sm">check_circle</span> ${msg}`;
+    document.body.appendChild(toast);
+    setTimeout(() => { toast.style.opacity = '0'; toast.style.transition = 'opacity 0.3s'; setTimeout(() => toast.remove(), 300); }, 3000);
+}
+
+// Expanded Agent Log Modal
+async function showAgentFullLog(agentId) {
+    try {
+        const r = await fetch(`/agents/${agentId}/logs`);
+        const data = await r.json();
+        const logs = data.logs || [];
+
+        const overlay = document.createElement('div');
+        overlay.className = 'agent-log-overlay';
+        overlay.onclick = (e) => { if (e.target === overlay) overlay.remove(); };
+
+        const logsContent = logs.length > 0
+            ? logs.map(l => {
+                const t = (l.type || 'system').toLowerCase();
+                return `<div class="log-line ${t}" style="font-size:11px;padding:3px 8px;"><span class="text-slate-600 mr-2">[${l.time || ''}]</span><span class="uppercase font-bold mr-2 text-[10px]">${t}</span>${l.message || l}</div>`;
+              }).join('')
+            : '<p class="text-slate-600 italic text-center py-8">Nenhum log disponível.</p>';
+
+        overlay.innerHTML = `
+            <div class="bg-slate-900 border border-white/10 rounded-2xl w-full max-w-2xl mx-4 max-h-[75vh] flex flex-col shadow-2xl">
+                <div class="flex items-center justify-between px-6 py-4 border-b border-white/5">
+                    <div class="flex items-center gap-3">
+                        <span class="material-symbols-outlined text-blue-400">terminal</span>
+                        <h3 class="text-sm font-bold text-white">Logs — ${agentId}</h3>
+                        <span class="text-[9px] font-bold text-slate-500 bg-white/5 px-2 py-0.5 rounded">${logs.length} entradas</span>
+                    </div>
+                    <button onclick="this.closest('.agent-log-overlay').remove()" class="text-slate-500 hover:text-white transition-colors">
+                        <span class="material-symbols-outlined">close</span>
+                    </button>
+                </div>
+                <div class="flex-1 overflow-y-auto custom-scrollbar p-4 space-y-0.5 bg-black/30">${logsContent}</div>
+            </div>
+        `;
+        document.body.appendChild(overlay);
+    } catch (e) {
+        console.error('Failed to fetch agent logs:', e);
+    }
+}
+
+// --- Create Agent Modal Logic ---
+
+const createAgentModal = document.getElementById('createAgentModal');
+const openCreateAgentBtn = document.getElementById('openCreateAgentModal');
+const closeCreateAgentBtn = document.getElementById('closeCreateAgentModal');
+const submitCreateAgentBtn = document.getElementById('submitCreateAgent');
+const createAgentErr = document.getElementById('createAgentError');
+
+async function loadAvailableTools() {
+    const container = document.getElementById('toolCheckboxes');
+    if (!container) return;
+    try {
+        const r = await fetch('/tools/available');
+        const data = await r.json();
+        const tools = data.tools || [];
+        if (tools.length === 0) {
+            container.innerHTML = '<p class="text-slate-500 text-xs italic col-span-2">Nenhuma ferramenta registrada.</p>';
+            return;
+        }
+        container.innerHTML = tools.map(t => `
+            <label class="flex items-center gap-2 p-1.5 rounded-lg hover:bg-white/5 transition-colors cursor-pointer group">
+                <input type="checkbox" value="${t.name}" class="tool-checkbox rounded border-white/10 bg-slate-900 text-blue-500 focus:ring-blue-500 focus:ring-offset-0 w-3.5 h-3.5" />
+                <div class="min-w-0">
+                    <span class="text-[11px] font-bold text-slate-300 group-hover:text-white">${t.name}</span>
+                    <p class="text-[8px] text-slate-600 truncate">${t.description || ''}</p>
+                </div>
+            </label>
+        `).join('');
+    } catch (e) {
+        container.innerHTML = '<p class="text-rose-400 text-xs col-span-2">Erro ao carregar ferramentas.</p>';
+    }
+}
+
+function openCreateAgentModalFn() {
+    if (!createAgentModal) return;
+    loadAvailableTools();
+    createAgentModal.classList.remove('hidden');
+    createAgentModal.classList.add('flex');
+    // Reset form
+    document.getElementById('newAgentId').value = '';
+    document.getElementById('newAgentRole').value = '';
+    document.getElementById('newAgentPersona').value = '';
+    if (createAgentErr) createAgentErr.classList.add('hidden');
+}
+
+function closeCreateAgentModalFn() {
+    if (!createAgentModal) return;
+    createAgentModal.classList.add('hidden');
+    createAgentModal.classList.remove('flex');
+}
+
+async function submitCreateAgentFn() {
+    const agentId = document.getElementById('newAgentId').value.trim();
+    const role = document.getElementById('newAgentRole').value.trim();
+    const persona = document.getElementById('newAgentPersona').value.trim();
+    const selectedTools = Array.from(document.querySelectorAll('.tool-checkbox:checked')).map(cb => cb.value);
+
+    if (!agentId || !role) {
+        if (createAgentErr) {
+            createAgentErr.textContent = 'ID e Função são obrigatórios.';
+            createAgentErr.classList.remove('hidden');
+        }
+        return;
+    }
+
+    // Disable button while creating
+    submitCreateAgentBtn.disabled = true;
+    submitCreateAgentBtn.innerHTML = '<span class="material-symbols-outlined text-sm animate-spin">sync</span> Criando...';
+
+    try {
+        const r = await fetch('/agents/create', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ agent_id: agentId, role: role, persona: persona, allowed_tools: selectedTools })
+        });
+        const data = await r.json();
+        if (r.ok && data.status === 'success') {
+            closeCreateAgentModalFn();
+            fetchObservabilityData();
+            showToast(`Agente "${agentId}" criado com sucesso!`, 'emerald');
+        } else {
+            throw new Error(data.detail || 'Erro ao criar agente');
+        }
+    } catch (e) {
+        if (createAgentErr) {
+            createAgentErr.textContent = e.message || 'Erro ao criar agente.';
+            createAgentErr.classList.remove('hidden');
+        }
+    } finally {
+        submitCreateAgentBtn.disabled = false;
+        submitCreateAgentBtn.innerHTML = '<span class="material-symbols-outlined text-sm">rocket_launch</span> Criar e Ativar';
+    }
+}
+
+// Wire modal buttons
+if (openCreateAgentBtn) openCreateAgentBtn.addEventListener('click', openCreateAgentModalFn);
+if (closeCreateAgentBtn) closeCreateAgentBtn.addEventListener('click', closeCreateAgentModalFn);
+if (submitCreateAgentBtn) submitCreateAgentBtn.addEventListener('click', submitCreateAgentFn);
+// Close on backdrop click
+if (createAgentModal) {
+    createAgentModal.addEventListener('click', (e) => {
+        if (e.target === createAgentModal) closeCreateAgentModalFn();
+    });
 }
 
 // Initial Listeners
