@@ -4,6 +4,7 @@ import re
 from typing import List, Dict, Any, Optional
 from core.llm_client import LLMClient
 from core.logger import logger
+from core.agents.critic_memory import CriticMemory
 
 class CriticAgent:
     """
@@ -53,6 +54,7 @@ REGRA DE SEGURANÇA: Se você detectar qualquer comando que possa destruir o sis
 
     def __init__(self, api_key: Optional[str] = None):
         self.llm = LLMClient(api_key=api_key)
+        self.memory = CriticMemory()
         
     def evaluate_plan(self, goal: str, plan: List[Dict[str, Any]], context: str, soul: str) -> Dict[str, Any]:
         """
@@ -64,6 +66,12 @@ REGRA DE SEGURANÇA: Se você detectar qualquer comando que possa destruir o sis
             soul=soul.replace("{", "{{").replace("}", "}}")
         )
         
+        # 1. Consultar Memória Evolutiva (Lições Aprendidas)
+        past_lessons = self.memory.query_lessons(goal)
+        if past_lessons:
+            logger.info("Avisos proativos detectados na memória evolutiva.", symbol="⚠️")
+            context += f"\n\n[LIÇÕES APRENDIDAS EM TAREFAS SIMILARES NO PASSADO]:\n{past_lessons}"
+
         user_prompt = f"""AUDITORIA DE PRÉ-EXECUÇÃO:
         
 OBJETIVO DO USUÁRIO: {goal}
@@ -75,10 +83,28 @@ Analise tecnicamente e retorne sua decisão em JSON."""
 
         try:
             raw_response = self.llm.generate(system_prompt, user_prompt)
-            return self._parse_json(raw_response)
+            result = self._parse_json(raw_response)
+            
+            # 2. Registrar Lições se houver problemas (Improve/Reject)
+            if result.get("decision") in ["improve", "reject"]:
+                self.memory.record_lesson(goal, result.get("issues", []))
+            
+            return result
         except Exception as e:
             logger.error(f"Falha na Auditoria Sênior: {str(e)}")
             return self._fallback_reject(f"Erro no Kernel do Auditor: {str(e)}")
+
+    def record_execution_result(self, goal: str, results: List[str]):
+        """
+        Closed-loop learning: check if an 'approved' plan actually worked.
+        If it failed, record the error as a critical lesson.
+        """
+        errors = [r for r in results if "[Error]" in r or "falha" in r.lower()]
+        if errors:
+            logger.warning("Plano 'Aprovado' falhou na execução. Registrando lição crítica.", symbol="🛑")
+            self.memory.record_lesson(goal, [f"Falha de Execução: {e[:100]}" for e in errors])
+            return True
+        return False
 
     def _parse_json(self, text: str) -> Dict[str, Any]:
         """Safely parse JSON from LLM response."""

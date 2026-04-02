@@ -227,6 +227,9 @@ Formule uma resposta natural e amigável."""
         # 3. Execution (Fixed Plan)
         self.log("Executando plano validado...", "executor")
         results = self.executor.execute_plan(final_plan)
+        
+        # LEARNING LOOP: Feedback results to Critic
+        self.critic.record_execution_result(user_input, results)
 
         for res in results:
             self.log(f"Resultado: {res[:100]}...", "executor")
@@ -335,6 +338,10 @@ Formule uma resposta natural e amigável."""
             # --- EXECUTION ---
             self.log("Processando execução do ciclo validado...", "executor")
             results = self.executor.execute_plan(final_plan)
+            
+            # LEARNING LOOP: Feedback results to Critic
+            self.critic.record_execution_result(goal, results)
+            
             combined_result = "\n".join(results)
             self.auto_results.extend(results)
             
