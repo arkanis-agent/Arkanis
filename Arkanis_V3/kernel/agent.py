@@ -10,6 +10,7 @@ from modules.memory.long_term import long_term_memory
 import time
 import threading
 import uuid
+from core.logger import logger as arkanis_logger
 
 class ArkanisAgent:
     """
@@ -48,27 +49,29 @@ class ArkanisAgent:
             pass
 
     def log(self, message: str, log_type: str = "info"):
-        """Centralized logging for both CLI (rich) and WebUI (buffer)."""
+        """Centralized logging for both CLI (rich), WebUI (buffer), and System Logs."""
         clean_msg = str(message).strip()
         timestamp = time.strftime("%H:%M:%S")
-        
-        # Rich CLI Output with colors based on type
-        colors = {
-            "planner": "blue",
-            "executor": "green",
-            "critic": "magenta",
-            "control": "yellow",
-            "system": "cyan",
-            "error": "red",
-            "info": "white"
-        }
-        color = colors.get(log_type, "white")
-        rprint(f"[{timestamp}] [bold {color}][{log_type.upper()}][/bold {color}] {clean_msg}")
         
         # WebUI Buffer (limit to 100 most recent logs)
         self.logs.append({"time": timestamp, "type": log_type, "message": clean_msg})
         if len(self.logs) > 100:
             self.logs.pop(0)
+
+        # Delegate to the Arkanis Production Logger
+        if log_type == "error":
+            arkanis_logger.error(clean_msg)
+        elif log_type == "success":
+            arkanis_logger.success(clean_msg)
+        elif log_type == "warning" or log_type == "control":
+            arkanis_logger.warning(clean_msg)
+        elif log_type == "critic":
+            arkanis_logger.critic(clean_msg)
+        else:
+            # Default to info with a custom symbol if possible
+            symbols = {"planner": "🧠", "executor": "⚙️", "system": "💻"}
+            symbol = symbols.get(log_type, "🧠")
+            arkanis_logger.info(clean_msg, symbol=symbol)
 
     def handle_input(self, user_input: str) -> str:
         """Process user input with strict priority routing."""

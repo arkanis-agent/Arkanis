@@ -58,6 +58,11 @@ class ArkanisLogger:
             print(f"   👉 Fix: {fix}")
         self._write_system_log("error", msg, {"fix_suggestion": fix} if fix else None)
 
+    def critic(self, msg: str):
+        """User-friendly critic/auditor log."""
+        print(f"🛡️  {msg}")
+        self._write_system_log("critic", msg)
+
     def request(self, provider: str, model: str):
         """Specific lifecycle log for LLM request start."""
         msg = f"Using {provider.title()} AI ({model})"
