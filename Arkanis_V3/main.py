@@ -44,6 +44,7 @@ def main():
             print("\n[Boot] Initializing Standard CLI...")
             ui = ArkanisCLI(agent)
             ui.start_loop()
+        else:
             # Default to WEB
             import uvicorn
             import webbrowser
