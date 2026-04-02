@@ -23,10 +23,12 @@
             "Não há uma forma clara de capturar a escolha do usuário e direcionar o diálogo de acordo com a opção selecionada.",
             "O plano não propõe uma progressão natural do diálogo, ficando limitado a uma única mensagem de boas-vindas.",
             "O plano se limita a uma única mensagem de boas-vindas genérica, sem considerar a progressão natural da conversa ou próximos passos.",
-            "Não há mecanismos para capturar a escolha do usuário e direcionar o diálogo de acordo com a opção selecionada."
+            "Não há mecanismos para capturar a escolha do usuário e direcionar o diálogo de acordo com a opção selecionada.",
+            "Não há mecanismo para capturar a escolha do usuário e direcionar o diálogo de acordo com a opção selecionada.",
+            "Erro de parsing no formato da auditoria."
         ],
-        "fail_count": 6,
-        "last_seen": "Thu Apr  2 14:36:40 2026"
+        "fail_count": 8,
+        "last_seen": "Thu Apr  2 14:40:55 2026"
     },
     {
         "goal_pattern": "Crie uma pasta na área de trabalho com nome Minha alma.",
