@@ -281,9 +281,9 @@ Formule uma resposta natural e amigável."""
             self.memory.add_interaction(user_input=f"Ciclo Auto {self.current_cycle} - {goal}", plan=plan, result=combined_result)
             
             # --- CRITIC LAYER ---
-            self.log("Critic avaliando resultados do ciclo...", "critic")
+            self.log("Critic avaliando resultados do ciclo (Auditoria Sênior)...", "critic")
             context = self.memory.get_context()
-            decision = self.critic.evaluate(
+            critic_report = self.critic.evaluate(
                 goal=goal,
                 plan=plan,
                 result=combined_result,
@@ -291,19 +291,42 @@ Formule uma resposta natural e amigável."""
                 soul=self.planner.agent_identity
             )
             
-            if decision == "done":
-                self.log("Sucesso aprovado pelo Critic. Finalizando loop.", "critic")
-                self.status = "completed"
-                break
-            elif decision == "fail":
-                self.log("Erro grave identificado pelo Critic. Abortando loop de segurança.", "critic")
-                self.auto_results.append("Aviso: Falha crítica na análise.")
+            # Extract structured feedback
+            decision = critic_report.get("decision", "improve")
+            risk = critic_report.get("risk_level", "medium")
+            confidence = critic_report.get("confidence", 0.0)
+            
+            # Log Auditor findings
+            self.log(f"Auditoria: {decision.upper()} | Risco: {risk.upper()} | Confiança: {confidence}", "critic")
+            
+            if critic_report.get("issues"):
+                for issue in critic_report["issues"][:3]: # Log top 3 issues
+                    self.log(f"⚠️ Alerta: {issue}", "critic")
+            
+            if critic_report.get("improvements"):
+                for imp in critic_report["improvements"][:2]:
+                    self.log(f"💡 Sugestão: {imp}", "critic")
+
+            if decision == "approve":
+                # Decision logic: if this was the final action or objective achieved
+                if "objetivo atingido" in combined_result.lower() or "finalizado" in combined_result.lower():
+                    self.log("Sucesso aprovado pelo Auditor Sênior. Finalizando.", "critic")
+                    self.status = "completed"
+                    break
+                else:
+                    self.log("Progresso aprovado. Continuando ciclo...", "critic")
+            
+            elif decision == "reject":
+                self.log("⚠️ Auditor Sênior Rejeitou a Saída (Risco ou Erro). Abortando.", "error")
+                self.auto_results.append(f"Aviso: Auditor rejeitou a ação: {critic_report.get('final_suggestion')}")
                 self.status = "failed"
                 break
-            elif decision == "continue":
-                self.log("Progresso válido. Mantendo ciclo contínuo.", "critic")
-            elif decision == "replan":
-                self.log("Tentativa falha ou incompleta. Direcionando replanejamento.", "critic")
+                
+            elif decision == "improve":
+                self.log("🔄 Auditor solicitou melhorias. Replanejando...", "critic")
+                # We inject the improved plan or logic into the next cycle's context
+                if critic_report.get("improved_plan"):
+                    self.memory.add_interaction(user_input="CRITIC IMPROVEMENT PLAN", plan=[], result=f"Sugestão do Auditor: {critic_report['improved_plan']}")
                 
             self.current_cycle += 1
             if self.current_cycle <= max_cycles:
