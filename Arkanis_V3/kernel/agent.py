@@ -11,6 +11,7 @@ import time
 import threading
 import uuid
 from core.logger import logger as arkanis_logger
+from core.llm_client import LLMClient
 
 class ArkanisAgent:
     """
@@ -239,7 +240,7 @@ Formule uma resposta natural e amigável."""
         response = self._format_response_with_soul(user_input, results)
 
         # 5. Salvar Interação Histórica Completa na Memória
-        self.memory.add_interaction(user_input=user_input, plan=plan, result=response)
+        self.memory.add_interaction(user_input=user_input, plan=final_plan, result=response)
 
         return response
 
