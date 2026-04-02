@@ -22,6 +22,12 @@ class ModelStrategy:
         self.simple_keywords = [
             r'\b(traduza|traduzir|resuma|resumir|corrija|corrigir|formate|ortografia)\b'
         ]
+
+        # Engineering/Coding specific tasks
+        self.engineering_keywords = [
+            r'\b(landing\s*page|site|website|frontend|backend|react|vue|vite|css|tailwind|html|javascript|typescript|python|c\+\+|rust|golang|php|sql|api|rest|json|xml|yaml)\b',
+            r'\b(projeto|app|aplicativo|software|dev|desenvolva|crie um script|automatize|automacao|automação)\b'
+        ]
         
         # Deep engineering/reasoning
         self.complex_keywords = [
@@ -87,12 +93,17 @@ class ModelStrategy:
             if re.search(pattern, input_lower) and word_count < 30:
                 return "conversation"
 
-        # 3. Check for complex engineering
+        # 3. Check for specialized engineering/coding
+        for pattern in self.engineering_keywords:
+            if re.search(pattern, input_lower):
+                return "engineering"
+
+        # 4. Check for complex architecture/reasoning
         for pattern in self.complex_keywords:
             if re.search(pattern, input_lower):
                 return "complex"
 
-        # 4. Check for simple utilities
+        # 5. Check for simple utilities
         for pattern in self.simple_keywords:
             if re.search(pattern, input_lower) and word_count < 200:
                 return "simple"
@@ -148,6 +159,9 @@ class ModelStrategy:
             return ["LOW COST", "FREE", "BALANCED", "HIGH PERFORMANCE"]
         elif classification == "medium":
             return ["BALANCED", "HIGH PERFORMANCE", "LOW COST", "FREE"]
+        elif classification == "engineering":
+            # Engineering tasks DEMAND high performance or balanced coding models
+            return ["HIGH PERFORMANCE", "BALANCED", "LOW COST", "FREE"]
         else: # complex
             return ["HIGH PERFORMANCE", "BALANCED", "LOW COST", "FREE"]
 

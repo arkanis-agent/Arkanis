@@ -20,6 +20,47 @@ def is_safe_path(path: str) -> bool:
             return False
     return True
 
+def normalize_path(path: str) -> str:
+    """
+    Intelligent Path Normalization for Linux.
+    Resolves case-sensitivity and accent issues by checking for existing near-matches.
+    """
+    if not path or path == ".":
+        return path
+    
+    # Standardize separator and remove trailing slashes for consistency
+    path = os.path.normpath(path)
+    
+    # If it already exists exactly as provided, we're good
+    if os.path.exists(path):
+        return path
+    
+    import unicodedata
+    def strip_accents(s):
+        return "".join(c for c in unicodedata.normalize("NFD", s)
+                       if unicodedata.category(c) != "Mn")
+    
+    # Recursive normalization
+    parent = os.path.dirname(path)
+    child = os.path.basename(path)
+    
+    # Normalize the parent first
+    if parent and parent != path:
+        parent = normalize_path(parent)
+    
+    # If parent exists, look for a near-match for the child
+    if os.path.exists(parent):
+        try:
+            items = os.listdir(parent)
+            normalized_child = strip_accents(child).lower()
+            for item in items:
+                if strip_accents(item).lower() == normalized_child:
+                    # Found a near-match!
+                    return os.path.join(parent, item)
+        except: pass
+    
+    return os.path.join(parent, child)
+
 class GetCurrentDateTimeTool(BaseTool):
     """A tool to get the current system date and time."""
     @property
@@ -48,6 +89,7 @@ class ListFilesTool(BaseTool):
         return {"path": "Directory path to list. Defaults to current directory if not provided."}
     def execute(self, **kwargs) -> str:
         path = kwargs.get("path", ".")
+        path = normalize_path(path)
         if not is_safe_path(path):
             return "Error: Access to this path is not permitted."
         try:
@@ -68,6 +110,7 @@ class ReadFileTool(BaseTool):
     def execute(self, **kwargs) -> str:
         path = kwargs.get("path")
         if not path: return "Error: Missing file path."
+        path = normalize_path(path)
         if not is_safe_path(path): return "Error: Path traversal or absolute path violation detected."
         try:
             with open(path, "r", encoding="utf-8") as f:
@@ -87,6 +130,7 @@ class FileExistsTool(BaseTool):
     def execute(self, **kwargs) -> str:
         path = kwargs.get("path")
         if not path: return "Error: Missing file path."
+        path = normalize_path(path)
         if not is_safe_path(path): return "Error: Path traversal or absolute path violation detected."
         exists = os.path.exists(path)
         return "true" if exists else "false"
@@ -107,6 +151,7 @@ class WriteFileTool(BaseTool):
         if not is_safe_path(path): return "Error: Path traversal or absolute path violation detected. Only write inside your CWD."
         
         try:
+            path = normalize_path(path)
             # Create subdirs if they don't exist
             os.makedirs(os.path.dirname(os.path.abspath(path)), exist_ok=True)
             with open(path, "w", encoding="utf-8") as f:
@@ -131,6 +176,7 @@ class CreateDirectoryTool(BaseTool):
         if not path: return "Error: Missing directory path."
         if not is_safe_path(path): return "Error: Path violation."
         try:
+            path = normalize_path(path)
             os.makedirs(path, exist_ok=True)
             return f"Successfully created directory: {path}"
         except Exception as e:
@@ -148,6 +194,7 @@ class DeleteItemTool(BaseTool):
     def execute(self, **kwargs) -> str:
         path = kwargs.get("path")
         if not path: return "Error: Missing path."
+        path = normalize_path(path)
         if not is_safe_path(path): return "Error: Path violation."
         if not os.path.exists(path): return f"Error: {path} does not exist."
         try:
@@ -173,6 +220,8 @@ class MoveItemTool(BaseTool):
         src = kwargs.get("source")
         dst = kwargs.get("destination")
         if not src or not dst: return "Error: Missing source or destination."
+        src = normalize_path(src)
+        dst = normalize_path(dst)
         if not is_safe_path(src) or not is_safe_path(dst): return "Error: Path violation."
         try:
             import shutil

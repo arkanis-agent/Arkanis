@@ -220,6 +220,18 @@
       "name": "Llama 3.2 3B (Ollama)",
       "provider": "ollama",
       "enabled": true
+    },
+    {
+      "id": "anthropic/claude-3.5-sonnet",
+      "name": "Claude 3.5 Sonnet (OR)",
+      "provider": "openrouter",
+      "enabled": true
+    },
+    {
+      "id": "deepseek/deepseek-chat",
+      "name": "DeepSeek V3 (OR)",
+      "provider": "openrouter",
+      "enabled": true
     }
   ]
 }

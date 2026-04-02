@@ -10,8 +10,8 @@ class LLMClient:
         # We ignore api_key here because LLMRouter handles it via config_manager
         pass
 
-    def generate(self, system_prompt: str, user_prompt: str) -> str:
+    def generate(self, system_prompt: str, user_prompt: str, task_hint: Optional[str] = None) -> str:
         """
         Sends a generation request via the central router.
         """
-        return router.generate(system_prompt, user_prompt)
+        return router.generate(system_prompt, user_prompt, task_hint=task_hint)

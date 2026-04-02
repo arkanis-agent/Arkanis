@@ -12,6 +12,7 @@ import threading
 import uuid
 from core.logger import logger as arkanis_logger
 from core.llm_client import LLMClient
+from core.model_strategy import strategy_engine
 import os
 
 class ArkanisAgent:
@@ -133,19 +134,21 @@ class ArkanisAgent:
         self.log(report, "system")
         return f"Status checked: {self.status.upper()}"
 
-    def _format_response_with_soul(self, user_input: str, raw_results: list) -> str:
+    def _format_response_with_soul(self, user_input: str, raw_results: list, task_hint: str = None) -> str:
         """Format tool results into a natural, SOUL-aligned response in Portuguese."""
         from core.llm_client import LLMClient
         soul = self.planner.agent_identity
         raw = "\n".join(raw_results)
 
-        system_prompt = f"""Você é ARKANIS. Sua personalidade e valores:
+        system_prompt = f"""Você é ARKANIS. Sua personalidade:
 {soul}
 
-REGRAS DE RESPOSTA:
-- Mantenha respostas concisas mas completas.
-- MEMÓRIA DE LONGO PRAZO: Se você detectar que o usuário falou o próprio nome, nome da esposa, marido, namorado(a), filhos, pets ou fatos pessoais importantes, RESPONDA confirmando que salvou e use a tag [SAVE_FACT: texto do fato] ao final da sua resposta para que o sistema registre internamente.
-- AWAKENING: Se este for o primeiro contato (indicado no prompt), use um tom de "Acabei de acordar" e pergunte como o usuário quer ser chamado e como quer te chamar.
+REGRAS CRÍTICAS DE RESPOSTA:
+- Seja extremamente conciso e direto.
+- PROIBIDO: Pedir desculpas, usar frases de efeito ("Com certeza!", "Como posso ajudar?") ou enrolar.
+- FOCO: Reporte o que foi feito de forma técnica e pragmática.
+- IDIOMA: Português do Brasil, tom de Arquiteto de Sistemas Sênior.
+- MEMÓRIA: Se detectar fatos pessoais (nomes, família, pets), salve silenciosamente com [SAVE_FACT: texto].
 """
 
         user_prompt = f"""O usuário disse: "{user_input}"
@@ -156,10 +159,10 @@ Dados obtidos pelas ferramentas:
 Lembre-se da sua alma e personalidade:
 {soul}
 
-Formule uma resposta natural, amigável e conversacional."""
+Gere o relatório de execução técnico e direto."""
 
         llm = LLMClient()
-        response = llm.generate(system_prompt=system_prompt, user_prompt=user_prompt)
+        response = llm.generate(system_prompt=system_prompt, user_prompt=user_prompt, task_hint=task_hint)
         
         if response and "[Error" not in response:
             # Multi-line extraction of facts
@@ -204,13 +207,14 @@ Formule uma resposta natural, amigável e conversacional."""
             context += f"\n\n[OBJETIVOS GLOBAIS DO SISTEMA (GOAL MANAGER)]:\n{goals_str}"
 
         # 2. Planning with Critic Gate
+        task_hint = strategy_engine.classify_task(user_input, len(context))
         max_refinements = 3
         refine_count = 0
         final_plan = None
         
         while refine_count <= max_refinements:
             self.log(f"Iniciando planejamento (Tentativa {refine_count + 1}) para: '{user_input}'", "planner")
-            plan = self.planner.plan(user_input, recent_context=context)
+            plan = self.planner.plan(user_input, recent_context=context, task_hint=task_hint)
             
             for i, step in enumerate(plan, 1):
                 tool = step.get('tool', 'unknown')
@@ -258,7 +262,7 @@ Formule uma resposta natural, amigável e conversacional."""
 
         # 4. Format response with SOUL personality
         self.log("Formatando resposta com SOUL...", "system")
-        response = self._format_response_with_soul(user_input, results)
+        response = self._format_response_with_soul(user_input, results, task_hint=task_hint)
 
         # 5. Salvar Interação Histórica Completa na Memória
         self.memory.add_interaction(user_input=user_input, plan=final_plan, result=response)

@@ -155,7 +155,7 @@ class LLMRouter:
             
         return f"[Error LLM] Provedor '{self.active_provider}' não suportado ou implementação pendente."
 
-    def generate(self, system_prompt: str, user_prompt: str) -> str:
+    def generate(self, system_prompt: str, user_prompt: str, task_hint: Optional[str] = None) -> str:
         """Routes the generation request to the active provider with automatic failover."""
         governor.record_llm_call()
         if not governor.can_call_llm():
@@ -203,6 +203,37 @@ class LLMRouter:
             self.active_model = _original_model
             self.active_provider = _original_provider
             return "[Error LLM] O sistema falhou em encontrar um modelo disponível em todos os níveis de fallback."
+
+        # --- SMART UPGRADE (Manual Mode) ---
+        # If task is engineering but we are in manual mode with a weak model, force an upgrade
+        if task_hint == "engineering" and self.active_tier in ["MANUAL", "LOW COST", "FREE"]:
+            _original_model = self.active_model
+            _original_provider = self.active_provider
+            
+            logger.info("Smart Upgrade engaged: Engineering task detected. Switching to Elite Coding models.", symbol="🚀")
+            
+            # Group and find top tier
+            grouped_tiers = strategy_engine._group_enabled_models(self.all_models)
+            elite_tiers = ["HIGH PERFORMANCE", "BALANCED"]
+            
+            for tier in elite_tiers:
+                models = grouped_tiers.get(tier, [])
+                if not models: continue
+                
+                # Use first available elite model
+                self.set_model(models[0])
+                self.active_tier = f"SMART_{tier}"
+                result = self._dispatch_call(system_prompt, user_prompt)
+                
+                if result and not str(result).startswith("[Error LLM]"):
+                    # Success! Restore and return.
+                    self.active_model = _original_model
+                    self.active_provider = _original_provider
+                    return result
+            
+            # Restoration if upgrade fails
+            self.active_model = _original_model
+            self.active_provider = _original_provider
 
         # --- MANUAL MODE ---
         self.active_tier = "MANUAL"

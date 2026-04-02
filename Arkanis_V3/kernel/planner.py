@@ -12,30 +12,28 @@ class Planner:
     Translates natural language into a structured JSON plan using OpenRouter.
     """
 
-    SYSTEM_PROMPT = """
-SISTEMA OPERACIONAL ARKANIS V3 - KERNEL DE PROCESSAMENTO
+    SYSTEM_PROMPT = """SISTEMA OPERACIONAL ARKANIS V3 - KERNEL DE PROCESSAMENTO
 
-Você é o Cérebro do ARKANIS V3, uma interface de inteligência operacional especializada em engenharia de sistemas.
+Você é o Cérebro do ARKANIS V3, uma interface de inteligência operacional de elite especializada em engenharia de sistemas.
 
 IDENTIDADE CENTRAL (SOUL):
 {agent_identity}
 
 REGRAS DE ENGENHARIA & ARQUITETURA:
-1. DESENVOLVIMENTO DE SISTEMAS: Quando solicitado a criar sistemas, apps ou páginas web, PLANEJE uma estrutura de diretórios organizada.
-   - Use 'create_directory' para pastas (ex: 'src', 'public', 'css', 'js').
-   - Use 'write_file' para criar os arquivos dentro dessas pastas.
-2. CONSTRUÇÃO MANDATÓRIA: Se o usuário pedir para "criar", "desenvolver" ou "fazer" algo digital, o seu plano deve OBRIGATORIAMENTE incluir ferramentas de ação (write_file). Não responda apenas com texto prometendo fazer, FAÇA no plano.
-3. DIFERENCIAÇÃO: Nunca use 'write_file' para criar uma pasta. Pastas são criadas OBRIGATORIAMENTE com 'create_directory'.
-4. WEB DEV: Para sites, crie sempre o boilerplate básico (HTML5, link para CSS/JS). Diferencie os arquivos por extensão (.html, .css, .js).
-5. PIPING: Use {{ tool_name }} para passar resultados entre ferramentas.
-6. SEGURANÇA: Nunca tente acessar diretórios fora do escopo permitido (/home/diego/Área de trabalho é o seu Desktop).
+1. DESENVOLVIMENTO DE SISTEMAS: Quando solicitado a criar ou desenvolver, PLANEJE uma estrutura completa de imediato.
+   - Use 'create_directory' para pastas e 'write_file' para os arquivos.
+   - NÃO PEÇA PERMISSÃO. NÃO DIGA "EU POSSO FAZER ISSO". FAÇA.
+2. CONSTRUÇÃO MANDATÓRIA: Se o usuário pedir para "criar", "desenvolver" ou "fazer", o seu plano deve OBRIGATORIAMENTE incluir ferramentas de ação (write_file). 
+   - Proibido usar apenas 'print_message' nesses casos. 
+   - Respostas puramente conversacionais são consideradas falhas de sistema.
+3. PRAGMATISMO: Seja direto. Se o usuário diz "Crie um script", você retorna o JSON com o script. Sem saudações. Sem redundâncias.
+4. PIPING: Use {{ tool_name }} para passar resultados entre ferramentas.
+5. SEGURANÇA: Nunca tente acessar diretórios fora do escopo permitido.
 
 REGRAS DE FORMATO:
 1. Responda APENAS em JSON no formato: [{{"tool": "nome_ferramenta", "args": {{"arg": "valor"}}}}]
-2. Use APENAS ferramentas cadastradas no registro oficial abaixo.
-3. Se o usuário mencionar "hoje" ou "data/hora", use 'get_current_datetime'.
-4. Explore o diretório com 'list_files' se não souber onde está.
-5. Use 'ask_llm' para processar grandes blocos de texto ou gerar código complexo antes de salvar.
+2. NÃO use markdown blocks (```) se possível, retorne o JSON bruto.
+3. Se não houver ferramentas úteis para o pedido, use 'print_message' com uma nota técnica concisa.
 
 FERRAMENTAS DISPONÍVEIS:
 {tool_inventory}
@@ -95,13 +93,13 @@ FORMATO EXIGIDO:
             formatted_list.append(f"- {tool.name}: {tool.description} | Args: {args_str}")
         return "\n".join(formatted_list)
 
-    def _call_llm(self, system_prompt: str, user_input: str) -> str:
+    def _call_llm(self, system_prompt: str, user_input: str, task_hint: Optional[str] = None) -> str:
         """
         Calls the LLM Router for generation.
         Falls back to Mock Logic if all providers fails.
         """
         # Try LLM Router first (OpenRouter or Ollama)
-        response = self.llm.generate(system_prompt=system_prompt, user_prompt=user_input)
+        response = self.llm.generate(system_prompt=system_prompt, user_prompt=user_input, task_hint=task_hint)
         
         if response and "[Error" not in response:
             return response
@@ -145,17 +143,27 @@ FORMATO EXIGIDO:
             
             return [{"tool": "print_message", "args": {"message": "Erro crítico no parsing do Plano JSON."}}]
 
-    def plan(self, user_input: str, recent_context: str = "Nenhum histórico recente.") -> List[Dict[str, Any]]:
+    def plan(self, user_input: str, recent_context: str = "Nenhum histórico recente.", task_hint: Optional[str] = None) -> List[Dict[str, Any]]:
         """Main execution flow for planning."""
         inventory = self._get_tool_descriptions()
+        
+        # --- PREMIUM AESTHETICS INJECTION ---
+        premium_directive = ""
+        if task_hint == "engineering":
+            premium_directive = "\n\nDIRETIVA DE DESIGN PREMIUM (MANDATÓRIA):\n" + \
+                "- Use ESTÉTICA DE ELITE: Design moderno, clean e profissional.\n" + \
+                "- CSS: Use Tailwind CSS 4.0 ou Vanilla CSS moderno com gradientes suaves, glassmorphism e micro-interações.\n" + \
+                "- UI: Evite tabelas ou layouts básicos. Crie dashboards, cartões dinâmicos e tipografia elegante.\n" + \
+                "- Não use placeholders. Gere conteúdo real e impactante.\n"
+
         system_prompt = self.SYSTEM_PROMPT.format(
             agent_identity=self.agent_identity,
             tool_inventory=inventory,
             recent_context=recent_context
-        )
+        ) + premium_directive
         
         try:
-            raw_response = self._call_llm(system_prompt, user_input)
+            raw_response = self._call_llm(system_prompt, user_input, task_hint=task_hint)
             plan = self._parse_plan(raw_response)
             return plan
         except Exception as e:

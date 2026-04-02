@@ -68,5 +68,23 @@
         ],
         "fail_count": 4,
         "last_seen": "Thu Apr  2 15:22:42 2026"
+    },
+    {
+        "goal_pattern": "não voce não criou. a pasta ainda não existe",
+        "lessons": [
+            "O plano não contém nenhuma ação para criar a pasta 'Diego' na Área de Trabalho do usuário, conforme solicitado."
+        ],
+        "fail_count": 1,
+        "last_seen": "Thu Apr  2 16:02:18 2026"
+    },
+    {
+        "goal_pattern": "Teste",
+        "lessons": [
+            "Erro no parsing do Plano JSON",
+            "O plano não inclui os comandos necessários para criar o diretório 'Diego' na Área de Trabalho do usuário.",
+            "Falta o comando para criar o diretório 'Diego' na Área de Trabalho do usuário."
+        ],
+        "fail_count": 4,
+        "last_seen": "Thu Apr  2 16:50:50 2026"
     }
 ]
