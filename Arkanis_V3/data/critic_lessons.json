@@ -90,5 +90,14 @@
         ],
         "fail_count": 4,
         "last_seen": "Thu Apr  2 16:50:50 2026"
+    },
+    {
+        "goal_pattern": "Analise o arquivo Arkanis_V3/core/agents/critic_agent.py. Descobrimos que pedidos legítimos vindos do Telegram estão sendo rejeitados com erro de \"forma segura\". Atualize o SYSTEM_PROMPT do Auditor para ser mais resiliente e pragmático, especialmente para pedidos de UI e Telegram, garantindo que ele não bloqueie pedidos legítimos.",
+        "lessons": [
+            "O plano não aborda a necessidade de atualizar o SYSTEM_PROMPT do Auditor Técnico para lidar melhor com pedidos legítimos de UI e Telegram.",
+            "Imprimir uma mensagem de erro não ajuda a resolver o problema relatado de pedidos legítimos sendo rejeitados."
+        ],
+        "fail_count": 1,
+        "last_seen": "Thu Apr  2 18:41:04 2026"
     }
 ]
