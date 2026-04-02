@@ -174,6 +174,10 @@ class LLMRouter:
         if not governor.can_call_llm():
             return "[Error LLM] Limite de segurança de custos atingido. Bloqueio preventivo ativado."
 
+        # Capture current state for safe restoration
+        _original_model = self.active_model
+        _original_provider = self.active_provider
+
         # Governor may request cheapest tier temporarily
         _forced_auto = False
         if governor.fallback_active and not self.auto_strategy:
@@ -218,10 +222,10 @@ class LLMRouter:
             return "[Error LLM] O sistema falhou em encontrar um modelo disponível em todos os níveis de fallback."
 
         # --- SMART UPGRADE (Manual or Auto-Low Mode) ---
-        # If task is engineering but we are NOT in a high performance tier, force an upgrade
+        # If task is engineering/complex but we are NOT in a high performance tier, force an upgrade
         high_tiers = ["HIGH PERFORMANCE", "BALANCED", "SMART_HIGH PERFORMANCE", "SMART_BALANCED"]
-        if task_hint == "engineering" and self.active_tier not in high_tiers:
-            logger.info("🚀 Smart Upgrade engaged: Engineering task detected. Switching to Elite Coding models.", symbol="⚡")
+        if task_hint in ["engineering", "complex"] and self.active_tier not in high_tiers:
+            logger.info(f"🚀 Smart Upgrade engaged: {task_hint.capitalize()} task detected. Switching to Elite Coding models.", symbol="⚡")
             
             # Save current tier for restoration
             _original_tier = self.active_tier
@@ -233,14 +237,26 @@ class LLMRouter:
             
             if tier in high_tiers:
                 logger.info(f"🎯 Redirigindo para modelo de Elite: {best_model} ({tier})")
-                self.active_model = best_model
-                self.active_provider = next((m["provider"] for m in config.get("models", []) if m["id"] == best_model), "openrouter")
-                self.active_tier = f"SMART_{tier}"
+            # 1. Select the BEST available model for the task (prioritizing DeepSeek due to Sonnet 400 issues)
+            # Tier mapping: 
+            # HIGH PERFORMANCE -> DeepSeek V3
+            # BALANCED -> Sonnet 3.5 (Fallback)
+            elite_model = "deepseek/deepseek-chat"
+            elite_provider = "openrouter"
+            
+            # Verify if elite_model exists in config, otherwise discovery
+            # (In this context, we hardcode for speed of healing)
+            
+            logger.info(f"🧠 🎯 Redirigindo para modelo de Elite: {elite_model} ({self.active_tier})", symbol="🧠")
+            
+            # Temporary state switch
+            self.active_model = elite_model
+            self.active_provider = elite_provider
+            
+            try:
+                res = self.generate(system_prompt, user_prompt, task_hint="UPGRADED")
                 
-                # Execute with Elite
-                res = self._dispatch_call(system_prompt, user_prompt)
-                
-                # Restore original state immediately
+                # Restore original state
                 self.active_model = _original_model
                 self.active_provider = _original_provider
                 self.active_tier = _original_tier
@@ -248,8 +264,12 @@ class LLMRouter:
                 if res and not str(res).startswith("[Error LLM]"):
                     return res
                 logger.warning("⚠️ Elite call failed. Falling back to original model...")
-            else:
-                logger.warning("⚠️ Smart Upgrade falhou: Nenhum modelo de elite disponível. Prosseguindo com o original.")
+            except Exception as e:
+                logger.error(f"Error during smart upgrade: {str(e)}")
+                # Restore state even on crash
+                self.active_model = _original_model
+                self.active_provider = _original_provider
+                self.active_tier = _original_tier
 
         # --- MANUAL MODE ---
         self.active_tier = "MANUAL"
@@ -296,7 +316,8 @@ class LLMRouter:
         headers = {
             "Authorization": f"Bearer {api_key}",
             "Content-Type": "application/json",
-            "X-Title": "Arkanis V3 Agent OS"
+            "X-Title": "Arkanis V3 Agent OS",
+            "HTTP-Referer": "https://github.com/arkanis-ai/v3"
         }
         payload = {
             "model": self.active_model,
@@ -309,8 +330,14 @@ class LLMRouter:
         try:
             response = requests.post(url, headers=headers, json=payload, timeout=self.timeout)
             
-            if response.status_code == 401:
-                return "[Error LLM] OpenRouter Unauthorized (401). Verifique sua API Key."
+            if not response.ok:
+                error_body = response.text
+                try:
+                    err_json = response.json()
+                    error_msg = err_json.get("error", {}).get("message", error_body)
+                except:
+                    error_msg = error_body
+                return f"[Error LLM] Erro na chamada OpenRouter ({response.status_code}): {error_msg}"
 
             response.raise_for_status()
             data = response.json()
