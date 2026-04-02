@@ -26,6 +26,8 @@ from core.agent_bus import agent_bus
 from core.goal_manager import goal_manager
 from core.goal_planner import goal_planner
 from core.cost_governor import governor
+from interfaces.telegram import TelegramInterface
+import threading
 from pydantic import BaseModel
 import requests
 
@@ -428,6 +430,21 @@ async def finalize_onboarding(request: OnboardingFinalizeRequest):
 webui_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "webui")
 if os.path.exists(webui_path):
     app.mount("/", StaticFiles(directory=webui_path, html=True), name="webui")
+
+# --- Multi-Channel Background Services ---
+def start_telegram():
+    if os.getenv("TELEGRAM_BOT_TOKEN"):
+        try:
+            tg = TelegramInterface(agent)
+            agent.log("Telegram Background Service Online.", "system")
+            tg.start_loop()
+        except Exception as e:
+            agent.log(f"Failed to start Telegram service: {e}", "error")
+
+@app.on_event("startup")
+async def startup_event():
+    # Start Telegram in a daemon thread
+    threading.Thread(target=start_telegram, daemon=True).start()
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000)

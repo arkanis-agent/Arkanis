@@ -49,6 +49,9 @@ class TelegramInterface:
 
     def _get_updates(self):
         """Fetches updates from the Telegram API via long-polling offset."""
+        if not self.token:
+            return []
+            
         url = f"{self.api_url}/getUpdates"
         params = {"offset": self.last_update_id + 1, "timeout": 30}
         try:
@@ -58,12 +61,15 @@ class TelegramInterface:
             if data.get("ok"):
                 return data.get("result", [])
             else:
-                self.console.print(f"[red]Telegram API Error: {data.get('description')}[/red]")
+                error_desc = data.get('description', 'Unknown Error')
+                self.console.print(f"[red]Telegram API Error: {error_desc}[/red]")
+                self.agent.log(f"Telegram API Error: {error_desc}", "error")
                 return []
         except requests.exceptions.RequestException as e:
-            # Silent fail for standard ReadTimeouts (expected during long polling), print others
-            if "ReadTimeout" not in str(e):
+            # Silent fail for standard ReadTimeouts (expected during long polling)
+            if "ReadTimeout" not in str(e) and "timeout" not in str(e).lower():
                 self.console.print(f"[yellow]Polling warning: {e}[/yellow]")
+                self.agent.log(f"Telegram Polling connection issue: {e}", "warning")
             return []
 
     def _process_update(self, update):
