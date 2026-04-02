@@ -2,6 +2,8 @@ import os
 import json
 from typing import Dict, Any, List
 
+from core.logger import logger
+
 class ConfigManager:
     """Manages system configuration storage and retrieval."""
     
@@ -100,6 +102,7 @@ class ConfigManager:
             # OpenRouter
             env_or_key = os.getenv("OPENROUTER_API_KEY")
             if env_or_key:
+                logger.info("OpenRouter API Key synchronized from Environment.")
                 if "openrouter" not in providers:
                     providers["openrouter"] = {"name": "OpenRouter", "endpoint": "https://openrouter.ai/api/v1/chat/completions"}
                 providers["openrouter"]["api_key"] = env_or_key
