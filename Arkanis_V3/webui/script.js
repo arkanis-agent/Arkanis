@@ -389,10 +389,20 @@ function addLogToDrawer(log) {
 
 // --- 3. Status Polling ---
 
+let _statusFailCount = 0;
+
 async function pollStatus() {
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 5000); // 5s timeout
     try {
-        const response = await fetch('/status');
+        const response = await fetch('/status', { signal: ctrl.signal });
+        clearTimeout(timer);
         const data = await response.json();
+        _statusFailCount = 0; // Reset fail counter on success
+
+        // Remove offline banner if present
+        const offlineBanner = document.getElementById('offlineBanner');
+        if (offlineBanner) offlineBanner.remove();
 
         if (statusBadge) {
             statusBadge.classList.remove('bg-green-500', 'bg-yellow-500', 'bg-red-500', 'bg-blue-500');
@@ -415,7 +425,6 @@ async function pollStatus() {
         // Update model button text correctly
         if (data.auto_strategy && currentModelName) {
             const prefix = data.active_tier ? `(AUTO - ${data.active_tier})` : '(AUTO)';
-            // Check if the current name label matches
             if (!currentModelName.textContent.startsWith(prefix)) {
                  const modelId = data.active_model.split('/').pop() || data.active_model;
                  currentModelName.textContent = `${prefix} ${modelId.toUpperCase()}`;
@@ -423,7 +432,18 @@ async function pollStatus() {
         }
 
     } catch (error) {
-        console.warn('Status polling failed');
+        clearTimeout(timer);
+        _statusFailCount++;
+        console.warn(`Status polling failed (${_statusFailCount}x):`, error.name);
+        
+        // Show offline banner after 3 consecutive failures
+        if (_statusFailCount >= 3 && !document.getElementById('offlineBanner')) {
+            const banner = document.createElement('div');
+            banner.id = 'offlineBanner';
+            banner.className = 'fixed top-0 left-0 right-0 z-50 bg-red-600 text-white text-center text-sm font-bold py-2 px-4';
+            banner.innerHTML = '⚠️ Servidor não está respondendo. O agente pode estar processando uma tarefa longa. <button onclick="location.reload()" class="ml-4 underline">Recarregar</button>';
+            document.body.prepend(banner);
+        }
     }
 }
 

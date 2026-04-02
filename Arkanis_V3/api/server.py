@@ -33,8 +33,28 @@ import threading
 from pydantic import BaseModel
 import requests
 
+import asyncio
+import concurrent.futures
+
 logger = logging.getLogger("uvicorn")
 app = FastAPI(title="ARKANIS V3 API")
+
+# Dedicated executor for long-running agent tasks.
+# This prevents blocking Uvicorn's internal threadpool that handles polling.
+_agent_executor = concurrent.futures.ThreadPoolExecutor(
+    max_workers=4,
+    thread_name_prefix="arkanis-agent"
+)
+
+async def run_agent(fn, *args, timeout: float = 120.0):
+    """Run a blocking agent function in the dedicated executor with a timeout."""
+    loop = asyncio.get_event_loop()
+    future = loop.run_in_executor(_agent_executor, fn, *args)
+    try:
+        return await asyncio.wait_for(future, timeout=timeout)
+    except asyncio.TimeoutError:
+        logger.error(f"Agent task timed out after {timeout}s")
+        raise HTTPException(status_code=504, detail="O agente demorou demais para responder. Tente novamente.")
 
 @app.middleware("http")
 async def add_cache_control_headers(request, call_next):
@@ -168,8 +188,8 @@ async def handle_message(request: MessageRequest):
         if not request.text.startswith("status"):
             agent.logs = []
             
-        # Execute the blocking agent logic in a separate thread to keep FastAPI responsive
-        response = await anyio.to_thread.run_sync(agent.handle_input, request.text)
+        # Run in dedicated agent executor — never blocks uvicorn polling threads
+        response = await run_agent(agent.handle_input, request.text)
         return {"response": response}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -217,9 +237,9 @@ async def handle_voice_message(request: Request):
                 return {"response": "Não detectei fala no áudio.", "transcription": ""}
             return {"response": "Não consegui entender o áudio.", "transcription": ""}
         
-        # 3. Process text via Agent (in separate thread)
+        # 3. Process text via Agent (in dedicated executor, 120s timeout)
         agent.logs = []
-        response = await anyio.to_thread.run_sync(agent.handle_input, text)
+        response = await run_agent(agent.handle_input, text)
         
         return {
             "response": response,
