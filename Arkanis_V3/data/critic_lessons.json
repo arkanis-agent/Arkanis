@@ -8,5 +8,17 @@
         ],
         "fail_count": 1,
         "last_seen": "Thu Apr  2 13:39:29 2026"
+    },
+    {
+        "goal_pattern": "Ola",
+        "lessons": [
+            "A mensagem ainda é um pouco genérica e impessoal. Seria melhor personalizar a mensagem com base no contexto da interação anterior.",
+            "Não há mecanismos de continuidade da conversa ou próximos passos propostos. O plano se limita a uma única mensagem sem considerar a progressão natural do diálogo.",
+            "O plano não contempla uma forma de capturar a opção selecionada pelo usuário e direcionar o diálogo de acordo com a escolha.",
+            "A mensagem de boas-vindas ainda pode ser aprimorada para soar mais natural e conversar diretamente com o usuário, usando seu nome e retomando detalhes específicos da interação anterior.",
+            "A mensagem de boas-vindas ainda pode ser mais personalizada, usando o nome do usuário e retomando detalhes específicos da interação anterior."
+        ],
+        "fail_count": 3,
+        "last_seen": "Thu Apr  2 13:54:40 2026"
     }
 ]

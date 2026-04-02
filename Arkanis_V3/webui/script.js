@@ -67,6 +67,9 @@ const goalsListContainer = document.getElementById('goalsListContainer');
 const showCreateGoalModalBtn = document.getElementById('showCreateGoalModalBtn');
 const governorContainer = document.getElementById('governorContainer');
 const navLogs = document.getElementById('navLogs');
+const navChat = document.getElementById('navChat');
+const navHistory = document.getElementById('navHistory');
+const navAnalyses = document.getElementById('navAnalyses');
 
 // Global State
 let lastLogIndex = 0;
@@ -94,8 +97,8 @@ async function sendMessage(textOverride = null) {
     if (!text) return;
 
     // Reset UI
-    if (welcomeScreen && welcomeScreen.style.display !== 'none') {
-        welcomeScreen.style.display = 'none';
+    if (welcomeScreen && !welcomeScreen.classList.contains('hidden')) {
+        welcomeScreen.classList.add('hidden');
         chatDisplay.innerHTML = '<div class="max-w-4xl mx-auto space-y-10" id="messageArea"></div>';
     }
 
@@ -192,8 +195,8 @@ function updateVoiceUI(recording) {
 
 async function sendVoiceMessage(blob) {
     // 1. Prepare UI
-    if (welcomeScreen && welcomeScreen.style.display !== 'none') {
-        welcomeScreen.style.display = 'none';
+    if (welcomeScreen && !welcomeScreen.classList.contains('hidden')) {
+        welcomeScreen.classList.add('hidden');
         chatDisplay.innerHTML = '<div class="max-w-4xl mx-auto space-y-10" id="messageArea"></div>';
     }
 
@@ -909,60 +912,83 @@ async function saveIntegrationsConfig() {
     }
 }
 
-function showProviders() {
-    welcomeScreen.style.display = 'none';
-    chatDisplay.style.display = 'none';
+
+/**
+ * CORE NAVIGATION ENGINE (Elite UI)
+ * Manages all panel switching and sidebar states consistently.
+ */
+function setActivePanel(panelId) {
+    const panels = {
+        'chat': { element: chatDisplay, nav: navChat, showFooter: true },
+        'providers': { element: providersPanel, nav: navProviders, showFooter: false },
+        'tasks': { element: tasksPanel, nav: navTasks, showFooter: false }
+    };
+
+    // Close log drawer when switching to deep configuration
+    if (panelId !== 'chat' && isDrawerOpen) {
+        logDrawer.classList.add('hidden');
+        logDrawer.classList.add('translate-y-full');
+        isDrawerOpen = false;
+    }
+
+    // Toggle Panels Visibility
+    Object.keys(panels).forEach(id => {
+        const p = panels[id];
+        if (id === panelId) {
+            p.element.classList.remove('hidden');
+            if (p.nav) {
+                p.nav.classList.replace('text-slate-500', 'text-blue-400');
+                p.nav.classList.replace('dark:text-slate-400', 'dark:text-blue-400');
+                p.nav.classList.add('bg-slate-800/80');
+            }
+        } else {
+            p.element.classList.add('hidden');
+            if (p.nav) {
+                p.nav.classList.replace('text-blue-400', 'text-slate-500');
+                p.nav.classList.replace('dark:text-blue-400', 'dark:text-slate-400');
+                p.nav.classList.remove('bg-slate-800/80');
+            }
+        }
+    });
+
+    // Special Case: Welcome Screen & Chat State
+    if (panelId === 'chat') {
+        const messageArea = document.getElementById('messageArea');
+        const hasMessages = messageArea && messageArea.children.length > 0;
+        
+        if (hasMessages) {
+            welcomeScreen.classList.add('hidden');
+        } else {
+            welcomeScreen.classList.remove('hidden');
+        }
+        userInput.focus();
+        adjustTextArea();
+    } else {
+        welcomeScreen.classList.add('hidden');
+    }
+
+    // Toggle Footer (Input Area)
     const footer = document.querySelector('footer');
-    if (footer) footer.style.display = 'none';
+    if (footer) {
+        footer.classList.toggle('hidden', !panels[panelId].showFooter);
+    }
     
-    providersPanel.classList.remove('hidden');
-    
-    // Highlight sidebar
-    navProviders.classList.replace('text-slate-500', 'text-blue-400');
-    navProviders.classList.add('bg-slate-800/80');
-    
+    // Smooth reflow hack
+    window.dispatchEvent(new Event('resize'));
+}
+
+function showChat() {
+    setActivePanel('chat');
+}
+
+function showProviders() {
+    setActivePanel('providers');
     loadProvidersConfig();
     loadIntegrationsConfig();
 }
 
-function showChat() {
-    providersPanel.classList.add('hidden');
-    if (tasksPanel) tasksPanel.classList.add('hidden');
-    if (logDrawer) { logDrawer.classList.add('hidden'); logDrawer.classList.add('translate-y-full'); isDrawerOpen = false; }
-    chatDisplay.style.display = 'block';
-    const footer = document.querySelector('footer');
-    if (footer) footer.style.display = 'block';
-    
-    if (currentConfig.models.length === 0) {
-         welcomeScreen.style.display = 'block';
-    }
-
-    // Reset sidebar highlight
-    navProviders.classList.replace('text-blue-400', 'text-slate-500');
-    navProviders.classList.remove('bg-slate-800/80');
-    if (navTasks) {
-        navTasks.classList.replace('text-blue-400', 'text-slate-500');
-        navTasks.classList.remove('bg-slate-800/80');
-    }
-}
-
 function showTasks() {
-    welcomeScreen.style.display = 'none';
-    chatDisplay.style.display = 'none';
-    providersPanel.classList.add('hidden');
-    const footer = document.querySelector('footer');
-    if (footer) footer.style.display = 'none';
-    
-    tasksPanel.classList.remove('hidden');
-    
-    // Highlight sidebar
-    navTasks.classList.replace('text-slate-500', 'text-blue-400');
-    navTasks.classList.add('bg-slate-800/80');
-    
-    // Un-highlight others
-    navProviders.classList.replace('text-blue-400', 'text-slate-500');
-    navProviders.classList.remove('bg-slate-800/80');
-    
+    setActivePanel('tasks');
     loadTasks();
 }
 
@@ -1399,11 +1425,17 @@ if (saveConfigBtn) {
     });
 }
 
-// Update Nova Conversa to go back to chat
-const newChatBtn = document.querySelector('aside nav a');
-if (newChatBtn) {
+// New unified sidebar listeners
+if (navChat) {
+    navChat.addEventListener('click', (e) => {
+        e.preventDefault();
+        showChat();
+    });
+}
+
+const newChatBtn = document.querySelector('aside nav a'); // Fallback for the lightning bolt logo or generic links
+if (newChatBtn && !newChatBtn.id) {
     newChatBtn.addEventListener('click', (e) => {
-        if (providersPanel.classList.contains('hidden') && tasksPanel.classList.contains('hidden')) return;
         e.preventDefault();
         showChat();
     });
