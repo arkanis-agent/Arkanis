@@ -186,7 +186,7 @@ Formule uma resposta natural e amigável."""
         # 2. Planning with Critic Gate
         max_refinements = 2
         refine_count = 0
-        final_plan = plan
+        final_plan = None
         
         while refine_count <= max_refinements:
             self.log(f"Iniciando planejamento (Tentativa {refine_count + 1}) para: '{user_input}'", "planner")
