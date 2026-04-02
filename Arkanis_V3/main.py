@@ -44,11 +44,14 @@ def main():
             print("\n[Boot] Initializing Standard CLI...")
             ui = ArkanisCLI(agent)
             ui.start_loop()
-        else:
             # Default to WEB
             import uvicorn
             import webbrowser
+            import api.server as api_server
             from api.server import app
+            
+            # Inject the kernel instance into the API server (Fixing Double Agent bug)
+            api_server.agent = agent
             
             print("\n[Boot] Initializing Web Interface (FastAPI)...")
             print("[INFO] Access ARKANIS at: http://127.0.0.1:8000")

@@ -50,8 +50,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Shared agent instance
-agent = ArkanisAgent()
+# Shared agent instance (Initialized as None, will be injected by main.py)
+agent: ArkanisAgent = None
 
 class MessageRequest(BaseModel):
     text: str
