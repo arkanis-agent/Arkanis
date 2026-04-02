@@ -1,6 +1,6 @@
-import re
 from typing import List, Dict, Tuple, Optional
 from core.config_manager import config_manager
+from core.logger import logger
 
 class ModelStrategy:
     """
@@ -159,15 +159,19 @@ class ModelStrategy:
         grouped_tiers = self._group_enabled_models(enabled_models)
         
         fallback_chain = self.get_fallback_chain(task_category)
+        logger.info(f"Task classified as '{task_category.upper()}'. Selecting fallback chain: {' -> '.join(fallback_chain)}", symbol="⚖️")
 
         for tier in fallback_chain:
             models_in_tier = grouped_tiers[tier]
             if len(models_in_tier) > 0:
+                logger.info(f"Priority Model: {models_in_tier[0]} ({tier})", symbol="🎯")
                 return models_in_tier[0], tier, task_category
 
         # Absolute Failsafe (should theoretically never happen if any model is on)
         active_ids = [m["id"] for m in enabled_models if m.get("enabled", True)]
         fallback_id = active_ids[0] if active_ids else "anthropic/claude-3-haiku"
+        return fallback_id, "FALLBACK", "unknown"
+
     def discover_best_provider(self) -> Tuple[Optional[str], Optional[str]]:
         """
         Zero-Touch Discovery: Detects the best available provider and model.

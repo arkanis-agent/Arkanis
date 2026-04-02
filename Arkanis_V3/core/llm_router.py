@@ -1,10 +1,12 @@
 import os
 import requests
 import json
+import time
 from typing import Optional, List, Dict, Any
 from core.config_manager import config_manager
 from core.model_strategy import strategy_engine
 from core.cost_governor import governor
+from core.logger import logger
 
 class LLMRouter:
     """
@@ -30,7 +32,7 @@ class LLMRouter:
         """Internal helper to find the best available model."""
         best_model, best_provider = strategy_engine.discover_best_provider()
         if best_model and best_provider:
-            print(f"[Auto-Config] System identified optimal provider: {best_provider} -> {best_model}")
+            logger.info(f"Auto-Configuration identified optimal provider: {best_provider} -> {best_model}")
             self.active_model = best_model
             self.active_provider = best_provider
         else:
@@ -161,7 +163,7 @@ class LLMRouter:
         # Governor may request cheapest tier temporarily
         _forced_auto = False
         if governor.fallback_active and not self.auto_strategy:
-            print("[Governor] Forçando Auto-Strategy devido à alta carga.")
+            logger.warning("Cost Governor engaged: Forcing Auto-Strategy due to high-load limits.")
             _forced_auto = True
 
         # --- AUTO-STRATEGY / FAILOVER MODE ---
@@ -203,24 +205,37 @@ class LLMRouter:
 
         # --- MANUAL MODE ---
         self.active_tier = "MANUAL"
+        
+        start_time = time.time()
+        logger.request(self.active_provider, self.active_model)
+        
         result = self._dispatch_call(system_prompt, user_prompt)
+        duration = time.time() - start_time
         
         # Automatic failover even in manual mode if primary fails
         if result and str(result).startswith("[Error LLM]"):
-            print(f"[Self-Healing] Active model {self.active_model} failed. Attempting silent recovery...")
+            logger.warning(f"Active model {self.active_model} failed. Attempting silent recovery...")
             # 1. Trigger fresh discovery
             self._discover()
             # 2. Retry call with new discovery
+            logger.info(f"Retrying with re-discovered model: {self.active_model} ({self.active_provider})", symbol="🔄")
             retry_result = self._dispatch_call(system_prompt, user_prompt)
             if retry_result and not str(retry_result).startswith("[Error LLM]"):
+                logger.response(success=True, duration=time.time() - start_time)
                 return retry_result
                 
             # 3. Last chance: Absolute Auto-Strategy
+            logger.info("Universal failover activated (Auto-Strategy).", symbol="🛡️")
             self.auto_strategy = True
             final_retry = self.generate(system_prompt, user_prompt)
             self.auto_strategy = False # Revert state
             return final_retry
 
+        if result and not str(result).startswith("[Error LLM]"):
+            logger.response(success=True, duration=duration)
+        else:
+            logger.response(success=False)
+            
         return result
 
 
