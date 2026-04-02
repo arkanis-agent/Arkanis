@@ -58,6 +58,12 @@ const tasksPanel = document.getElementById('tasksPanel');
 const createTaskBtn = document.getElementById('createTaskBtn');
 const tasksListContainer = document.getElementById('tasksListContainer');
 const newTaskDesc = document.getElementById('newTaskDesc');
+const governorToggleBtn = document.getElementById('governorToggleBtn');
+const governorBody = document.getElementById('governorBody');
+const governorChevron = document.getElementById('governorChevron');
+const goalsToggleBtn = document.getElementById('goalsToggleBtn');
+const goalsBody = document.getElementById('goalsBody');
+const goalsChevron = document.getElementById('goalsChevron');
 const newTaskType = document.getElementById('newTaskType');
 const newTaskInterval = document.getElementById('newTaskInterval');
 const newTaskCondition = document.getElementById('newTaskCondition');
@@ -1474,6 +1480,21 @@ closeLogDrawer.addEventListener('click', () => {
     logDrawer.classList.add('translate-y-full');
     isDrawerOpen = false;
 });
+
+// Collapsible Panels (Agentes & Tarefas)
+if (governorToggleBtn) {
+    governorToggleBtn.addEventListener('click', () => {
+        governorBody.classList.toggle('hidden');
+        governorChevron.classList.toggle('rotate-180');
+    });
+}
+
+if (goalsToggleBtn) {
+    goalsToggleBtn.addEventListener('click', () => {
+        goalsBody.classList.toggle('hidden');
+        goalsChevron.classList.toggle('rotate-180');
+    });
+}
 
 // Suggestions
 document.querySelectorAll('.suggestion-card').forEach(card => {

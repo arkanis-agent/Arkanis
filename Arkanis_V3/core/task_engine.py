@@ -18,7 +18,7 @@ class ContinuousTask:
         self.created_at = datetime.now()
         self.last_run = None
         self.next_run = None
-        self.agent = ArkanisAgent() # Independent agent for this task
+        self.agent = ArkanisAgent(agent_id=self.id) # Independent agent for this task
         self.thread = None
         self.run_count = 0
         self.last_result = ""
@@ -51,8 +51,7 @@ class TaskEngine:
 
     def start_task(self, description: str, type_: str, interval: int, condition: str = "", goal_id: str = None, auto_generated: bool = False) -> ContinuousTask:
         task = ContinuousTask(description, type_, interval, condition, goal_id, auto_generated)
-        # Assign agent ID correctly so it syncs with goal_manager logically
-        task.agent.id = task.id
+        # Agent ID is now assigned during ContinuousTask.__init__
         from core.goal_manager import goal_manager
         if goal_id:
             goal_manager.assign_agent(goal_id, task.id)

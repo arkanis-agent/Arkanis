@@ -20,5 +20,13 @@
         ],
         "fail_count": 3,
         "last_seen": "Thu Apr  2 13:54:40 2026"
+    },
+    {
+        "goal_pattern": "Crie uma pasta na área de trabalho com nome Minha alma.",
+        "lessons": [
+            "Erro de parsing no formato da auditoria."
+        ],
+        "fail_count": 1,
+        "last_seen": "Thu Apr  2 13:57:10 2026"
     }
 ]
