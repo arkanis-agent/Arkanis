@@ -31,10 +31,14 @@
             "O plano se limita a uma única mensagem de boas-vindas, sem considerar a progressão natural do diálogo ou próximos passos.",
             "Falta de continuidade do diálogo e próximos passos",
             "Ausência de mecanismos para capturar a escolha do usuário e direcionar o fluxo",
-            "Mensagem de boas-vindas ainda um pouco genérica"
+            "Mensagem de boas-vindas ainda um pouco genérica",
+            "Formato JSON inválido no plano proposto.",
+            "O plano não está no formato JSON correto. Deve ser um objeto JSON com as chaves 'decision', 'quality_score', 'risk_level', 'reasoning', 'issues', 'improvements' e 'final_suggestion'.",
+            "O plano não está no formato JSON correto esperado pela Arkanis V3.1.",
+            "Formato JSON inválido"
         ],
-        "fail_count": 11,
-        "last_seen": "Thu Apr  2 14:51:41 2026"
+        "fail_count": 15,
+        "last_seen": "Thu Apr  2 18:36:41 2026"
     },
     {
         "goal_pattern": "Crie uma pasta na área de trabalho com nome Minha alma.",
