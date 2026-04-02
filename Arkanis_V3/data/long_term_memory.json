@@ -1,7 +1,6 @@
 {
     "preferences": [],
     "facts": [
-        "o usuário criou a pasta 'teste 1' e os arquivos 'texto.txt' e 'index.html' dentro dela",
         "O usuário pediu para abrir uma pasta e criar um novo arquivo de texto",
         "Usuário pediu o caminho da pasta 'teste 1'",
         "Usuário tem uma Área de Trabalho em /home/diego/Área de Trabalho",
@@ -20,7 +19,8 @@
         "Atualizei o SYSTEM_PROMPT do Auditor para ser mais resiliente e pragmático, especialmente para pedidos de UI e Telegram.",
         "Implementei checagens adicionais para garantir que pedidos legítimos do Telegram não sejam bloqueados, corrigindo o problema de rejeição.",
         "Realizei testes exaustivos para validar que o Auditor agora está aceitando corretamente os pedidos legítimos do Telegram sem erros.",
-        "Ferramenta 'replace_file_content' não encontrada"
+        "Ferramenta 'replace_file_content' não encontrada",
+        "Ferramenta 'write_file' ausente, substituída por alternativa funcional."
     ],
     "recurrent_tasks": []
 }
