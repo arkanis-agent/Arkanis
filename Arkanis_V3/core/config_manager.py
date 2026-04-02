@@ -97,16 +97,18 @@ class ConfigManager:
                 config = json.load(f)
             
             # Sync critical keys from environment (Prioritizing ENV over JSON)
-            providers = config.get("providers", {})
+            if "providers" not in config:
+                config["providers"] = {}
+            providers = config["providers"]
             
             # OpenRouter
             env_or_key = os.getenv("OPENROUTER_API_KEY")
             if env_or_key:
-                logger.info("OpenRouter API Key synchronized from Environment.")
                 if "openrouter" not in providers:
                     providers["openrouter"] = {"name": "OpenRouter", "endpoint": "https://openrouter.ai/api/v1/chat/completions"}
                 providers["openrouter"]["api_key"] = env_or_key
                 providers["openrouter"]["enabled"] = True
+                logger.info("OpenRouter API Key synchronized from Environment.")
 
             # Anthropic
             env_ant_key = os.getenv("ANTHROPIC_API_KEY")
@@ -123,6 +125,14 @@ class ConfigManager:
                     providers["openai"] = {"name": "OpenAI", "endpoint": "https://api.openai.com/v1/chat/completions"}
                 providers["openai"]["api_key"] = env_oa_key
                 providers["openai"]["enabled"] = True
+
+            # Google / Gemini
+            env_goog_key = os.getenv("GOOGLE_API_KEY") or os.getenv("GEMINI_API_KEY")
+            if env_goog_key:
+                if "google" not in providers:
+                    providers["google"] = {"name": "Google Gemini", "endpoint": "https://generativelanguage.googleapis.com/v1beta/openai/"}
+                providers["google"]["api_key"] = env_goog_key
+                providers["google"]["enabled"] = True
             
             return config
         except Exception as e:

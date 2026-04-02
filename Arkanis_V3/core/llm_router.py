@@ -109,12 +109,13 @@ class LLMRouter:
         if not url:
             return False
             
-        # Simplified health check (HEAD request or GET version)
+        # Improved health check (HEAD request or GET version)
         try:
             if provider_id == "ollama":
-                # Ollama specific check
+                # Ollama specific check - /api/tags is the most reliable "ready" indicator
                 base_url = url.replace("/api/chat", "")
-                response = requests.get(base_url, timeout=2)
+                tags_url = f"{base_url.rstrip('/')}/api/tags"
+                response = requests.get(tags_url, timeout=2)
                 return response.status_code == 200
             else:
                 # Generic cloud provider ping is usually not needed/possible without key
@@ -124,7 +125,7 @@ class LLMRouter:
                     response = requests.get(base_url, timeout=2)
                     return response.status_code == 200
             return True # Assume cloud is up if key is present
-        except:
+        except Exception:
             return False
 
     def get_models(self) -> Dict[str, List[Dict[str, str]]]:

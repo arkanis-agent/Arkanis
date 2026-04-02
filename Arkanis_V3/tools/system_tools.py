@@ -96,7 +96,7 @@ class WriteFileTool(BaseTool):
     @property
     def name(self) -> str: return "write_file"
     @property
-    def description(self) -> str: return "Creates or OVERWRITES a file with the provided content. CRITICAL: Provide COMPLETELY new content if overwriting."
+    def description(self) -> str: return "PRIMARY TOOL for building apps and systems. Creates or OVERWRITES a file with the provided code, HTML, or text."
     @property
     def arguments(self) -> Dict[str, str]:
         return {"path": "The path to the file.", "content": "The string content to write."}
@@ -122,7 +122,7 @@ class CreateDirectoryTool(BaseTool):
     @property
     def name(self) -> str: return "create_directory"
     @property
-    def description(self) -> str: return "Creates a new directory at the specified path."
+    def description(self) -> str: return "Creates a new directory/folder. USE THIS to organize project structures (src, css, js) before writing files."
     @property
     def arguments(self) -> Dict[str, str]:
         return {"path": "The path to the new directory."}

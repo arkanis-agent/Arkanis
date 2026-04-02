@@ -11,7 +11,7 @@ class WriteFileTool(BaseTool):
 
     @property
     def description(self) -> str:
-        return "Write content to a specified file path."
+        return "Write code, HTML, CSS or text to a file. USE THIS to build systems, pages and apps."
 
     @property
     def arguments(self) -> Dict[str, str]:

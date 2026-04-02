@@ -43,6 +43,7 @@ def test_providers():
         print(f"{status} {pid.upper()}: Ready={ready}, Healthy={health}")
         if not health and pid == "ollama":
             print(f"      (Ollama endpoint {pcfg.get('endpoint')} not reachable)")
+            print(f"      👉 SUGGESTION: Run 'bash scripts/ensure_ollama.sh' to start the service.")
     print("")
 
 def test_generation():
