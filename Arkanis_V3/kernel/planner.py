@@ -150,29 +150,33 @@ FORMATO EXIGIDO:
                 if isinstance(parsed, dict): return [parsed]
         except: pass
 
-        # 4. ATTEMPT 3: Object Fragment Extraction (The Arkanis Self-Healing Loop)
-        # Useful when the LLM gives multiple {tool:X} outside an array
+        # 4. ATTEMPT 3: Object Fragment Extraction (Brace Counting)
+        # Handle cases where multiple objects are given without an array or are deeply nested
         try:
-            # Look for all blocks that look like objects {...}
-            # We use a non-greedy approach but attempt to capture nested structures 
-            # by looking for matches starting with {"tool":
-            fragments = re.findall(r'({[^{]*?"tool"\s*:\s*".*?"\s*})|({.*?})', clean_input, re.DOTALL)
             valid_tools = []
-            for frag_tuple in fragments:
-                # findall with multiple groups returns tuples
-                frag = frag_tuple[0] or frag_tuple[1]
-                try:
-                    tool_obj = json.loads(frag)
-                    if isinstance(tool_obj, dict) and "tool" in tool_obj:
-                        valid_tools.append(tool_obj)
-                except: continue
+            stack = 0
+            start_idx = -1
+            for i, char in enumerate(clean_input):
+                if char == '{':
+                    if stack == 0: start_idx = i
+                    stack += 1
+                elif char == '}':
+                    stack -= 1
+                    if stack == 0 and start_idx != -1:
+                        obj_str = clean_input[start_idx:i+1]
+                        try:
+                            # Basic validation: must contain "tool"
+                            if '"tool"' in obj_str or "'tool'" in obj_str:
+                                tool_obj = json.loads(obj_str)
+                                if isinstance(tool_obj, dict) and "tool" in tool_obj:
+                                    valid_tools.append(tool_obj)
+                        except: pass
             
             if valid_tools:
                 return valid_tools
         except: pass
 
-        # 5. FINAL FALLBACK: Manual Bracket Counting (Extreme Case)
-        # (This is a simplified version of the logic Arkanis proposed during auto-repair)
+        # 5. FINAL FALLBACK: Print Message
         return [{"tool": "print_message", "args": {"message": "[RELATÓRIO TÉCNICO] Erro crítico no parsing do Plano JSON. O modelo não gerou uma estrutura válida para execução de engenharia."}}]
 
     def plan(self, user_input: str, recent_context: str = "Nenhum histórico recente.", task_hint: Optional[str] = None) -> List[Dict[str, Any]]:
