@@ -228,20 +228,22 @@ Formule uma resposta natural, amigável e conversacional."""
                 self.log(f"Raciocínio: {reasoning}", "critic")
 
             if decision == "approve":
-                self.log("Plano APROVADO pelo Auditor Sênior.", "success")
+                self.log("Plano APROVADO pelo Auditor.", "success")
                 final_plan = plan
                 break
-            elif decision == "improve" and refine_count < max_refinements:
-                self.log(f"🔄 Auditor sugeriu melhorias (Refinamento {refine_count + 1}/2).", "critic")
-                for issue in critic_report.get("issues", []):
-                    self.log(f"⚠️ {issue}", "critic")
-                # Feedback loop: add critic suggestion to context for next planning attempt
-                context += f"\n\n[FEEDBACK DO AUDITOR]: {critic_report.get('improved_plan')}"
+            elif (decision in ["improve", "reject"]) and refine_count < max_refinements:
+                # ITERATIVE IMPROVEMENT: If reject or improve, pass feedback back to Planner
+                log_symbol = "🔄" if decision == "improve" else "⚠️"
+                self.log(f"{log_symbol} Auditor solicitou ajustes (Refinamento {refine_count + 1}/{max_refinements}).", "critic")
+                
+                # feedback = improved_plan if provided, else general reasoning
+                feedback = critic_report.get('improved_plan') or critic_report.get('reasoning')
+                context += f"\n\n[FEEDBACK DO AUDITOR]: {feedback}"
                 refine_count += 1
                 continue
             else:
-                self.log(f"🔴 Auditor REJEITOU o plano: {critic_report.get('final_suggestion')}", "error")
-                return f"Execução abortada por segurança: {critic_report.get('final_suggestion')}"
+                self.log("🔴 Auditor não aprovou o plano após múltiplas tentativas.", "error")
+                return "Não consegui processar o pedido de forma segura no momento. Pode tentar de outra forma?"
 
         # 3. Execution (Fixed Plan)
         self.log("Executando plano validado...", "executor")
