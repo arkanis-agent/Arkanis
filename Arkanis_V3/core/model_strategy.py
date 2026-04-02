@@ -26,7 +26,7 @@ class ModelStrategy:
         # Engineering/Coding specific tasks
         self.engineering_keywords = [
             r'\b(landing\s*page|site|website|frontend|backend|react|vue|vite|css|tailwind|html|javascript|typescript|python|c\+\+|rust|golang|php|sql|api|rest|json|xml|yaml)\b',
-            r'\b(projeto|app|aplicativo|software|dev|desenvolva|crie um script|automatize|automacao|automação)\b'
+            r'\b(projeto|app|aplicativo|software|dev|desenvolva|crie um script|automatize|automacao|automação|faça|fazer|construa|monte|programe|codifique)\b'
         ]
         
         # Deep engineering/reasoning

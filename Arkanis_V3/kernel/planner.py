@@ -147,14 +147,19 @@ FORMATO EXIGIDO:
         """Main execution flow for planning."""
         inventory = self._get_tool_descriptions()
         
-        # --- PREMIUM AESTHETICS INJECTION ---
+        # --- PREMIUM AESTHETICS INJECTION (Elite Engineering Mode) ---
         premium_directive = ""
         if task_hint == "engineering":
-            premium_directive = "\n\nDIRETIVA DE DESIGN PREMIUM (MANDATÓRIA):\n" + \
-                "- Use ESTÉTICA DE ELITE: Design moderno, clean e profissional.\n" + \
-                "- CSS: Use Tailwind CSS 4.0 ou Vanilla CSS moderno com gradientes suaves, glassmorphism e micro-interações.\n" + \
-                "- UI: Evite tabelas ou layouts básicos. Crie dashboards, cartões dinâmicos e tipografia elegante.\n" + \
-                "- Não use placeholders. Gere conteúdo real e impactante.\n"
+            premium_directive = "\n\n🔥 DIRETIVA DE DESIGN PREMIUM (MANDATÓRIA - QUALIDADE ELITE):\n" + \
+                "- **ESTÉTICA DE ALTA FIDELIDADE**: Design ultra-moderno, 'Apple-style' ou 'SaaS Premium'.\n" + \
+                "- **CSS OBRIGATÓRIO**: Use Tailwind CSS 4.0 ou Modern CSS.\n" + \
+                "- **ELEMENTOS VISUAIS**: \n" + \
+                "  * Graded backgrounds (ex: `bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900`)\n" + \
+                "  * Glassmorphism (ex: `bg-white/10 backdrop-blur-md border border-white/20`)\n" + \
+                "  * Soft Shadows (`shadow-2xl`), Micro-interações (`hover:scale-105 transition-all`)\n" + \
+                "  * Fontes modernas (Sans-serif elegantes).\n" + \
+                "- **REGRA DE OURO**: Proibido layouts básicos ou cinzas. Se for criar um card, que seja um card com hover dinâmico e bordas suaves.\n" + \
+                "- **CONTEÚDO**: Use textos reais de marketing, não use 'Lorem Ipsum'.\n"
 
         system_prompt = self.SYSTEM_PROMPT.format(
             agent_identity=self.agent_identity,

@@ -83,6 +83,19 @@ class LLMRouter:
                 if config_manager.is_provider_ready(m["provider"], config):
                     self.active_model = model_id
                     self.active_provider = m["provider"]
+                    # Update active tier identification
+                    tier = "UNKNOWN"
+                    if m["provider"] in ["ollama", "lm_studio", "vllm"] or ":free" in model_id.lower():
+                        tier = "FREE"
+                    else:
+                        from core.model_strategy import strategy_engine
+                        for t_name, m_list in strategy_engine.CLOUD_TIERS.items():
+                            if model_id in m_list:
+                                tier = t_name
+                                break
+                    
+                    self.active_tier = tier
+                    logger.info(f"Roteador: Modelo definido para {model_id} (Tier: {tier})")
                     return True
 
         # Allow any model routed via OpenRouter (e.g. fetched dynamically from OR API)
@@ -204,36 +217,39 @@ class LLMRouter:
             self.active_provider = _original_provider
             return "[Error LLM] O sistema falhou em encontrar um modelo disponível em todos os níveis de fallback."
 
-        # --- SMART UPGRADE (Manual Mode) ---
-        # If task is engineering but we are in manual mode with a weak model, force an upgrade
-        if task_hint == "engineering" and self.active_tier in ["MANUAL", "LOW COST", "FREE"]:
-            _original_model = self.active_model
-            _original_provider = self.active_provider
+        # --- SMART UPGRADE (Manual or Auto-Low Mode) ---
+        # If task is engineering but we are NOT in a high performance tier, force an upgrade
+        high_tiers = ["HIGH PERFORMANCE", "BALANCED", "SMART_HIGH PERFORMANCE", "SMART_BALANCED"]
+        if task_hint == "engineering" and self.active_tier not in high_tiers:
+            logger.info("🚀 Smart Upgrade engaged: Engineering task detected. Switching to Elite Coding models.", symbol="⚡")
             
-            logger.info("Smart Upgrade engaged: Engineering task detected. Switching to Elite Coding models.", symbol="🚀")
+            # Save current tier for restoration
+            _original_tier = self.active_tier
             
-            # Group and find top tier
-            grouped_tiers = strategy_engine._group_enabled_models(self.all_models)
-            elite_tiers = ["HIGH PERFORMANCE", "BALANCED"]
+            # Re-run strategy specifically for complex engineering
+            from core.model_strategy import strategy_engine
+            config = config_manager.load_config()
+            best_model, tier, category = strategy_engine.decide(user_prompt, system_prompt, config.get("models", []))
             
-            for tier in elite_tiers:
-                models = grouped_tiers.get(tier, [])
-                if not models: continue
-                
-                # Use first available elite model
-                self.set_model(models[0])
+            if tier in high_tiers:
+                logger.info(f"🎯 Redirigindo para modelo de Elite: {best_model} ({tier})")
+                self.active_model = best_model
+                self.active_provider = next((m["provider"] for m in config.get("models", []) if m["id"] == best_model), "openrouter")
                 self.active_tier = f"SMART_{tier}"
-                result = self._dispatch_call(system_prompt, user_prompt)
                 
-                if result and not str(result).startswith("[Error LLM]"):
-                    # Success! Restore and return.
-                    self.active_model = _original_model
-                    self.active_provider = _original_provider
-                    return result
-            
-            # Restoration if upgrade fails
-            self.active_model = _original_model
-            self.active_provider = _original_provider
+                # Execute with Elite
+                res = self._dispatch_call(system_prompt, user_prompt)
+                
+                # Restore original state immediately
+                self.active_model = _original_model
+                self.active_provider = _original_provider
+                self.active_tier = _original_tier
+                
+                if res and not str(res).startswith("[Error LLM]"):
+                    return res
+                logger.warning("⚠️ Elite call failed. Falling back to original model...")
+            else:
+                logger.warning("⚠️ Smart Upgrade falhou: Nenhum modelo de elite disponível. Prosseguindo com o original.")
 
         # --- MANUAL MODE ---
         self.active_tier = "MANUAL"

@@ -1,8 +1,6 @@
 {
     "preferences": [],
     "facts": [
-        "O usuário não informou o próprio nome ainda",
-        "Nome do usuário: Diego",
         "Criou pasta \"teste 1\" na área de trabalho",
         "Criei uma pasta chamada \"teste 1\" na Área de Trabalho do usuário e adicionei os arquivos solicitados.",
         "O usuário reportou que a pasta \"teste 1\" está vazia.",
@@ -20,7 +18,9 @@
         "O usuário pediu para deixar a landing page mais profissional",
         "o nome do usuário é Diego",
         "Projeto Arkanis está dentro da pasta Juliana na área de trabalho do usuário.",
-        "Precisa apagar arquivos da pasta Juliana"
+        "Precisa apagar arquivos da pasta Juliana",
+        "O usuário pediu para apagar os arquivos da pasta \"juliana\" na área de trabalho.",
+        "criou pasta \"juliana\" com arquivos HTML, CSS e JS"
     ],
     "recurrent_tasks": []
 }
