@@ -303,8 +303,8 @@ class StartTaskRequest(BaseModel):
     description: str
     type: str # "interval", "condition"
     interval: int = 300
-    condition: str = ""
-    goal_id: str = None
+    condition: Optional[str] = ""
+    goal_id: Optional[str] = None
 
 class StopTaskRequest(BaseModel):
     task_id: str
@@ -315,8 +315,8 @@ class CreateGoalRequest(BaseModel):
 
 class UpdateGoalRequest(BaseModel):
     goal_id: str
-    status: str = None
-    progress: int = None
+    status: Optional[str] = None
+    progress: Optional[int] = None
     note: str = ""
 
 @app.get("/tasks")
@@ -344,12 +344,7 @@ async def stop_task(request: StopTaskRequest):
         raise HTTPException(status_code=404, detail="Tarefa não encontrada.")
     return {"status": "success"}
 
-@app.post("/goals/update")
-def api_update_goal_status(data: GoalUpdateData):
-    res = goal_manager.update_status(data.goal_id, data.status)
-    if not res:
-        raise HTTPException(status_code=404, detail="Goal ID not found")
-    return {"status": "success"}
+
 
 # --- Governor Endpoints ---
 @app.get("/governor/state")
