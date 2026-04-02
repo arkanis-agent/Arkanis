@@ -201,6 +201,13 @@ Formule uma resposta natural e amigável."""
             critic_report = self.critic.evaluate_plan(goal=user_input, plan=plan, context=context, soul=self.planner.agent_identity)
             
             decision = critic_report.get("decision", "improve")
+            score = critic_report.get("quality_score", 0)
+            reasoning = critic_report.get("reasoning", "")
+
+            self.log(f"Auditoria: {decision.upper()} | Score: {score}/10", "critic")
+            if reasoning:
+                self.log(f"Raciocínio: {reasoning}", "critic")
+
             if decision == "approve":
                 self.log("Plano APROVADO pelo Auditor Sênior.", "success")
                 final_plan = plan
@@ -305,6 +312,13 @@ Formule uma resposta natural e amigável."""
                 critic_report = self.critic.evaluate_plan(goal=goal, plan=plan, context=context, soul=self.planner.agent_identity)
                 
                 decision = critic_report.get("decision", "improve")
+                score = critic_report.get("quality_score", 0)
+                reasoning = critic_report.get("reasoning", "")
+                
+                self.log(f"Auditoria Ciclo: {decision.upper()} | Score: {score}/10", "critic")
+                if reasoning:
+                    self.log(f"Raciocínio: {reasoning}", "critic")
+
                 if decision == "approve":
                     self.log("Ciclo aprovado para execução.", "success")
                     final_plan = plan
