@@ -36,13 +36,13 @@ PERSONA ARKANIS (SOUL):
 
 FORMATO DE RESPOSTA (JSON):
 {{
-  "decision": "approve | improve | reject",
-  "quality_score": 0-10,
-  "risk_level": "low | medium | high",
-  "reasoning": "Raciocínio técnico curto (Ex: 'Seguro e funcional').",
+  "decision": "approve",
+  "quality_score": 10,
+  "risk_level": "low",
+  "reasoning": "Plano seguro e funcional.",
   "issues": [],
   "improvements": [],
-  "final_suggestion": "Feedback curto."
+  "final_suggestion": "Aprovado."
 }}
 
 SEGURANÇA: Bloqueie caminhos como /etc, /root, /bin ou comandos destrutivos sem backup.
@@ -68,14 +68,12 @@ SEGURANÇA: Bloqueie caminhos como /etc, /root, /bin ou comandos destrutivos sem
             logger.info("Avisos proativos detectados na memória evolutiva.", symbol="⚠️")
             context += f"\n\n[LIÇÕES APRENDIDAS EM TAREFAS SIMILARES NO PASSADO]:\n{past_lessons}"
 
-        user_prompt = f"""AUDITORIA DE PRÉ-EXECUÇÃO:
-        
-OBJETIVO DO USUÁRIO: {goal}
-CONTEXTO ATUAL: {context}
-PLANO PROPOSTO PELO DEV AGENT:
-{json.dumps(plan, indent=2, ensure_ascii=False)}
-
-Analise tecnicamente e retorne sua decisão em JSON."""
+        user_prompt = "AUDITORIA DE PRÉ-EXECUÇÃO:\n\n"
+        user_prompt += "OBJETIVO DO USUÁRIO: " + str(goal) + "\n"
+        user_prompt += "CONTEXTO ATUAL: " + str(context) + "\n"
+        user_prompt += "PLANO PROPOSTO PELO DEV AGENT:\n"
+        user_prompt += json.dumps(plan, indent=2, ensure_ascii=False) + "\n\n"
+        user_prompt += "Analise tecnicamente e retorne sua decisão em JSON conforme o formato especificado no System Prompt."
 
         try:
             raw_response = self.llm.generate(system_prompt, user_prompt)

@@ -25,10 +25,16 @@
             "O plano se limita a uma única mensagem de boas-vindas genérica, sem considerar a progressão natural da conversa ou próximos passos.",
             "Não há mecanismos para capturar a escolha do usuário e direcionar o diálogo de acordo com a opção selecionada.",
             "Não há mecanismo para capturar a escolha do usuário e direcionar o diálogo de acordo com a opção selecionada.",
-            "Erro de parsing no formato da auditoria."
+            "Erro de parsing no formato da auditoria.",
+            "Ainda falta uma forma de capturar a escolha do usuário e direcionar o diálogo de acordo com a opção selecionada.",
+            "A mensagem de boas-vindas, embora melhor do que as anteriores, ainda poderia ser mais personalizada, usando o nome do usuário e retomando detalhes específicos da interação anterior.",
+            "O plano se limita a uma única mensagem de boas-vindas, sem considerar a progressão natural do diálogo ou próximos passos.",
+            "Falta de continuidade do diálogo e próximos passos",
+            "Ausência de mecanismos para capturar a escolha do usuário e direcionar o fluxo",
+            "Mensagem de boas-vindas ainda um pouco genérica"
         ],
-        "fail_count": 8,
-        "last_seen": "Thu Apr  2 14:40:55 2026"
+        "fail_count": 11,
+        "last_seen": "Thu Apr  2 14:51:41 2026"
     },
     {
         "goal_pattern": "Crie uma pasta na área de trabalho com nome Minha alma.",
@@ -37,5 +43,18 @@
         ],
         "fail_count": 1,
         "last_seen": "Thu Apr  2 13:57:10 2026"
+    },
+    {
+        "goal_pattern": "oi",
+        "lessons": [
+            "O plano não resolve o problema principal de criar uma pasta e um arquivo HTML na área de trabalho, conforme solicitado pelo usuário nas últimas interações.",
+            "Embora a mensagem de saudação seja agradável, ela não é diretamente relevante para o objetivo final do usuário.",
+            "A mensagem de saudação, embora agradável, não é diretamente relevante para a tarefa principal do usuário.",
+            "O plano não inclui a criação da pasta 'ProjetoTeste' e do arquivo 'index.html', conforme solicitado pelo usuário nas últimas interações.",
+            "O plano não cria a pasta 'ProjetoTeste' nem o arquivo 'index.html' na área de trabalho, conforme solicitado pelo usuário.",
+            "A mensagem de saudação, embora cordial, não é diretamente relevante para a tarefa principal do usuário."
+        ],
+        "fail_count": 3,
+        "last_seen": "Thu Apr  2 14:44:13 2026"
     }
 ]
