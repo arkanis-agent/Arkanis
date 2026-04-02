@@ -1,0 +1,12 @@
+[
+    {
+        "goal_pattern": "estou tentando mandar mensagem para voce atraves do telegram mas não estou recebendo resposta sua. verifique e corrija",
+        "lessons": [
+            "O plano atual apenas imprime uma mensagem, mas não realiza nenhuma ação concreta para resolver o problema de integração com o Telegram.",
+            "Não há verificação se a integração com o Telegram está funcionando corretamente ou quais podem ser as possíveis causas do problema.",
+            "Não há um plano de testes ou validação para garantir que a integração seja restabelecida com sucesso."
+        ],
+        "fail_count": 1,
+        "last_seen": "Thu Apr  2 13:39:29 2026"
+    }
+]
