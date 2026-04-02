@@ -88,7 +88,6 @@ class LLMRouter:
                     if m["provider"] in ["ollama", "lm_studio", "vllm"] or ":free" in model_id.lower():
                         tier = "FREE"
                     else:
-                        from core.model_strategy import strategy_engine
                         for t_name, m_list in strategy_engine.CLOUD_TIERS.items():
                             if model_id in m_list:
                                 tier = t_name
@@ -231,7 +230,6 @@ class LLMRouter:
             _original_tier = self.active_tier
             
             # Re-run strategy specifically for complex engineering
-            from core.model_strategy import strategy_engine
             config = config_manager.load_config()
             best_model, tier, category = strategy_engine.decide(user_prompt, system_prompt, config.get("models", []))
             
