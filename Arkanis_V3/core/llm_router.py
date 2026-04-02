@@ -14,14 +14,29 @@ class LLMRouter:
 
     def __init__(self):
         self._load_config()
-        self.active_model = os.getenv("ARKANIS_MODEL", "anthropic/claude-3-haiku")
+        # 1. Start with configured model
+        self.active_model = os.getenv("ARKANIS_MODEL")
+        self.active_provider = self._get_provider_for_model(self.active_model) if self.active_model else None
+
+        # 2. Zero-Touch Discovery if nothing is correctly configured
+        if not self.active_model or not self.active_provider:
+             self._discover()
+        
         self.timeout = int(os.getenv("ARKANIS_TIMEOUT", 30))
         self.auto_strategy = False # Auto strategy toggle state
         self.active_tier = None # Caches the cost tier of the selected model
 
-        
-        # Self-correct active provider based on initial model
-        self.active_provider = self._get_provider_for_model(self.active_model)
+    def _discover(self):
+        """Internal helper to find the best available model."""
+        best_model, best_provider = strategy_engine.discover_best_provider()
+        if best_model and best_provider:
+            print(f"[Auto-Config] System identified optimal provider: {best_provider} -> {best_model}")
+            self.active_model = best_model
+            self.active_provider = best_provider
+        else:
+            # Absolute failsafe defaults if discovery fails (system will prompt setup in UI)
+            self.active_model = "anthropic/claude-3-haiku"
+            self.active_provider = "openrouter"
 
     def set_auto_strategy(self, state: bool):
         self.auto_strategy = state
@@ -192,11 +207,19 @@ class LLMRouter:
         
         # Automatic failover even in manual mode if primary fails
         if result and str(result).startswith("[Error LLM]"):
-            print(f"[Manual Fallback] Active model {self.active_model} failed. Attempting auto-failover...")
+            print(f"[Self-Healing] Active model {self.active_model} failed. Attempting silent recovery...")
+            # 1. Trigger fresh discovery
+            self._discover()
+            # 2. Retry call with new discovery
+            retry_result = self._dispatch_call(system_prompt, user_prompt)
+            if retry_result and not str(retry_result).startswith("[Error LLM]"):
+                return retry_result
+                
+            # 3. Last chance: Absolute Auto-Strategy
             self.auto_strategy = True
-            retry_result = self.generate(system_prompt, user_prompt)
+            final_retry = self.generate(system_prompt, user_prompt)
             self.auto_strategy = False # Revert state
-            return retry_result
+            return final_retry
 
         return result
 

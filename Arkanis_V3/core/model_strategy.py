@@ -1,5 +1,5 @@
 import re
-from typing import List, Dict, Tuple
+from typing import List, Dict, Tuple, Optional
 from core.config_manager import config_manager
 
 class ModelStrategy:
@@ -168,7 +168,45 @@ class ModelStrategy:
         # Absolute Failsafe (should theoretically never happen if any model is on)
         active_ids = [m["id"] for m in enabled_models if m.get("enabled", True)]
         fallback_id = active_ids[0] if active_ids else "anthropic/claude-3-haiku"
-        return fallback_id, "FAILSAFE", task_category
+    def discover_best_provider(self) -> Tuple[Optional[str], Optional[str]]:
+        """
+        Zero-Touch Discovery: Detects the best available provider and model.
+        Returns: (model_id, provider_id)
+        """
+        import os
+        import requests
+
+        config = config_manager.load_config()
+        providers = config.get("providers", {})
+
+        # Priority 1: Ollama (Local)
+        ollama_cfg = providers.get("ollama", {})
+        if ollama_cfg.get("enabled", True):
+            endpoint = ollama_cfg.get("endpoint", "http://localhost:11434/api/tags")
+            # Convert /api/chat to /api/tags for model listing if needed
+            tags_url = endpoint.replace("/api/chat", "/api/tags")
+            try:
+                # 1. Is service running?
+                res = requests.get(tags_url, timeout=2)
+                if res.status_code == 200:
+                    models_data = res.json()
+                    models = models_data.get("models", [])
+                    if models:
+                        # Success! Use the first local model found
+                        return models[0]["name"], "ollama"
+            except Exception:
+                pass
+
+        # Priority 2: OpenRouter (Cloud)
+        or_cfg = providers.get("openrouter", {})
+        # We check both the config and the environment for the key
+        or_key = os.getenv("OPENROUTER_API_KEY") or or_cfg.get("api_key")
+        if or_key and len(or_key.strip()) > 10:
+            # Fallback to a safe, reliable cloud default
+            return "anthropic/claude-3-haiku", "openrouter"
+
+        # Final Fallback / Setup Required
+        return None, None
 
 # Singleton instance
 strategy_engine = ModelStrategy()

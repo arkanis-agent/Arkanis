@@ -93,6 +93,9 @@ for i in {1..12}; do
 done
 
 # Abertura
+echo -e "\n[Action] Performing first-run intelligence validation..."
+"$VENV_PYTHON" "$V3_DIR/scripts/verify_intelligence.py"
+
 ( xdg-open "http://localhost:8000" || open "http://localhost:8000" ) >/dev/null 2>&1
 
 echo -e "\n\n${BOLD}ARKANIS PRONTO!${NC}"

@@ -38,10 +38,18 @@ def get_pid():
     except Exception:
         return None
 
+def verify():
+    """Performs a quick intelligence smoke test."""
+    print("[Action] Verifying intelligence pipeline...")
+    script_path = os.path.join(V3_DIR, "scripts", "verify_intelligence.py")
+    subprocess.run([sys.executable, script_path])
+
 def start():
     pid = get_pid()
     if pid:
         print(f"[Info] Arkanis already running (PID: {pid})")
+        # Still verify if it's responding
+        verify()
         return
     
     print("[Action] Starting Arkanis V3.1 in Web Mode...")
@@ -50,10 +58,12 @@ def start():
         subprocess.Popen([sys.executable, f"{V3_DIR}/main.py", "--web"], 
                          stdout=log, stderr=log, cwd=V3_DIR)
     
-    time.sleep(2)
+    time.sleep(3) # Give it a bit more time to initialize
     new_pid = get_pid()
     if new_pid:
         print(f"[Success] Arkanis online (PID: {new_pid}) at http://localhost:8000")
+        # First-run validation
+        verify()
     else:
         print("[Error] Failed to start service. Check arkanis.log")
 
@@ -179,9 +189,12 @@ def doctor():
         }
         results["issues"] += 1
 
-    # 4. Model Configuration
+    # 4. Model Configuration & Auto-Discovery
     if router and router.active_model:
-        results["model"] = {"status": "ok", "msg": f"Model '{router.active_model}' is correctly mapped"}
+        provider = router.active_provider
+        is_auto = os.getenv("ARKANIS_MODEL") is None
+        auto_label = " (Auto-Discovered)" if is_auto else ""
+        results["model"] = {"status": "ok", "msg": f"Model '{router.active_model}' is active{auto_label}"}
         results["mode"] = router.active_provider.title()
     else:
         results["model"] = {
@@ -285,6 +298,7 @@ def main():
     
     subparsers.add_parser("start", help="Start Arkanis service")
     subparsers.add_parser("stop", help="Stop Arkanis service")
+    subparsers.add_parser("verify", help="Verify intelligence pipeline")
     subparsers.add_parser("restart", help="Restart Arkanis service")
     subparsers.add_parser("status", help="Show system status")
     subparsers.add_parser("doctor", help="Run system diagnostics")
@@ -296,6 +310,8 @@ def main():
         start()
     elif args.command == "stop":
         stop()
+    elif args.command == "verify":
+        verify()
     elif args.command == "restart":
         restart()
     elif args.command == "status":
