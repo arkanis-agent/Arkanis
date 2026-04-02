@@ -1,7 +1,6 @@
 {
     "preferences": [],
     "facts": [
-        "Usuário tem uma Área de Trabalho em /home/diego/Área de Trabalho",
         "Usuário perguntou \"ainda está aí?\"",
         "O usuário criou um diretório chamado \"teste 1\" na Área de Trabalho e um arquivo HTML dentro dele.",
         "O usuário se chama Diego",
@@ -20,7 +19,8 @@
         "Ferramenta 'replace_file_content' não encontrada",
         "Ferramenta 'write_file' ausente, substituída por alternativa funcional.",
         "Erro no parsing do Plano JSON",
-        "Padrão de erro reportado via Telegram"
+        "Padrão de erro reportado via Telegram",
+        "Olá, como posso ajudar?"
     ],
     "recurrent_tasks": []
 }
