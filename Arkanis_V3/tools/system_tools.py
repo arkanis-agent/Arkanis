@@ -117,6 +117,70 @@ class WriteFileTool(BaseTool):
         except Exception as e:
             return f"Error writing file: {str(e)}"
 
+class CreateDirectoryTool(BaseTool):
+    """A tool to create a directory/folder."""
+    @property
+    def name(self) -> str: return "create_directory"
+    @property
+    def description(self) -> str: return "Creates a new directory at the specified path."
+    @property
+    def arguments(self) -> Dict[str, str]:
+        return {"path": "The path to the new directory."}
+    def execute(self, **kwargs) -> str:
+        path = kwargs.get("path")
+        if not path: return "Error: Missing directory path."
+        if not is_safe_path(path): return "Error: Path violation."
+        try:
+            os.makedirs(path, exist_ok=True)
+            return f"Successfully created directory: {path}"
+        except Exception as e:
+            return f"Error creating directory: {str(e)}"
+
+class DeleteItemTool(BaseTool):
+    """A tool to delete a file or directory."""
+    @property
+    def name(self) -> str: return "delete_item"
+    @property
+    def description(self) -> str: return "Deletes a file or directory (recursively if it is a directory)."
+    @property
+    def arguments(self) -> Dict[str, str]:
+        return {"path": "The path to delete."}
+    def execute(self, **kwargs) -> str:
+        path = kwargs.get("path")
+        if not path: return "Error: Missing path."
+        if not is_safe_path(path): return "Error: Path violation."
+        if not os.path.exists(path): return f"Error: {path} does not exist."
+        try:
+            import shutil
+            if os.path.isdir(path):
+                shutil.rmtree(path)
+            else:
+                os.remove(path)
+            return f"Successfully deleted {path}."
+        except Exception as e:
+            return f"Error deleting {path}: {str(e)}"
+
+class MoveItemTool(BaseTool):
+    """A tool to rename or move a file or directory."""
+    @property
+    def name(self) -> str: return "move_item"
+    @property
+    def description(self) -> str: return "Renames or moves a file or directory."
+    @property
+    def arguments(self) -> Dict[str, str]:
+        return {"source": "The current path.", "destination": "The new path."}
+    def execute(self, **kwargs) -> str:
+        src = kwargs.get("source")
+        dst = kwargs.get("destination")
+        if not src or not dst: return "Error: Missing source or destination."
+        if not is_safe_path(src) or not is_safe_path(dst): return "Error: Path violation."
+        try:
+            import shutil
+            shutil.move(src, dst)
+            return f"Successfully moved/renamed {src} to {dst}."
+        except Exception as e:
+            return f"Error moving {src}: {str(e)}"
+
 class SendMessageTool(BaseTool):
     """Envia uma mensagem direta para outro agente pelo ID."""
     @property
@@ -193,6 +257,9 @@ registry.register(GetCurrentDateTimeTool())
 registry.register(ListFilesTool())
 registry.register(ReadFileTool())
 registry.register(WriteFileTool())
+registry.register(CreateDirectoryTool())
+registry.register(DeleteItemTool())
+registry.register(MoveItemTool())
 registry.register(FileExistsTool())
 registry.register(SendMessageTool())
 registry.register(BroadcastMessageTool())
