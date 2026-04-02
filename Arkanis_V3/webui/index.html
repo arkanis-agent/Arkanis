@@ -205,9 +205,9 @@
                 <span class="material-symbols-outlined">history</span>
                 Histórico
             </a>
-            <a id="navAnalyses" class="text-slate-500 dark:text-slate-400 px-4 py-3 flex items-center gap-3 hover:bg-slate-100 dark:hover:bg-slate-800/80 transition-all rounded-xl font-inter text-sm font-medium" href="#">
-                <span class="material-symbols-outlined">analytics</span>
-                Análises
+            <a id="navObservability" class="text-slate-500 dark:text-slate-400 px-4 py-3 flex items-center gap-3 hover:bg-slate-100 dark:hover:bg-slate-800/80 transition-all rounded-xl font-inter text-sm font-medium" href="#">
+                <span class="material-symbols-outlined">monitoring</span>
+                Observabilidade
             </a>
             <a id="navLogs" class="text-slate-500 dark:text-slate-400 px-4 py-3 flex items-center gap-3 hover:bg-slate-100 dark:hover:bg-slate-800/80 transition-all rounded-xl font-inter text-sm font-medium" href="#">
                 <span class="material-symbols-outlined">terminal</span>
@@ -327,106 +327,79 @@
             </div>
         </section>
 
-        <!-- Tasks Panel (Hidden by default) -->
-        <section id="tasksPanel" class="hidden flex-1 overflow-y-auto p-10 custom-scrollbar">
-            <div class="max-w-5xl mx-auto space-y-8 pb-24">
+        <!-- Observability Panel (System Watch) -->
+        <section id="observabilityPanel" class="hidden flex-1 overflow-y-auto p-10 custom-scrollbar">
+            <div class="max-w-6xl mx-auto space-y-8 pb-24">
                 <div class="flex items-center justify-between">
                     <div>
-                        <h2 class="text-3xl font-headline font-extrabold text-on-surface">Agentes & Tarefas Contínuas</h2>
-                        <p class="text-on-surface-variant text-sm mt-1">Crie rotinas autônomas, monitoramentos e gatilhos.</p>
+                        <h2 class="text-3xl font-headline font-extrabold text-on-surface">System</h2>
+                        <p class="text-on-surface-variant text-sm mt-1">Observabilidade em tempo real do ecossistema Arkanis.</p>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <div class="flex items-center gap-2 px-3 py-1.5 bg-emerald-500/10 border border-emerald-500/20 rounded-full">
+                            <span class="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></span>
+                            <span class="text-[10px] font-bold text-emerald-400">Live</span>
+                        </div>
+                        <button id="refreshObservabilityBtn" class="flex items-center gap-2 bg-slate-800 hover:bg-slate-700 text-slate-300 px-4 py-2 rounded-xl text-xs font-bold transition-all">
+                            <span class="material-symbols-outlined text-sm">cached</span> Atualizar
+                        </button>
                     </div>
                 </div>
 
-                <div class="bg-slate-900/40 rounded-2xl border border-white/5 mt-4 overflow-hidden">
-                    <button id="governorToggleBtn" class="w-full flex items-center justify-between px-6 py-4 hover:bg-white/3 transition-colors">
-                        <h3 class="text-base font-bold text-on-surface flex items-center gap-2">
-                            <span class="material-symbols-outlined text-primary text-[18px]">monitoring</span>
-                            Governor (Resource & Costs)
-                        </h3>
-                        <span id="governorChevron" class="material-symbols-outlined text-slate-500 text-[18px] transition-transform duration-200">expand_more</span>
-                    </button>
-                    <div id="governorBody" class="hidden px-6 pb-5">
-                        <div id="governorContainer" class="flex flex-wrap gap-4 text-sm">
-                            <!-- Governor dynamic data injected here -->
-                        </div>
+                <!-- Stats Summary -->
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+                    <div class="bg-slate-900/40 border border-white/5 p-5 rounded-2xl">
+                        <p class="text-[9px] font-bold text-slate-500 uppercase tracking-widest mb-1">Total Agentes</p>
+                        <p id="obsTotalAgents" class="text-3xl font-extrabold text-white">0</p>
+                    </div>
+                    <div class="bg-slate-900/40 border border-white/5 p-5 rounded-2xl">
+                        <p class="text-[9px] font-bold text-slate-500 uppercase tracking-widest mb-1">Ativos</p>
+                        <p id="obsActiveAgents" class="text-3xl font-extrabold text-blue-400">0</p>
+                    </div>
+                    <div class="bg-slate-900/40 border border-white/5 p-5 rounded-2xl">
+                        <p class="text-[9px] font-bold text-slate-500 uppercase tracking-widest mb-1">IDLE</p>
+                        <p id="obsIdleAgents" class="text-3xl font-extrabold text-slate-400">0</p>
+                    </div>
+                    <div class="bg-slate-900/40 border border-white/5 p-5 rounded-2xl">
+                        <p class="text-[9px] font-bold text-slate-500 uppercase tracking-widest mb-1">Erros</p>
+                        <p id="obsErrorAgents" class="text-3xl font-extrabold text-rose-500">0</p>
                     </div>
                 </div>
 
-                <div class="bg-slate-900/40 rounded-2xl border border-white/5 mt-4 overflow-hidden">
-                    <button id="goalsToggleBtn" class="w-full flex items-center justify-between px-6 py-4 hover:bg-white/3 transition-colors">
-                        <h3 class="text-base font-bold text-on-surface flex items-center gap-2">
-                            <span class="material-symbols-outlined text-primary text-[18px]">flag</span>
-                            Objetivos Globais
-                        </h3>
-                        <div class="flex items-center gap-3">
-                            <button id="showCreateGoalModalBtn" class="text-xs font-bold bg-primary/20 text-primary px-3 py-1 rounded hover:bg-primary/40 transition-colors" onclick="event.stopPropagation()">+ Novo</button>
-                            <span id="goalsChevron" class="material-symbols-outlined text-slate-500 text-[18px] transition-transform duration-200">expand_more</span>
-                        </div>
-                    </button>
-                    <div id="goalsBody" class="hidden px-6 pb-5">
-                        <div id="goalsListContainer" class="space-y-4">
-                            <!-- Goals dynamically injected -->
-                        </div>
-                    </div>
-                </div>
-
-                <div class="bg-slate-900/40 rounded-2xl border border-white/5 p-6 mt-4">
-                    <h3 class="text-lg font-bold text-on-surface mb-4 flex items-center gap-2">
-                        <span class="material-symbols-outlined text-primary">add_task</span>
-                        Nova Tarefa Contínua
+                <!-- Agents Cards List -->
+                <div class="space-y-4">
+                    <h3 class="text-[11px] font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2">
+                        <span class="material-symbols-outlined text-sm">hub</span> Agentes Registrados
                     </h3>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                            <label class="block text-xs font-bold text-slate-400 mb-1">Descrição / Comando</label>
-                            <input type="text" id="newTaskDesc" class="w-full bg-slate-800 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-primary" placeholder="ex: Monitore o preço do Bitcoin...">
-                        </div>
-                        <div>
-                            <label class="block text-xs font-bold text-slate-400 mb-1">Status de Disparo</label>
-                            <div class="flex gap-2">
-                                <select id="newTaskType" class="bg-slate-800 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-primary">
-                                    <option value="interval">Por Intervalo</option>
-                                    <option value="condition">Por Condição</option>
-                                </select>
-                                <input type="number" id="newTaskInterval" class="w-24 bg-slate-800 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-primary" placeholder="Segs" value="300">
-                            </div>
-                        </div>
-                        <div class="col-span-1">
-                            <label class="block text-xs font-bold text-slate-400 mb-1">Condição (Opcional)</label>
-                            <input type="text" id="newTaskCondition" class="w-full bg-slate-800 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-primary" placeholder="ex: Bitcoin abaixo de 90k">
-                        </div>
-                        <div class="col-span-1">
-                            <label class="block text-xs font-bold text-slate-400 mb-1">Objetivo Relacionado (Opcional)</label>
-                            <select id="newTaskGoalId" class="w-full bg-slate-800 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-primary">
-                                <option value="">Nenhum Objetivo</option>
-                            </select>
-                        </div>
+                    <div id="obsAgentsGrid" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <!-- Agent Cards injected here -->
                     </div>
-                    <button id="createTaskBtn" class="mt-4 bg-primary hover:bg-primary-dim text-white px-5 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition-all">
-                        <span class="material-symbols-outlined text-sm">play_arrow</span>
-                        Iniciar Tarefa
-                    </button>
                 </div>
 
-                <div class="bg-slate-900/40 rounded-2xl border border-white/5 p-6">
-                    <h3 class="text-lg font-bold text-on-surface mb-4 flex items-center gap-2">
-                        <span class="material-symbols-outlined text-primary">view_list</span>
-                        Tarefas Ativas
+                <!-- Event Log Table -->
+                <div class="space-y-4">
+                    <h3 class="text-[11px] font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2">
+                        <span class="material-symbols-outlined text-sm">reorder</span> Eventos Recentes
                     </h3>
-                    <div id="tasksListContainer" class="space-y-4">
-                        <!-- Tasks dynamically injected -->
+                    <div class="bg-slate-900/40 border border-white/5 rounded-2xl overflow-hidden">
+                        <table class="w-full text-left text-[12px]">
+                            <thead class="bg-black/20 text-slate-500 font-bold border-b border-white/5 uppercase tracking-tighter">
+                                <tr>
+                                    <th class="px-6 py-3">Hora</th>
+                                    <th class="px-6 py-3">Agente</th>
+                                    <th class="px-6 py-3">Evento / Ação</th>
+                                    <th class="px-6 py-3">Detalhes</th>
+                                </tr>
+                            </thead>
+                            <tbody id="obsEventsTable" class="divide-y divide-white/5 text-slate-300">
+                                <!-- Row demo -->
+                                <tr>
+                                    <td colspan="4" class="px-6 py-12 text-center text-slate-600 italic">Nenhum evento registrado ainda.</td>
+                                </tr>
+                            </tbody>
+                        </table>
                     </div>
                 </div>
-
-                <div class="bg-slate-900/40 rounded-2xl border border-white/5 p-6 mt-4">
-                    <h3 class="text-lg font-bold text-on-surface mb-4 flex items-center gap-2">
-                        <span class="material-symbols-outlined text-primary">forum</span>
-                        Agent Communication Bus
-                    </h3>
-                    <div id="busLogsContainer" class="h-48 overflow-y-auto custom-scrollbar bg-black/40 rounded-xl p-4 font-mono text-[11px] text-slate-300 space-y-2 border border-white/10">
-                        <div class="text-slate-500 italic">No communication yet.</div>
-                    </div>
-                </div>
-
             </div>
         </section>
 

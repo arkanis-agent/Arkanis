@@ -59,5 +59,31 @@ class AgentBus:
         if len(self.message_history) > self.max_history:
             self.message_history.pop(0)
 
+    def get_observability_data(self) -> Dict[str, Any]:
+        """Provides a real-time snapshot of the system state for the WebUI."""
+        with self._lock:
+            agents_snapshot = []
+            for aid, instance in self._agents.items():
+                # Extract relevant metadata from the agent instance
+                state = {
+                    "id": aid,
+                    "status": getattr(instance, "status", "idle").lower(),
+                    "mode": getattr(instance, "mode", "manual").upper(),
+                    "cycle": getattr(instance, "current_cycle", 0),
+                    "last_seen": datetime.now().strftime("%H:%M:%S") # Placeholder for activity
+                }
+                agents_snapshot.append(state)
+            
+            return {
+                "agents": agents_snapshot,
+                "history": self.message_history[-20:], # Only latest 20 for UI
+                "stats": {
+                    "total": len(agents_snapshot),
+                    "active": len([a for a in agents_snapshot if a["status"] != "idle"]),
+                    "idle": len([a for a in agents_snapshot if a["status"] == "idle"]),
+                    "errors": 0 # Placeholder for future health checks
+                }
+            }
+
 # Singleton global instance
 agent_bus = AgentBus()

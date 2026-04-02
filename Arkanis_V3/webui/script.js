@@ -75,7 +75,7 @@ const governorContainer = document.getElementById('governorContainer');
 const navLogs = document.getElementById('navLogs');
 const navChat = document.getElementById('navChat');
 const navHistory = document.getElementById('navHistory');
-const navAnalyses = document.getElementById('navAnalyses');
+const navObservability = document.getElementById('navObservability');
 
 // Global State
 let lastLogIndex = 0;
@@ -86,6 +86,7 @@ let isDrawerOpen = false;
 let currentConfig = { providers: {}, models: [] };
 let currentIntegrationsConfig = {};
 let activeConfigTab = 'llms'; // 'llms' or 'integrations'
+let observabilityInterval = null;
 
 // Model picker state
 let allModelsList = [];      // all models (local + cloud + OR fetched)
@@ -981,6 +982,8 @@ function setActivePanel(panelId) {
     const panels = {
         'chat': { element: chatDisplay, nav: navChat, showFooter: true },
         'providers': { element: providersPanel, nav: navProviders, showFooter: false },
+        history: { element: document.getElementById('historyPanel'), nav: navHistory, showFooter: false },
+        observability: { element: document.getElementById('observabilityPanel'), nav: navObservability, showFooter: false },
         'tasks': { element: tasksPanel, nav: navTasks, showFooter: false }
     };
 
@@ -1037,20 +1040,39 @@ function setActivePanel(panelId) {
     window.dispatchEvent(new Event('resize'));
 }
 
-function showChat() {
-    setActivePanel('chat');
-}
+// Alias for developer comfort/compatibility
+const showPanel = setActivePanel;
 
+function showChat() { setActivePanel('chat'); }
+function showHistory() { setActivePanel('history'); }
 function showProviders() {
     setActivePanel('providers');
     loadProvidersConfig();
     loadIntegrationsConfig();
 }
-
-function showTasks() {
-    setActivePanel('tasks');
-    loadTasks();
+function showTasks() { setActivePanel('tasks'); }
+function showObservability() { 
+    setActivePanel('observability'); 
+    fetchObservabilityData();
+    // Start polling
+    if (observabilityInterval) clearInterval(observabilityInterval);
+    observabilityInterval = setInterval(fetchObservabilityData, 3000);
 }
+
+// Stop polling when leaving observability
+function stopObservabilityPolling() {
+    if (observabilityInterval) {
+        clearInterval(observabilityInterval);
+        observabilityInterval = null;
+    }
+}
+
+// Intercept setActivePanel to manage polling
+const originalSetActivePanel = setActivePanel;
+setActivePanel = function(panelId) {
+    if (panelId !== 'observability') stopObservabilityPolling();
+    originalSetActivePanel(panelId);
+};
 
 async function loadTasks() {
     try {
@@ -1557,6 +1579,80 @@ document.querySelectorAll('.suggestion-card').forEach(card => {
         sendMessage(action);
     });
 });
+
+// --- 11. Observability (System Watch) Logic ---
+
+async function fetchObservabilityData() {
+    try {
+        const response = await fetch('/observability');
+        const data = await response.json();
+        renderObservability(data);
+    } catch (e) {
+        console.error("Failed to fetch observability data:", e);
+    }
+}
+
+function renderObservability(data) {
+    // Update Stats
+    document.getElementById('obsTotalAgents').innerText = data.stats.total;
+    document.getElementById('obsActiveAgents').innerText = data.stats.active;
+    document.getElementById('obsIdleAgents').innerText = data.stats.idle;
+    document.getElementById('obsErrorAgents').innerText = data.stats.errors;
+
+    // Render Agent Cards
+    const grid = document.getElementById('obsAgentsGrid');
+    grid.innerHTML = '';
+    
+    data.agents.forEach(agent => {
+        const isActive = agent.status !== 'idle';
+        const card = document.createElement('div');
+        card.className = "bg-slate-900/40 border border-white/5 p-6 rounded-2xl relative overflow-hidden transition-all hover:border-white/10";
+        
+        card.innerHTML = `
+            <div class="flex items-center justify-between mb-4">
+                <div class="flex items-center gap-3">
+                    <div class="w-2 h-2 rounded-full ${isActive ? 'bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.6)]' : 'bg-slate-600'}"></div>
+                    <h4 class="text-sm font-bold text-white">${agent.id}</h4>
+                </div>
+                <span class="text-[9px] font-bold px-2 py-0.5 rounded bg-white/5 text-slate-500 uppercase">${agent.status}</span>
+            </div>
+            <div class="space-y-2">
+                <div class="h-1 w-full bg-white/5 rounded-full overflow-hidden">
+                    <div class="h-full bg-blue-500/50 ${isActive ? 'w-2/3 animate-shimmer' : 'w-0'}" style="background-image: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent); background-size: 200% 100%;"></div>
+                </div>
+                <div class="flex justify-between text-[10px] text-slate-500 font-medium">
+                    <span>Ciclos: ${agent.cycle}</span>
+                    <span>Modo: ${agent.mode}</span>
+                </div>
+                <p class="text-[9px] text-slate-600 mt-2">Visto pela última vez: ${agent.last_seen}</p>
+            </div>
+        `;
+        grid.appendChild(card);
+    });
+
+    // Render Events Table
+    const tableBody = document.getElementById('obsEventsTable');
+    if (data.history.length === 0) {
+        tableBody.innerHTML = '<tr><td colspan="4" class="px-6 py-12 text-center text-slate-600 italic">Nenhum evento registrado ainda.</td></tr>';
+    } else {
+        tableBody.innerHTML = '';
+        data.history.reverse().forEach(msg => {
+            const row = document.createElement('tr');
+            row.className = "hover:bg-white/2 transition-colors";
+            row.innerHTML = `
+                <td class="px-6 py-4 font-mono text-slate-500">${msg.timestamp}</td>
+                <td class="px-6 py-4"><span class="bg-blue-500/10 text-blue-400 px-2 py-0.5 rounded text-[10px] font-bold">${msg.from}</span></td>
+                <td class="px-6 py-4 font-medium">${msg.type === 'broadcast' ? '📣 Broadcast' : '📨 Direct Message'}</td>
+                <td class="px-6 py-4 text-slate-400 max-w-xs truncate">${msg.content}</td>
+            `;
+            tableBody.appendChild(row);
+        });
+    }
+}
+
+// Initial Listeners
+navObservability.addEventListener('click', (e) => { e.preventDefault(); showObservability(); });
+document.getElementById('refreshObservabilityBtn').addEventListener('click', fetchObservabilityData);
 
 // Intervals
 setInterval(pollStatus, 2000);

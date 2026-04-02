@@ -44,7 +44,16 @@ class ArkanisAgent:
         
         # Communication
         self.inbox = []
+        # 2. Register with Bus
         agent_bus.register_agent(self.id, self)
+        
+        # Virtual Sub-Agents for UI / Multi-Agent Simulation
+        from collections import namedtuple
+        VirtualAgent = namedtuple('VirtualAgent', ['id', 'status', 'mode', 'current_cycle'])
+        agent_bus.register_agent("planner_agent", VirtualAgent("planner_agent", "idle", "AUTO", 0))
+        agent_bus.register_agent("memory_agent", VirtualAgent("memory_agent", "idle", "AUTO", 0))
+        agent_bus.register_agent("goal_agent", VirtualAgent("goal_agent", "idle", "AUTO", 0))
+        agent_bus.register_agent("tool_agent", VirtualAgent("tool_agent", "idle", "AUTO", 0))
         
     def __del__(self):
         try:

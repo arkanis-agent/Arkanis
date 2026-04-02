@@ -366,6 +366,11 @@ async def get_bus_logs():
     """Get the latest agent communication logs."""
     return {"messages": agent_bus.message_history}
 
+@app.get("/observability")
+async def get_system_observability():
+    """Get full system monitoring data (agents + stats + history)."""
+    return agent_bus.get_observability_data()
+
 @app.get("/goals")
 async def get_goals():
     """List all active and past global goals."""
