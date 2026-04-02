@@ -42,6 +42,14 @@ async def add_cache_control_headers(request, call_next):
     response.headers["Expires"] = "0"
     return response
 
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 # Shared agent instance
 agent = ArkanisAgent()
 

@@ -151,7 +151,7 @@ class TelegramInterface:
             download_url = f"https://api.telegram.org/file/bot{self.token}/{file_path}"
             
             # 2. Download to local tmp
-            local_path = os.path.join("V3", "data", f"tg_voice_{uuid4().hex[:8]}.ogg")
+            local_path = os.path.join("data", f"tg_voice_{uuid4().hex[:8]}.ogg")
             os.makedirs(os.path.dirname(local_path), exist_ok=True)
             
             audio_resp = requests.get(download_url, timeout=30)

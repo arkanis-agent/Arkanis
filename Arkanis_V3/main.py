@@ -43,7 +43,8 @@ def main():
             import uvicorn
             from api.server import app
             print("\n[Boot] Initializing Web Interface (FastAPI)...")
-            print("[INFO] Access ARKANIS at: http://localhost:8000")
+            print("[INFO] Access ARKANIS at: http://127.0.0.1:8000")
+            print("[TIP] If 'localhost' fails, try using the explicit IP above.")
             uvicorn.run(app, host="0.0.0.0", port=8000)
         else:
             from interfaces.cli import ArkanisCLI
