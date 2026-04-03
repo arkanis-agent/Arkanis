@@ -345,6 +345,47 @@ class ReplaceFileContentTool(BaseTool):
         except Exception as e:
             return f"Error replacing content in {path}: {str(e)}"
 
+class DiagnosticTool(BaseTool):
+    """Diagnóstico proativo do sistema Arkanis V3."""
+    @property
+    def name(self) -> str: return "system_diagnostics"
+    @property
+    def description(self) -> str: return "Scans logs and tests system health (Internet, AI, Core). Use this when the agent detects errors or failing tasks."
+    @property
+    def arguments(self) -> Dict[str, str]: return {}
+    
+    def execute(self, **kwargs) -> str:
+        report = ["=== ARKANIS V3 HEALTH REPORT ==="]
+        base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        
+        # 1. Log Analysis
+        log_path = os.path.join(base_dir, "arkanis.json.log")
+        if os.path.exists(log_path):
+            try:
+                with open(log_path, "r") as f:
+                    lines = f.readlines()[-20:] # Last 20 lines
+                    errors = [json.loads(l) for l in lines if '"level": "error"' in l.lower()]
+                    report.append(f"Recent Errors found: {len(errors)}")
+                    for err in errors:
+                        report.append(f"  - [{err.get('timestamp')}] {err.get('message')}")
+            except: report.append("Failed to read JSON logs.")
+        else: report.append("Log file not found.")
+
+        # 2. Connectivity Tests
+        import socket
+        try:
+            socket.create_connection(("8.8.8.8", 53), timeout=3)
+            report.append("Internet: OK (Google DNS Accessible)")
+        except: report.append("Internet: FAILED (No connection)")
+
+        # 3. Environment Check
+        env_path = os.path.join(base_dir, ".env")
+        if os.path.exists(env_path):
+            report.append(".env Config: OK")
+        else: report.append(".env Config: MISSING")
+        
+        return "\n".join(report)
+
 # Auto-registration
 registry.register(GetCurrentDateTimeTool())
 registry.register(ListFilesTool())
@@ -359,3 +400,4 @@ registry.register(BroadcastMessageTool())
 registry.register(SaveMemoryTool())
 registry.register(UpdateGoalProgressTool())
 registry.register(ReplaceFileContentTool())
+registry.register(DiagnosticTool())

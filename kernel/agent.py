@@ -1,6 +1,7 @@
 from kernel.planner import Planner
 from kernel.executor import Executor
 from core.agents.critic_agent import CriticAgent
+from core.agents.auto_heal_agent import AutoHealAgent # New: Auto-Heal System
 from modules.memory.short_term import session_memory
 from rich import print as rprint
 from rich.panel import Panel
@@ -26,6 +27,7 @@ class ArkanisAgent:
         self.planner = Planner()
         self.executor = Executor()
         self.critic = CriticAgent()
+        self.sentinel = AutoHealAgent() # The Self-Maintenance Sentinel
         self.memory = session_memory
         
         # Agent Control State
@@ -286,10 +288,20 @@ Se NÃO houver dados factuais e o usuário fez uma pergunta específica, admita 
                 self.log("🔴 Auditor não aprovou o plano após múltiplas tentativas.", "error")
                 return "Não consegui processar o pedido de forma segura no momento. Pode tentar de outra forma?"
 
-        # 3. Execution (Fixed Plan)
-        self.current_action = "Executando plano..."
-        self.log("Executando plano validado...", "executor")
+        self.current_action = f"Executando {len(final_plan)} passos..."
+        self.log(f"Processando plano validado pelo Auditor ({len(final_plan)} passos)...", "executor")
         results = self.executor.execute_plan(final_plan)
+        
+        # --- SENTINEL MODE: Proactive Error Detection ---
+        critical_errors = [r for r in results if "[Error]" in r or "falha" in r.lower()]
+        if critical_errors:
+            self.log(f"⚠️ {len(critical_errors)} falhas críticas detectadas. Ativando SENTINEL para autorreparo...", "error")
+            self.current_action = "Sentinel: Diagnosticando falhas..."
+            repair_report = self.sentinel.diagnose_and_fix(f"O plano falhou com os seguintes erros: {critical_errors}")
+            self.log(f"Sentinel: Relatório de reparo gerado: {repair_report[:200]}...", "success")
+            # If the repair report suggests an improved plan, we could re-run here.
+            # For now, we inform the user.
+            results.append(f"\n[SENTINEL / AUTO-HEAL]: {repair_report}")
         
         # LEARNING LOOP: Feedback results to Critic
         self.critic.record_execution_result(user_input, results)
