@@ -1,0 +1,24 @@
+{
+    "b00d9dfc": {
+        "id": "b00d9dfc",
+        "description": "monitorar",
+        "priority": "high",
+        "status": "completed",
+        "progress": 0,
+        "agents_involved": [],
+        "created_at": "2026-04-03 10:12:52",
+        "updated_at": "2026-04-03 10:13:03",
+        "notes": []
+    },
+    "687dcd7f": {
+        "id": "687dcd7f",
+        "description": "monitorar o sistema em busca de erros e corrigir",
+        "priority": "medium",
+        "status": "active",
+        "progress": 0,
+        "agents_involved": [],
+        "created_at": "2026-04-03 10:13:36",
+        "updated_at": "2026-04-03 10:13:36",
+        "notes": []
+    }
+}

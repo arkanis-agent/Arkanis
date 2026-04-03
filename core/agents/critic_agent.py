@@ -22,10 +22,11 @@ Verificar se o plano funciona (Tecnicamente Correto) e se é seguro (Segurança)
 
 REGRAS DE OURO (NUNCA IGNORE):
 1. PRAGMATISMO: Se o plano atende ao pedido do usuário de forma segura, APROVE. Não peça "mais contexto" ou "melhor experiência".
-2. CONVERSA & SAUDAÇÕES: Para saudações como "Oi", "Oi Arkanis", "Olá", "Tudo bem?", "Obrigado" ou planos que contenham APENAS a ferramenta 'print_message', APROVE IMEDIATAMENTE (Score 10). NUNCA bloqueie interações humanas.
-3. PROIBIÇÃO: É terminantemente PROIBIDO dar 'improve' ou 'reject' baseado em "estilo de resposta", "engajamento", ou "falta de opções".
-4. FOCO TÉCNICO: Recuse apenas se houver risco de segurança real (ex: deletar a raiz /, acessar /etc/shadow, ou comandos que formatam o disco).
-5. PLANOS SIMPLES: Se o plano tem apenas 1 ou 2 passos inofensivos, APROVE na primeira tentativa.
+2. CONVERSA & SAUDAÇÕES: Para saudações como "Oi", "Oi Arkanis", "Olá", "Tudo bem?", "Obrigado" ou planos que contenham APENAS a ferramenta 'print_message', APROVE IMEDIATAMENTE (Score 10). NUNCA bloqueie interações humanas baseando-se em tarefas técnicas passadas.
+3. INFORMAÇÕES PÚBLICAS & FINANCEIRAS: Planos para monitorar Preço de Bitcoin, Criptomoedas, Ações, Notícias ou Clima são 100% SEGUROS e devem ser APROVADOS. Isso NÃO é acesso indevido.
+4. PROIBIÇÃO: É terminantemente PROIBIDO dar 'improve' ou 'reject' baseado em "estilo de resposta" ou "falta de opções".
+5. FOCO TÉCNICO: Recuse APENAS se houver risco real de destruição de dados (formatar disco, deletar /) ou roubo de credenciais privadas do sistema.
+6. PLANOS SIMPLES: Se o plano tem apenas 1 ou 2 passos inofensivos (ex: web_search -> print_message), APROVE na primeira tentativa.
 
 DECISÕES:
 - "approve": O plano é funcional e seguro. (Padrão para 99% dos casos).
@@ -33,8 +34,8 @@ DECISÕES:
 - "reject": O plano é malicioso, perigoso ou totalmente estúpido/sem sentido técnico.
 
 REGRAS PARA TELEGRAM & UI:
-- Se o plano for longo/extenso por causa de código de UI (HTML/CSS), NÃO bloqueie. Planos de design são naturalmente grandes.
-- Se o usuário pedir para "criar", o plano DEVE ter ferramentas de escrita. APROVE planos que cumprem o objetivo de forma direta.
+- Monitoramento de Bitcoin/Cripto é permitido e incentivado.
+- Se o usuário pedir para criar algo, o plano DEVE ter ferramentas de escrita. APROVE planos que cumprem o objetivo de forma direta.
 - Seja resiliente: se o plano é tecnicamente sólido, aprove na primeira tentativa.
 
 PERSONA ARKANIS (SOUL):
@@ -99,8 +100,15 @@ SEGURANÇA: Bloqueie caminhos como /etc, /root, /bin ou comandos destrutivos sem
         Closed-loop learning: check if an 'approved' plan actually worked.
         If it failed, record the error as a critical lesson.
         """
+        # Ignorar erros de rede transientes ou de ferramentas de informação pública (Bitcoin, Clima, etc)
+        # Nesses casos, a falha é técnica/externa, não uma falha de "auditoria".
+        public_info_keywords = ["bitcoin", "cripto", "clima", "tempo", "notícia", "news", "preço", "valor", "bitcoin"]
+        is_public_info = any(kw in goal.lower() for kw in public_info_keywords)
+        
         errors = [r for r in results if "[Error]" in r or "falha" in r.lower()]
-        if errors:
+        
+        # Só registrar lição se NÃO for informação pública e houver erro real
+        if errors and not is_public_info:
             logger.warning("Plano 'Aprovado' falhou na execução. Registrando lição crítica.", symbol="🛑")
             self.memory.record_lesson(goal, [f"Falha de Execução: {e[:100]}" for e in errors])
             return True

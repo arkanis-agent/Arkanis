@@ -142,5 +142,13 @@
         ],
         "fail_count": 8,
         "last_seen": "Fri Apr  3 10:08:55 2026"
+    },
+    {
+        "goal_pattern": "monitorar o preço do bitcoin",
+        "lessons": [
+            "Erro de parsing no formato da auditoria."
+        ],
+        "fail_count": 1,
+        "last_seen": "Fri Apr  3 10:13:54 2026"
     }
 ]
