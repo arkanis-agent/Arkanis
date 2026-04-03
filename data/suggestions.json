@@ -1,5 +1,53 @@
 [
     {
+        "title": "Implementa\u00e7\u00e3o de um Sistema de Feedback Loop Estrat\u00e9gico",
+        "description": "Atualmente o sistema carece de um mecanismo estruturado para aprender com execu\u00e7\u00f5es passadas. Proponho um m\u00f3dulo 'feedback_engine.py' no core/ que analisa logs de execu\u00e7\u00e3o, m\u00e9tricas de performance e resultados de objetivos para gerar ajustes autom\u00e1ticos nos planners e estrat\u00e9gias. Isso criaria um ciclo virtuoso onde o sistema refinaria continuamente sua pr\u00f3pria arquitetura operacional.",
+        "type": "arch",
+        "priority": "high",
+        "files_involved": [
+            "core/task_engine.py",
+            "core/goal_planner.py",
+            "core/logger.py",
+            "core/model_strategy.py",
+            "kernel/planner.py"
+        ],
+        "proposed_code": {
+            "module_structure": {
+                "feedback_engine.py": {
+                    "functions": [
+                        "analyze_execution_patterns() -> StrategyAdjustments",
+                        "generate_planner_recommendations() -> PlannerTuning",
+                        "update_strategy_weights() -> None",
+                        "save_evolution_snapshot() -> None"
+                    ],
+                    "dependencies": [
+                        "from core.logger import ExecutionLogger",
+                        "from core.model_strategy import StrategyWeights",
+                        "from kernel.planner import PlannerConfiguration"
+                    ]
+                }
+            },
+            "integration_plan": {
+                "1": "Modificar task_engine.py para registrar meta-dados de execu\u00e7\u00e3o estruturados",
+                "2": "Criar pipeline entre logger.py e feedback_engine.py",
+                "3": "Conectar saidas do feedback_engine ao model_strategy.py e planner.py"
+            }
+        },
+        "id": "arch_1775245767",
+        "status": "pending",
+        "timestamp": "2026-04-03 16:49:27"
+    },
+    {
+        "title": "Adi\u00e7\u00e3o de Documenta\u00e7\u00e3o e Tipagem",
+        "description": "Adicionar documenta\u00e7\u00e3o mais detalhada e tipagem mais espec\u00edfica ao m\u00e9todo execute(). O dicion\u00e1rio de argumentos poderia ser melhor tipado com ArgumentSpec para maior clareza.",
+        "type": "feature",
+        "file_path": "/home/diego/\u00c1rea de trabalho/Arkanis_V3.1/tools/base_tool.py",
+        "proposed_code": "from abc import ABC, abstractmethod\nfrom typing import Any, Dict, TypedDict\n\n\nclass ArgumentSpec(TypedDict):\n    description: str\n    required: bool\n\n\nclass BaseTool(ABC):\n    \"\"\"\n    Abstract base class for all Arkanis tools.\n    Every tool must implement name, description, arguments, and execute().\n    \"\"\"\n\n    @property\n    @abstractmethod\n    def name(self) -> str:\n        \"\"\"Get the identifier name of the tool.\n        Returns:\n            str: Unique name identifier for the tool\n        \"\"\"\n        pass\n\n    @property\n    @abstractmethod\n    def description(self) -> str:\n        \"\"\"Get the tool's description.\n        Returns:\n            str: Brief explanation of what the tool does\n        \"\"\"\n        pass\n\n    @property\n    @abstractmethod\n    def arguments(self) -> Dict[str, ArgumentSpec]:\n        \"\"\"Get the tool's argument specifications.\n        Returns:\n            Dict[str, ArgumentSpec]: Mapping of argument names to their specifications,\n            including description and required status\n        \"\"\"\n        pass\n\n    @abstractmethod\n    def execute(self, **kwargs: Any) -> Any:\n        \"\"\"Execute the main tool logic.\n        Args:\n            **kwargs: Arbitrary keyword arguments containing tool inputs\n        Returns:\n            Any: Result of the tool's execution\n        \"\"\"\n        pass",
+        "id": "sug_1775245510",
+        "status": "pending",
+        "timestamp": "2026-04-03 16:45:10"
+    },
+    {
         "title": "Melhoria de Documenta\u00e7\u00e3o e Tratamento de Exce\u00e7\u00f5es em hardware_detect.py",
         "description": "1. Adiciona docstrings detalhadas para todas as fun\u00e7\u00f5es, explicando seu prop\u00f3sito e comportamento esperado.\n2. Trata exce\u00e7\u00f5es de forma mais robusta, retornando valores padr\u00e3o em caso de falha ao inv\u00e9s de deixar a exce\u00e7\u00e3o subir.\n3. Adiciona coment\u00e1rios explicando a l\u00f3gica e as decis\u00f5es de cada etapa do c\u00f3digo.",
         "type": "refactor",

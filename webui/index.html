@@ -544,42 +544,97 @@
             </div>
         </section>
 
-        <!-- Dev Center Panel (Suggestions) -->
-        <section id="devCenterPanel" class="hidden flex-1 overflow-y-auto p-10 custom-scrollbar">
-            <div class="max-w-6xl mx-auto space-y-8 pb-24">
-                <div class="flex flex-col md:flex-row items-start md:items-center justify-between border-b border-white/10 pb-4 gap-4">
-                    <div>
-                        <h2 class="text-3xl font-headline font-extrabold text-on-surface">Dev Center</h2>
-                        <p class="text-on-surface-variant text-sm mt-1">Sugestões proativas do DevAgent para melhorar seu sistema.</p>
-                    </div>
-                    
-                    <div class="flex flex-col md:flex-row items-end md:items-center gap-3">
-                        <!-- Pause / Resume Controls -->
-                        <div class="hidden items-center gap-1 bg-slate-900/50 border border-white/5 rounded-xl px-2 py-1 flex" id="devAgentControls">
-                            <button class="agent-ctrl-btn pause p-1 rounded hover:bg-amber-500/20 text-slate-500 hover:text-amber-500 transition-colors" title="Pausar DevAgent" onclick="agentPause('dev_agent')">
-                                <span class="material-symbols-outlined text-[18px]">pause</span>
-                            </button>
-                            <button class="agent-ctrl-btn resume p-1 rounded hover:bg-emerald-500/20 text-slate-500 hover:text-emerald-500 transition-colors" title="Retomar DevAgent" onclick="agentResume('dev_agent')">
-                                <span class="material-symbols-outlined text-[18px]">play_arrow</span>
-                            </button>
-                        </div>
-                        
-                        <div class="bg-indigo-500/10 border border-indigo-500/30 rounded-xl px-4 py-2 flex items-center gap-3 hidden" id="devAgentStatusContainer">
-                            <div class="w-2 h-2 rounded-full bg-indigo-500 animate-pulse" id="devAgentPulse"></div>
-                            <div class="text-xs font-mono text-indigo-400 max-w-[250px] truncate" id="devAgentLiveStatus" title="Status atual da thread do agente.">
-                                Coletando status...
+        <!-- Dev Center Panel (System Evolution) -->
+        <section id="devCenterPanel" class="hidden flex-1 overflow-y-auto p-8 lg:p-12 custom-scrollbar bg-black/20">
+            <div class="max-w-7xl mx-auto space-y-12 pb-32">
+                
+                <!-- Evolution Hero Dashboard -->
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 items-stretch">
+                    <!-- Column 1: Analysis Radar (WOW Factor) -->
+                    <div class="lg:col-span-1 bg-slate-900/60 border border-white/5 rounded-3xl p-8 flex flex-col items-center justify-center relative overflow-hidden backdrop-blur-xl transition-all hover:border-blue-500/30">
+                        <div class="absolute inset-0 bg-gradient-to-br from-blue-500/5 to-purple-500/5 pointer-events-none"></div>
+                        <div class="analysis-radar-container relative w-48 h-48 mb-6">
+                            <!-- SVG Radar Animation Overlay -->
+                            <div class="radar-pulse absolute inset-0 rounded-full border border-blue-500/20"></div>
+                            <div class="radar-sweep absolute inset-0 rounded-full bg-conic-radar"></div>
+                            <div class="absolute inset-0 flex items-center justify-center">
+                                <span class="material-symbols-outlined text-4xl text-blue-400 drop-shadow-[0_0_15px_rgba(59,130,246,0.6)]">radar</span>
                             </div>
                         </div>
-                        <button onclick="loadSuggestions()" class="flex items-center gap-2 bg-slate-800 hover:bg-slate-700 text-slate-300 px-4 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap">
-                            <span class="material-symbols-outlined text-sm">cached</span> Atualizar
-                        </button>
+                        <div class="text-center relative z-10">
+                            <h4 class="text-sm font-bold text-white uppercase tracking-widest mb-1">Análise Ativa</h4>
+                            <p id="devLiveAction" class="text-[11px] text-blue-400 font-mono animate-pulse">Iniciando escaneamento...</p>
+                        </div>
+                    </div>
+
+                    <!-- Column 2 & 3: Stats & Controls -->
+                    <div class="lg:col-span-2 space-y-6">
+                        <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                            <div>
+                                <h2 class="text-4xl font-headline font-black text-white tracking-tight">System <span class="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-500 text-glow-blue">Evolution</span></h2>
+                                <p class="text-slate-400 text-sm mt-1 uppercase tracking-tighter font-bold opacity-60">Arquitetura de Adaptação Autônoma</p>
+                            </div>
+                            <!-- Live Toggle Control Center -->
+                            <div class="flex items-center gap-3 bg-white/5 border border-white/5 rounded-2xl p-2 px-4 backdrop-blur-md">
+                                <span class="text-[10px] font-black text-slate-500 uppercase tracking-widest">DevAgent Status</span>
+                                <div class="px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[10px] font-bold flex items-center gap-2">
+                                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                                    ONLINE
+                                </div>
+                                <button onclick="agentToggle('dev_agent')" class="w-8 h-8 rounded-lg bg-white/5 hover:bg-white/10 flex items-center justify-center text-slate-400 transition-all border border-white/5">
+                                    <span class="material-symbols-outlined text-lg" id="devAgentToggleIcon">pause</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Mini Health Stats Grid -->
+                        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                            <div class="bg-white/5 border border-white/5 p-4 rounded-2xl hover:bg-white/10 transition-colors group">
+                                <p class="text-[10px] font-bold text-slate-500 uppercase mb-1">Integridade</p>
+                                <div class="flex items-baseline gap-1">
+                                    <span class="text-2xl font-black text-white" id="devHealthPct">98.4</span>
+                                    <span class="text-[10px] text-emerald-400 font-bold">%</span>
+                                </div>
+                                <div class="w-full bg-white/5 h-1 rounded-full mt-2 overflow-hidden">
+                                     <div class="bg-emerald-500 h-full w-[98.4%]" id="devHealthBar"></div>
+                                </div>
+                            </div>
+                            <div class="bg-white/5 border border-white/5 p-4 rounded-2xl hover:bg-white/10 transition-colors">
+                                <p class="text-[10px] font-bold text-slate-500 uppercase mb-1">Melhorias</p>
+                                <span class="text-2xl font-black text-white" id="devTotalImprovements">0</span>
+                                <p class="text-[9px] text-blue-400 mt-1 uppercase tracking-tighter font-bold">Applied Today</p>
+                            </div>
+                            <div class="bg-white/5 border border-white/5 p-4 rounded-2xl hover:bg-white/10 transition-colors">
+                                <p class="text-[10px] font-bold text-slate-500 uppercase mb-1">Análises</p>
+                                <span class="text-2xl font-black text-white" id="devAnalysesCount">...</span>
+                                <p class="text-[9px] text-purple-400 mt-1 uppercase tracking-tighter font-bold">Files Audited</p>
+                            </div>
+                            <div class="bg-white/5 border border-white/5 p-4 rounded-2xl hover:bg-white/10 transition-colors">
+                                <p class="text-[10px] font-bold text-slate-500 uppercase mb-1">Impacto</p>
+                                <span class="text-2xl font-black text-white" id="devTimeSaved">--</span>
+                                <p class="text-[9px] text-amber-400 mt-1 uppercase tracking-tighter font-bold">Estimated Optimization</p>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
-                <div id="suggestionsGrid" class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <!-- Suggestions will be injected here -->
-                    <div class="col-span-full py-20 text-center text-slate-600 italic">
-                        O DevAgent está analisando seu código em busca de melhorias...
+                <!-- Suggestions Section -->
+                <div class="space-y-6">
+                    <div class="flex items-center justify-between border-b border-white/5 pb-4">
+                        <h3 class="text-[11px] font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2">
+                             <span class="material-symbols-outlined text-sm">auto_awesome</span> Sugestões de Melhoria
+                        </h3>
+                        <button onclick="loadSuggestions()" class="flex items-center gap-2 text-[10px] font-bold text-blue-400 hover:text-blue-300 transition-colors uppercase tracking-widest">
+                             <span class="material-symbols-outlined text-xs">sync</span> Sincronizar
+                        </button>
+                    </div>
+
+                    <div id="suggestionsGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        <!-- Suggestions will be injected here -->
+                        <div class="col-span-full py-20 text-center text-slate-600 italic flex flex-col items-center gap-4">
+                            <span class="material-symbols-outlined text-3xl animate-spin opacity-20">cloud_sync</span>
+                            O DevAgent está analisando seu código em busca de melhorias...
+                        </div>
                     </div>
                 </div>
             </div>
