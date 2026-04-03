@@ -22,6 +22,7 @@ from tools import network_tools # This triggers network tool registration
 from tools import ai_tools # This triggers AI tool registration
 from tools import browser_tools # This triggers browser tool registration
 from tools import audio_tools # This triggers audio tool registration
+from tools import monitoring_tools # This triggers monitoring tool registration (crypto, exchange, sports, weather)
 
 def main():
     """

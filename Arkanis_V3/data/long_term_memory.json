@@ -1,7 +1,6 @@
 {
     "preferences": [],
     "facts": [
-        "O usuário pediu para deixar a landing page mais profissional",
         "o nome do usuário é Diego",
         "Projeto Arkanis está dentro da pasta Juliana na área de trabalho do usuário.",
         "Precisa apagar arquivos da pasta Juliana",
@@ -20,7 +19,8 @@
         "Usuário utiliza Playwright + Chromium para automação.",
         "Usuário possui pasta CP1 em ~/Área de Trabalho",
         "Usuário trabalha em `/home/diego/Área de Trabalho/`",
-        "Usuário trabalha em ambiente Linux (caminho Área de trabalho)"
+        "Usuário trabalha em ambiente Linux (caminho Área de trabalho)",
+        "Usuário consultou valor BTC em 03/06/2024"
     ],
     "recurrent_tasks": []
 }
