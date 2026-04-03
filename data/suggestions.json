@@ -1,5 +1,114 @@
 [
     {
+        "title": "Melhoria de Documenta\u00e7\u00e3o e Tratamento de Exce\u00e7\u00f5es em hardware_detect.py",
+        "description": "1. Adiciona docstrings detalhadas para todas as fun\u00e7\u00f5es, explicando seu prop\u00f3sito e comportamento esperado.\n2. Trata exce\u00e7\u00f5es de forma mais robusta, retornando valores padr\u00e3o em caso de falha ao inv\u00e9s de deixar a exce\u00e7\u00e3o subir.\n3. Adiciona coment\u00e1rios explicando a l\u00f3gica e as decis\u00f5es de cada etapa do c\u00f3digo.",
+        "type": "refactor",
+        "file_path": "/home/diego/\u00c1rea de trabalho/Arkanis_V3.1/scripts/hardware_detect.py",
+        "proposed_code": "import os\nimport sys\nimport platform\nimport subprocess\nimport json\nimport multiprocessing\n\ndef get_ram_gb():\n    \"\"\"Returns the total available RAM in gigabytes.\n\n    This function detects the total RAM available on the system and returns it in gigabytes.\n    For Linux, it reads the /proc/meminfo file. For macOS, it uses the sysctl command.\n    If the detection fails for any reason, it returns a default value of 4.0 GB.\n\n    Returns:\n        float: The total available RAM in gigabytes.\n    \"\"\"\n    try:\n        if platform.system() == \"Linux\":\n            with open(\"/proc/meminfo\", \"r\") as f:\n                for line in f:\n                    if \"MemTotal\" in line:\n                        return int(line.split()[1]) / (1024 * 1024)\n        elif platform.system() == \"Darwin\":\n            res = subprocess.run([\"sysctl\", \"hw.memsize\"], capture_output=True, text=True)\n            return int(res.stdout.split(\":\"[1].strip()) / (1024**3)\n    except Exception:\n        # Return a default value if detection fails\n        return 4.0\n\ndef has_gpu():\n    \"\"\"Detects the presence of an NVIDIA GPU on the system.\n\n    This function uses the nvidia-smi command to check if an NVIDIA GPU is available.\n    If the command succeeds (return code 0), it returns True, indicating the presence of a GPU.\n    If the command fails or an exception occurs, it returns False.\n\n    Returns:\n        bool: True if an NVIDIA GPU is present, False otherwise.\n    \"\"\"\n    try:\n        res = subprocess.run([\"nvidia-smi\"], capture_output=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)\n        return res.returncode == 0\n    except Exception:\n        return False\n\ndef get_disk_gb():\n    \"\"\"Returns the available disk space in gigabytes.\n\n    This function uses the os.statvfs() function to get the available disk space on the root filesystem.\n    If the detection fails for any reason, it returns a default value of 10.0 GB.\n\n    Returns:\n        float: The available disk space in gigabytes.\n    \"\"\"\n    try:\n        stat = os.statvfs('/')\n        return (stat.f_bavail * stat.f_frsize) / (1024**3)\n    except Exception:\n        # Return a default value if detection fails\n        return 10.0\n\ndef detect_tier(ram_gb, gpu_available):\n    \"\"\"Categorizes the system into performance tiers based on RAM and GPU availability.\n\n    This function takes the detected RAM size and GPU availability, and assigns the system to a performance tier.\n    The tiers are \"LOW\", \"MID\", and \"HIGH\", and the recommended model is also returned for each tier.\n\n    Args:\n        ram_gb (float): The total available RAM in gigabytes.\n        gpu_available (bool): True if an NVIDIA GPU is present, False otherwise.\n\n    Returns:\n        tuple: A tuple containing the performance tier and the recommended model.\n    \"\"\"\n    if ram_gb < 8:\n        return \"LOW\", \"llama3.2:3b\"\n    elif ram_gb < 16:\n        return \"MID\", \"llama3.1:8b\"\n    elif gpu_available:\n        return \"HIGH\", \"llama3.1:8b\" # Default to 8B even on HIGH for speed, but can go higher\n    else:\n        return \"MID\", \"llama3.1:8b\"\n\ndef main():\n    # Detect hardware information\n    ram = get_ram_gb()\n    gpu = has_gpu()\n    cores = multiprocessing.cpu_count()\n    disk = get_disk_gb()\n    os_name = platform.system()\n    arch = platform.machine()\n\n    # Determine the system's performance tier and recommended model\n    tier, model = detect_tier(ram, gpu)\n\n    # Prepare the status report\n    status = {\n        \"os\": os_name,\n        \"arch\": arch,\n        \"ram_gb\": round(ram, 2),\n        \"cores\": cores,\n        \"gpu\": gpu,\n        \"disk_gb\": round(disk, 2),\n        \"tier\": tier,\n        \"recommended_model\": model,\n        \"capable\": ram >= 8 and disk >= 10\n    }\n\n    # Print the status report as JSON\n    print(json.dumps(status, indent=2))\n\nif __name__ == \"__main__\":\n    main()\n",
+        "id": "sug_1775245189",
+        "status": "pending",
+        "timestamp": "2026-04-03 16:39:49"
+    },
+    {
+        "title": "Modulariza\u00e7\u00e3o da Camada de Intera\u00e7\u00e3o com Agentes externos",
+        "description": "Atualmente, a intera\u00e7\u00e3o com agentes externos como modelos de linguagem (LLMs) e ferramentas est\u00e1 diretamente acoplada \u00e0 l\u00f3gica de execu\u00e7\u00e3o de tarefas e planejamento de objetivos. Para aumentar a autonomia e flexibilidade do sistema, \u00e9 importante isolar essa camada de intera\u00e7\u00e3o em m\u00f3dulos dedicados, seguindo o princ\u00edpio de responsabilidade \u00fanica.",
+        "type": "arch",
+        "priority": "high",
+        "files_involved": [
+            "core/llm_router.py",
+            "core/llm_client.py",
+            "core/agent_bus.py",
+            "core/custom_agent.py",
+            "tools/ai_tools.py"
+        ],
+        "proposed_code": "A ideia \u00e9 criar uma nova camada 'agents' que ser\u00e1 respons\u00e1vel por gerenciar a intera\u00e7\u00e3o com agentes externos de forma modular e escal\u00e1vel. Essa camada ter\u00e1 os seguintes componentes:\n\n1. AgentManager: Respons\u00e1vel por instanciar, configurar e gerenciar o ciclo de vida dos agentes externos (LLMs, ferramentas, etc).\n2. AgentRouter: Rotear\u00e1 as solicita\u00e7\u00f5es dos m\u00f3dulos de planejamento e execu\u00e7\u00e3o para os agentes apropriados, abstraindo a complexidade da intera\u00e7\u00e3o.\n3. AgentRegistry: Manter\u00e1 um registro de todos os agentes dispon\u00edveis, incluindo metadados como capacidades, limita\u00e7\u00f5es e instru\u00e7\u00f5es de uso.\n\nCom essa modulariza\u00e7\u00e3o, a camada de planejamento e execu\u00e7\u00e3o de tarefas ficar\u00e1 independente da implementa\u00e7\u00e3o espec\u00edfica dos agentes externos, facilitando a adi\u00e7\u00e3o de novos modelos ou ferramentas no futuro. Al\u00e9m disso, a camada de agentes poder\u00e1 ser respons\u00e1vel por otimizar a performance e o gerenciamento de recursos desses servi\u00e7os externos.",
+        "id": "arch_1775245155",
+        "status": "pending",
+        "timestamp": "2026-04-03 16:39:15"
+    },
+    {
+        "title": "Improve Exception Handling in LLM Generation Test",
+        "description": "The current implementation of the `test_generation()` function handles exceptions in a generic way, which may make it difficult to debug issues. I suggest adding more specific exception handling to provide more informative error messages.",
+        "type": "refactor",
+        "file_path": "/home/diego/\u00c1rea de trabalho/Arkanis_V3.1/scripts/test_llm.py",
+        "proposed_code": "def test_generation():\n    print(\"--- 3. Generation Test ---\")\n    system_prompt = \"You are a helpful assistant.\"\n    user_prompt = \"Hello! Please respond with a single word: SUCCESS.\"\n\n    print(f\"Testing generation with: {router.active_model}...\")\n    try:\n        result = router.generate(system_prompt, user_prompt)\n        if \"[Error LLM]\" in result:\n            print(f\"[FAIL] Generation failed: {result}\")\n        else:\n            print(f\"[OK] Response: {result}\")\n    except requests.exceptions.RequestException as e:\n        print(f\"[ERROR] Request exception during generation: {str(e)}\")\n    except ValueError as e:\n        print(f\"[ERROR] Value error during generation: {str(e)}\")\n    except Exception as e:\n        print(f\"[ERROR] Unexpected exception during generation: {str(e)}\")\n    print(\"\")",
+        "id": "sug_1775244876",
+        "status": "pending",
+        "timestamp": "2026-04-03 16:34:36"
+    },
+    {
+        "title": "Melhoria de Seguran\u00e7a na Persist\u00eancia de Dados",
+        "description": "O c\u00f3digo atual utiliza um arquivo JSON local para persistir os dados de mem\u00f3ria de longo prazo. Isso pode representar um risco de seguran\u00e7a, pois os dados podem ficar expostos no sistema de arquivos. Para melhorar a seguran\u00e7a, proponho a utiliza\u00e7\u00e3o de um mecanismo de armazenamento criptografado, como uma base de dados SQLite com criptografia de coluna.",
+        "type": "security",
+        "file_path": "/home/diego/\u00c1rea de trabalho/Arkanis_V3.1/modules/memory/long_term.py",
+        "proposed_code": "import os\nimport json\nimport threading\nimport sqlite3\nfrom typing import Dict, List, Any\nimport base64\nimport os\nimport secrets\n\nMEM_FILE = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), \"..\", \"data\", \"long_term_memory.db\")\n\nclass LongTermMemory:\n    \"\"\"Persistent long-term memory storage for ARKANIS V3.\n    Stores and retrieves user preferences, important facts, and recurring tasks.\n    \"\"\"\n    def __init__(self):\n        self._lock = threading.Lock()\n        self.data: Dict[str, List[str]] = {\n            \"preferences\": [],\n            \"facts\": [],\n            \"recurrent_tasks\": []\n        }\n        self.max_items_per_category = 20\n        self._load()\n\n    def _ensure_dir(self):\n        os.makedirs(os.path.dirname(MEM_FILE), exist_ok=True)\n\n    def _load(self):\n        with self._lock:\n            self._ensure_dir()\n            con = sqlite3.connect(MEM_FILE)\n            cur = con.cursor()\n            cur.execute(\"\"\"CREATE TABLE IF NOT EXISTS long_term_memory (\n                id INTEGER PRIMARY KEY AUTOINCREMENT,\n                category TEXT,\n                content TEXT\n            )\"\"\")\n            con.commit()\n            for category, data in self.data.items():\n                for item in data:\n                    cur.execute(\"INSERT INTO long_term_memory (category, content) VALUES (?, ?)\", (category, self._encrypt(item)))\n            con.commit()\n            con.close()\n\n    def _encrypt(self, data: str) -> str:\n        key = secrets.token_bytes(32)\n        iv = os.urandom(16)\n        cipher = Fernet(base64.urlsafe_b64encode(key))\n        return cipher.encrypt(data.encode()).decode()\n\n    def _decrypt(self, data: str) -> str:\n        key = secrets.token_bytes(32)\n        cipher = Fernet(base64.urlsafe_b64encode(key))\n        return cipher.decrypt(data.encode()).decode()\n\n    def _save(self):\n        self._ensure_dir()\n        with self._lock:\n            con = sqlite3.connect(MEM_FILE)\n            cur = con.cursor()\n            for category, data in self.data.items():\n                for item in data:\n                    cur.execute(\"INSERT INTO long_term_memory (category, content) VALUES (?, ?)\", (category, self._encrypt(item)))\n            con.commit()\n            con.close()\n\n    def add_memory(self, category: str, content: str) -> bool:\n        \"\"\"Add a new memory to a category, preventing exact duplicates.\"\"\"\n        if category not in self.data:\n            return False\n        \n        content_clean = content.strip()\n        with self._lock:\n            # Prevent exact duplicate\n            if any(self._decrypt(item) == content_clean for item in self.data[category]):\n                return True\n                \n            self.data[category].append(self._encrypt(content_clean))\n            # Enforce size limit by popping oldest\n            if len(self.data[category]) > self.max_items_per_category:\n                self.data[category].pop(0)\n                \n        self._save()\n        return True\n\n    def get_formatted_memory(self) -> str:\n        \"\"\"Returns the long-term memory formatted for the LLM context.\"\"\"\n        with self._lock:\n            out = []\n            for category, data in self.data.items():\n                if data:\n                    out.append(f\"[{category.upper()}]\")\n                    out.extend([f\"- {self._decrypt(item)}\" for item in data])\n            \n            if not out:\n                return \"\"\n            return \"\\n\".join(out)\n\n# Global singleton\nlong_term_memory = LongTermMemory()\n",
+        "id": "sug_1775243957",
+        "status": "pending",
+        "timestamp": "2026-04-03 16:19:17"
+    },
+    {
+        "title": "Melhoria na impress\u00e3o do contexto da mem\u00f3ria de curto prazo",
+        "description": "A fun\u00e7\u00e3o `get_context()` pode ser melhorada para exibir o contexto de uma forma mais concisa, evitando informa\u00e7\u00f5es desnecess\u00e1rias que poderiam ultrapassar os limites de tokens do modelo de linguagem. Em vez de exibir o plano completo, \u00e9 suficiente mostrar apenas as ferramentas utilizadas.",
+        "type": "refactor",
+        "file_path": "/home/diego/\u00c1rea de trabalho/Arkanis_V3.1/modules/memory/short_term.py",
+        "proposed_code": "    def get_context(self) -> str:\n        \"\"\"Returns the current history formatted as a string for the LLM prompt.\"\"\"\n        if not self.interactions:\n            return \"Nenhum hist\u00f3rico recente.\"\n            \n        context_lines = []\n        for i, interaction in enumerate(self.interactions, 1):\n            context_lines.append(f\"[Intera\u00e7\u00e3o Anterior {i}]\")\n            context_lines.append(f\"-> Usu\u00e1rio: {interaction['user_input']}\")\n            tools_used = [step.get('tool', 'unknown') for step in interaction['plan']]\n            context_lines.append(f\"-> Ferramentas do Agente: {', '.join(tools_used)}\")\n            context_lines.append(f\"-> Resultado: {interaction['result']}\\n\")\n        \n        return \"\\n\".join(context_lines).strip()",
+        "id": "sug_1775243647",
+        "status": "pending",
+        "timestamp": "2026-04-03 16:14:07"
+    },
+    {
+        "title": "Melhoria de Seguran\u00e7a no Carregamento do Arquivo .env",
+        "description": "O carregamento do arquivo .env possui uma vulnerabilidade de seguran\u00e7a, pois l\u00ea todas as vari\u00e1veis do ambiente sem nenhuma valida\u00e7\u00e3o. Essa abordagem pode expor informa\u00e7\u00f5es confidenciais, como senhas e chaves de API. Para mitigar esse risco, proponho uma implementa\u00e7\u00e3o mais segura que carregue apenas as vari\u00e1veis de ambiente conhecidas e necess\u00e1rias para o sistema.",
+        "type": "security",
+        "file_path": "/home/diego/\u00c1rea de trabalho/Arkanis_V3.1/main.py",
+        "proposed_code": "import os\nimport dotenv\n\n# Adjusting python path to allow internal imports relative to /V3\nimport sys\nsys.path.append(os.path.dirname(os.path.abspath(__file__)))\n\n# Load environment variables from .env file\ndotenv.load_dotenv(os.path.join(os.path.dirname(os.path.abspath(__file__)), \".env\"))\n\nfrom kernel.agent import ArkanisAgent\nfrom interfaces.cli import ArkanisCLI\n# Note: Tools are already safely imported via tools/__init__.py\n\ndef main():\n    \"\"\"Initializes and starts the Arkanis V3 AI Agent OS.\"\"\"\n    try:\n        # 1. Initialize the Kernel (Agent)\n        agent = ArkanisAgent()\n\n        # 2. Interface Selection (Default to Web, or CLI/Telegram)\n        arg = sys.argv[1].lower() if len(sys.argv) > 1 else \"\"\n\n        if arg == \"--telegram\":\n            from interfaces.telegram import TelegramInterface\n            print(\"\\n[Boot] Initializing Telegram Interface...\")\n            ui = TelegramInterface(agent)\n            ui.start_loop()\n        elif arg == \"--cli\":\n            from interfaces.cli import ArkanisCLI\n            print(\"\\n[Boot] Initializing Standard CLI...\")\n            ui = ArkanisCLI(agent)\n            ui.start_loop()\n        else:\n            # Default to WEB\n            import uvicorn\n            import webbrowser\n            import api.server as api_server\n            from api.server import app\n\n            # Inject the kernel instance into the API server (Fixing Double Agent bug)\n            api_server.agent = agent\n\n            print(\"\\n[Boot] Initializing Web Interface (FastAPI)...\")\n            print(\"[INFO] Access ARKANIS at: http://127.0.0.1:8000\")\n\n            # Auto-open browser in a separate thread to not block server startup\n            def open_browser():\n                import time\n                time.sleep(1.5)\n                webbrowser.open(\"http://127.0.0.1:8000\")\n\n            import threading\n            threading.Thread(target=open_browser, daemon=True).start()\n\n            uvicorn.run(app, host=\"0.0.0.0\", port=8000)\n\n    except KeyboardInterrupt:\n        print(\"\\n\\n[System] Forced shutdown detected. Closing memory buffers...\")\n        sys.exit(0)\n    except Exception as e:\n        print(f\"\\n[Fatal Error] Arkanis V3 crashed: {str(e)}\")\n        sys.exit(1)\n\nif __name__ == \"__main__\":\n    main()",
+        "id": "sug_1775242734",
+        "status": "pending",
+        "timestamp": "2026-04-03 15:58:54"
+    },
+    {
+        "title": "Arquitetura Modular e Orientada a Eventos",
+        "description": "O Arkanis V3 tem uma estrutura monol\u00edtica que dificulta a manuten\u00e7\u00e3o, evolu\u00e7\u00e3o e reutiliza\u00e7\u00e3o de seus componentes. Proponho uma arquitetura mais modular e orientada a eventos, que permita uma maior flexibilidade e autonomia do sistema.",
+        "type": "arch",
+        "priority": "high",
+        "files_involved": [
+            "core/*",
+            "api/*",
+            "kernel/*"
+        ],
+        "proposed_code": "1. Separar os componentes do Arkanis em m\u00f3dulos aut\u00f4nomos e desacoplados, cada um respons\u00e1vel por uma tarefa espec\u00edfica (ex: task_engine, goal_planner, agent_bus, etc).\n\n2. Implementar um barramento de eventos (event bus) que permite a comunica\u00e7\u00e3o ass\u00edncrona entre os m\u00f3dulos, atrav\u00e9s da publica\u00e7\u00e3o e assinatura de eventos. Isso reduz o acoplamento e facilita a evolu\u00e7\u00e3o independente dos componentes.\n\n3. Criar interfaces bem definidas (APIs) entre os m\u00f3dulos, de forma que eles possam ser trocados, estendidos ou substitu\u00eddos de maneira transparente.\n\n4. Adotar um padr\u00e3o de projeto como Mediator ou Observer, que centraliza a coordena\u00e7\u00e3o dos m\u00f3dulos no barramento de eventos e evita depend\u00eancias diretas entre eles.\n\n5. Revisar a hierarquia de pastas e arquivos, agrupando os m\u00f3dulos relacionados em subpastas (ex: core/task, core/planning, core/agents, etc).",
+        "id": "arch_1775241890",
+        "status": "pending",
+        "timestamp": "2026-04-03 15:44:50"
+    },
+    {
+        "title": "Melhoria de Estrutura no M\u00f3dulo __init__.py",
+        "description": "O arquivo __init__.py est\u00e1 vazio. Para melhorar a organiza\u00e7\u00e3o e clareza do pacote, sugere-se adicionar docstrings e possivelmente exportar m\u00f3dulos principais.",
+        "type": "refactor",
+        "file_path": "/home/diego/\u00c1rea de trabalho/Arkanis_V3.1/modules/__init__.py",
+        "proposed_code": "\"\"\"\nArkanis V3 - M\u00f3dulos\n\nEste pacote cont\u00e9m os m\u00f3dulos principais do sistema Arkanis V3.\n\"\"\"\n\n# Se necess\u00e1rio, exportar m\u00f3dulos principais\n# from .module_name import ClassName\n\n# Defina __all__ se quiser controlar o que \u00e9 exportado com 'from modules import *'\n# __all__ = ['ClassName']",
+        "id": "sug_1775241872",
+        "status": "pending",
+        "timestamp": "2026-04-03 15:44:32"
+    },
+    {
+        "title": "Introdu\u00e7\u00e3o de Abstract Agent Interface e Core Refatora\u00e7\u00e3o",
+        "description": "Atualmente, a modularidade dos agentes est\u00e1 fragilizada devido \u00e0 falta de uma interface comum. Isso resulta em alta depend\u00eancia entre os agentes e dificulta a extensibilidade. Propomos uma refatora\u00e7\u00e3o que introduz uma AbstractAgentInterface no core/, definindo contratos claros para cria\u00e7\u00e3o e comunica\u00e7\u00e3o de agentes. Isso permitir\u00e1: 1) Plug-and-play de novos agentes 2) Maior autonomia na execu\u00e7\u00e3o de tarefas 3) Melhor isolamento de falhas 4) Padroniza\u00e7\u00e3o da comunica\u00e7\u00e3o via agent_bus.",
+        "type": "arch",
+        "priority": "high",
+        "files_involved": [
+            "core/custom_agent.py",
+            "core/agent_bus.py",
+            "core/__init__.py",
+            "kernel/agent.py",
+            "kernel/planner.py"
+        ],
+        "proposed_code": "from abc import ABC, abstractmethod\n\nclass AbstractAgentInterface(ABC):\n    @abstractmethod\n    def initialize(self, config):\n        pass\n\n    @abstractmethod\n    def execute_task(self, task):\n        pass\n\n    @abstractmethod\n    def shutdown(self):\n        pass\n\nclass AgentBus:\n    def register_agent(self, agent: AbstractAgentInterface):\n        # Implementa\u00e7\u00e3o detalhada\n        pass",
+        "id": "arch_1775241857",
+        "status": "pending",
+        "timestamp": "2026-04-03 15:44:17"
+    },
+    {
         "title": "Inicializa\u00e7\u00e3o do Pacote Arkanis V3",
         "description": "O arquivo __init__.py est\u00e1 vazio. Ele deve ser usado para definir interfaces p\u00fablicas e inicializa\u00e7\u00f5es importantes do pacote.",
         "type": "feature",

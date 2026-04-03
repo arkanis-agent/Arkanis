@@ -25,14 +25,16 @@ SEU FLUXO DE TRABALHO:
 4. Se o código estiver perfeito e não precisar mexer, aborte a sugestão.
 
 FORMATO DE RESPOSTA OBRIGATÓRIO (JSON):
-Retorne SEMPRE um bloco de código JSON com a seguinte estrutura:
+Retorne SEMPRE um bloco de código JSON PRECISO. 
+IMPORTANTE: No campo "proposed_code", você DEVE escapar corretamente as quebras de linha (use \\n) e aspas, pois o resultado será processado por json.loads().
+
 ```json
 {
   "title": "Título curto da melhoria (Ex: Melhoria de Performance no Router)",
   "description": "Explicação do problema e como seu código resolve",
   "type": "refactor" | "feature" | "security",
   "file_path": "caminho/do/arquivo/analisado.py",
-  "proposed_code": "# Seu novo código limpo e perfeito aqui"
+  "proposed_code": "Escapar todas as quebras de linha aqui com \\\\n"
 }
 ```
 Apenas gere a sugestão se for realmente valiosa.
@@ -150,24 +152,41 @@ Conteúdo:
 """
                 response = self.llm.generate(self.SYSTEM_PROMPT, prompt)
                 
+                if not response or len(response.strip()) < 10:
+                    self.log(f"LLM retornou resposta vazia para {filename}.", "error")
+                    continue
+
                 if "```json" in response:
                     import re
                     match = re.search(r"```json\n?(.*?)\n?```", response, re.DOTALL)
                     if match:
-                        suggestion = json.loads(match.group(1))
-                        suggestion["id"] = f"sug_{int(time.time())}"
-                        suggestion["status"] = "pending"
-                        suggestion["timestamp"] = time.strftime("%Y-%m-%d %H:%M:%S")
-                        
-                        self._save_suggestion(suggestion)
-                        broadcast(f"💡 Nova sugestão gerada para {filename}: {suggestion['title']}")
-                        
-                        # Notify Sentinel if it's a security or bug fix
-                        if suggestion.get('type') in ['security', 'bug']:
-                            agent_bus.send_message(self.id, "auto_heal_agent", f"Gerei uma correção de {suggestion['type']} para {file_path}. Fique atento a falhas nesta área.")
+                        try:
+                            json_str = match.group(1).strip()
+                            suggestion = json.loads(json_str)
+                            suggestion["id"] = f"sug_{int(time.time())}"
+                            suggestion["status"] = "pending"
+                            suggestion["timestamp"] = time.strftime("%Y-%m-%d %H:%M:%S")
+                            
+                            self._save_suggestion(suggestion)
+                            broadcast(f"💡 Nova sugestão gerada para {filename}: {suggestion['title']}")
+                            
+                            # Notify Sentinel if it's a security or bug fix
+                            if suggestion.get('type') in ['security', 'bug']:
+                                agent_bus.send_message(self.id, "auto_heal_agent", f"Gerei uma correção de {suggestion['type']} para {file_path}. Fique atento a falhas nesta área.")
+                        except json.JSONDecodeError as de:
+                            self.log(f"Erro ao decodificar JSON gerado para {filename}: {de}", "error")
+                            logger.error(f"DevAgent JSON error for {filename}: {de}")
+                    else:
+                        self.log(f"LLM não formatou JSON corretamente para {filename}.", "warning")
+                else:
+                    self.log(f"Análise de {filename} concluída, nenhuma melhoria necessária.", "info")
                         
             except Exception as e:
-                logger.error(f"Erro na análise do DevAgent: {e}", symbol="⚠️")
+                import traceback
+                error_trace = traceback.format_exc()
+                logger.error(f"Falha crítica na análise do DevAgent em {filename}: {e}", symbol="🔥")
+                logger.error(error_trace)
+                self.log(f"Erro crítico em {filename}: {str(e)}", "error")
                 self.current_action = f"Erro ao analisar {filename}"
             
             # Espera 5 minutos entre arquivos para não explodir a API

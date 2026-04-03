@@ -473,6 +473,43 @@
                     </div>
                 </div>
 
+                <!-- Master Activity Feed (Timeline + Terminal) -->
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                    <!-- Column 1 & 2: System Terminal -->
+                    <div class="lg:col-span-2 space-y-4">
+                        <div class="flex items-center justify-between">
+                            <h3 class="text-[11px] font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2">
+                                <span class="material-symbols-outlined text-sm">terminal</span> Master Control Console
+                            </h3>
+                            <div class="flex items-center gap-2">
+                                <span class="text-[8px] font-bold text-emerald-500 animate-pulse uppercase">Read Only</span>
+                                <div class="w-1.5 h-1.5 rounded-full bg-emerald-500"></div>
+                            </div>
+                        </div>
+                        <div class="bg-black/80 border border-white/5 rounded-2xl p-5 h-[320px] overflow-y-auto custom-scrollbar font-mono text-[11px] relative shadow-inner">
+                             <div id="systemTerminalLogs" class="space-y-1">
+                                 <div class="text-slate-500 italic">Inicializando console mestre...</div>
+                                 <div class="text-blue-400">Arkanis V3.1 Console Protocol (Ready)</div>
+                             </div>
+                             <div class="absolute bottom-2 right-4 opacity-10 pointer-events-none select-none text-2xl font-black">ARKANIS OS</div>
+                        </div>
+                    </div>
+
+                    <!-- Column 3: Auto-Heal Timeline -->
+                    <div class="space-y-4">
+                        <h3 class="text-[11px] font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2">
+                            <span class="material-symbols-outlined text-sm">history_edu</span> Auto-Heal Timeline
+                        </h3>
+                        <div id="autoHealTimeline" class="bg-slate-900/40 border border-white/5 rounded-2xl p-5 h-[320px] overflow-y-auto custom-scrollbar relative">
+                            <!-- Timeline items injected here -->
+                            <div class="flex flex-col items-center justify-center h-full text-slate-600 opacity-50">
+                                <span class="material-symbols-outlined text-2xl mb-2">construction</span>
+                                <p class="text-[10px]">Aguardando intervenções autônomas...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Agent Cards Grid -->
                 <div class="space-y-4">
                     <h3 class="text-[11px] font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2">
@@ -483,23 +520,23 @@
                     </div>
                 </div>
 
-                <!-- Event Log Table -->
+                <!-- Event Details (AgentBus stream) -->
                 <div class="space-y-4">
                     <h3 class="text-[11px] font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2">
-                        <span class="material-symbols-outlined text-sm">reorder</span> Eventos Recentes
+                        <span class="material-symbols-outlined text-sm">analytics</span> Barramento de Eventos (AgentBus)
                     </h3>
-                    <div class="bg-slate-900/40 border border-white/5 rounded-2xl overflow-hidden">
-                        <table class="w-full text-left text-[12px]">
-                            <thead class="bg-black/20 text-slate-500 font-bold border-b border-white/5 uppercase tracking-tighter">
+                    <div class="bg-slate-900/40 border border-white/5 rounded-2xl overflow-hidden shadow-2xl">
+                        <table class="w-full text-left text-[11px]">
+                            <thead class="bg-black/30 text-slate-500 font-bold border-b border-white/5 uppercase tracking-tighter">
                                 <tr>
-                                    <th class="px-6 py-3">Hora</th>
-                                    <th class="px-6 py-3">Agente</th>
-                                    <th class="px-6 py-3">Evento / Ação</th>
-                                    <th class="px-6 py-3">Detalhes</th>
+                                    <th class="px-6 py-4">Hora</th>
+                                    <th class="px-6 py-4">Agente</th>
+                                    <th class="px-6 py-4">Tipo</th>
+                                    <th class="px-6 py-4">Detalhes / Payload</th>
                                 </tr>
                             </thead>
-                            <tbody id="obsEventsTable" class="divide-y divide-white/5 text-slate-300">
-                                <tr><td colspan="4" class="px-6 py-12 text-center text-slate-600 italic">Nenhum evento registrado ainda.</td></tr>
+                            <tbody id="obsEventsTable" class="divide-y divide-white/5 opacity-80 text-slate-300">
+                                <!-- Filas de logs -->
                             </tbody>
                         </table>
                     </div>

@@ -110,12 +110,24 @@ class AgentBus:
             self.message_history.pop(0)
 
     def _record_connection(self, from_aid: str, to_aid: str):
-        """Track communication edges for the graph visualization."""
-        conn = {"source": from_aid, "target": to_aid, "last_interaction": datetime.now().strftime("%H:%M:%S")}
+        """Track communication edges for the graph visualization with high-precision timestamps."""
+        import time
+        now_ts = time.time_ns() // 1_000_000 # Milliseconds
+        now_str = datetime.now().strftime("%H:%M:%S")
+        
+        conn = {
+            "source": from_aid, 
+            "target": to_aid, 
+            "last_interaction": now_str,
+            "last_interaction_ms": now_ts
+        }
+        
         for c in self.connections:
             if c["source"] == from_aid and c["target"] == to_aid:
-                c["last_interaction"] = conn["last_interaction"]
+                c["last_interaction"] = now_str
+                c["last_interaction_ms"] = now_ts
                 return
+                
         self.connections.append(conn)
         if len(self.connections) > self.max_connections:
             self.connections.pop(0)

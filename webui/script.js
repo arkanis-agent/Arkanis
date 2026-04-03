@@ -1133,10 +1133,19 @@ function showTasks() {
 }
 function showObservability() { 
     setActivePanel('observability'); 
+    // Ensure Map is initialized with correct dimensions when shown
+    setTimeout(initNeuralMap, 50); 
     fetchObservabilityData();
+    fetchSystemLogs();
+    fetchTimeline();
+
     // Start polling
     if (observabilityInterval) clearInterval(observabilityInterval);
-    observabilityInterval = setInterval(fetchObservabilityData, 3000);
+    observabilityInterval = setInterval(() => {
+        fetchObservabilityData();
+        fetchSystemLogs();
+        fetchTimeline();
+    }, 3000);
 }
 
 // Stop polling when leaving observability
@@ -1703,6 +1712,77 @@ async function fetchObservabilityData() {
     } catch (e) {
         console.error("Failed to fetch observability data:", e);
     }
+}
+
+async function fetchSystemLogs() {
+    try {
+        const response = await fetch('/system/logs?lines=40');
+        const data = await response.json();
+        renderSystemLogs(data.logs);
+    } catch (e) { console.error("Logs error:", e); }
+}
+
+async function fetchTimeline() {
+    try {
+        const response = await fetch('/system/timeline');
+        const data = await response.json();
+        renderAutoHealTimeline(data.timeline);
+    } catch (e) { console.error("Timeline error:", e); }
+}
+
+function renderSystemLogs(logs) {
+    const term = document.getElementById('systemTerminalLogs');
+    if (!term || !logs) return;
+    
+    // Simple diff-based render to avoid flickering
+    const currentLines = term.children.length;
+    if (logs.length > currentLines - 2) {
+        term.innerHTML = ''; // Full refresh for simplicity initially
+        logs.forEach(l => {
+            const line = document.createElement('div');
+            // Basic color coding for terminal
+            if (l.includes('[ERROR]')) line.className = 'text-rose-500';
+            else if (l.includes('[SUCCESS]')) line.className = 'text-emerald-400';
+            else if (l.includes('[WARNING]')) line.className = 'text-amber-400';
+            else line.className = 'text-slate-300';
+            line.textContent = l;
+            term.appendChild(line);
+        });
+        // Auto-scroll
+        const container = term.parentElement;
+        container.scrollTop = container.scrollHeight;
+    }
+}
+
+function renderAutoHealTimeline(timeline) {
+    const container = document.getElementById('autoHealTimeline');
+    if (!container) return;
+    
+    if (!timeline || timeline.length === 0) {
+        container.innerHTML = `
+            <div class="flex flex-col items-center justify-center h-full text-slate-600 opacity-50">
+                <span class="material-symbols-outlined text-2xl mb-2">construction</span>
+                <p class="text-[10px]">Aguardando intervenções autônomas...</p>
+            </div>
+        `;
+        return;
+    }
+
+    container.innerHTML = '<div class="space-y-6 relative ml-2 border-l border-white/5 pl-6">';
+    timeline.forEach(item => {
+        const div = document.createElement('div');
+        div.className = 'relative';
+        div.innerHTML = `
+            <span class="absolute -left-[31px] top-1 w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.6)]"></span>
+            <div class="text-[10px] text-slate-500 font-mono mb-1">${item.timestamp}</div>
+            <div class="text-[11px] text-white font-bold">${item.title}</div>
+            <div class="text-[10px] text-slate-400 mt-1 line-clamp-2 italic">${item.description}</div>
+            <div class="mt-2 flex items-center gap-2">
+                <span class="px-2 py-0.5 rounded bg-blue-500/10 text-blue-400 text-[8px] font-bold uppercase tracking-tighter">Fix: ${item.file_path.split('/').pop()}</span>
+            </div>
+        `;
+        container.firstChild.appendChild(div);
+    });
 }
 
 function getStatusConfig(status) {
@@ -2283,6 +2363,9 @@ function initNeuralMap() {
     const width = container.clientWidth || 800;
     const height = container.clientHeight || 400;
 
+    // Reset container to avoid duplication
+    container.innerHTML = '';
+
     neuralGraph.svg = d3.select("#neuralMapContainer")
         .append("svg")
         .attr("width", "100%")
@@ -2326,10 +2409,27 @@ function updateNeuralMap(graphData) {
 
     const { nodes: newNodes, links: newLinks } = graphData;
 
-    // Preserve existing node positions
-    const oldNodes = new Map(neuralGraph.nodes.map(d => [d.id, d]));
-    neuralGraph.nodes = newNodes.map(d => Object.assign(oldNodes.get(d.id) || {}, d));
-    neuralGraph.links = newLinks.map(d => Object.assign({}, d));
+    // 1. Update Nodes: Preserve positions and velocities
+    const nodeMap = new Map(neuralGraph.nodes.map(n => [n.id, n]));
+    neuralGraph.nodes = newNodes.map(d => {
+        const old = nodeMap.get(d.id);
+        if (old) {
+            return Object.assign(old, d);
+        }
+        // Initialize new node position near center to avoid "jumps"
+        d.x = 400 + (Math.random() - 0.5) * 100;
+        d.y = 200 + (Math.random() - 0.5) * 100;
+        return d;
+    });
+
+    // 2. Update Links: Re-map source/target to node objects OR IDs
+    neuralGraph.links = newLinks.map(l => {
+        return {
+            source: l.source,
+            target: l.target,
+            last_interaction: l.last_interaction
+        };
+    });
 
     const link = neuralGraph.container.selectAll(".link")
         .data(neuralGraph.links, d => `${d.source}-${d.target}`)
@@ -2349,16 +2449,14 @@ function updateNeuralMap(graphData) {
             .on("drag", dragged)
             .on("end", dragended));
 
-    node.html(""); // Clear and rebuild
+    node.html(""); // Rebuild icon and label
     
-    // Node Circle
     node.append("circle")
         .attr("r", 15)
         .attr("fill", d => d.id === 'ALL' ? '#8b5cf6' : (d.status === 'running' ? '#3b82f6' : '#1e293b'))
         .attr("stroke", d => d.status === 'running' ? '#60a5fa' : '#334155')
         .attr("stroke-width", 2);
 
-    // Node Icons/Labels
     node.append("text")
         .attr("dy", "0.35em")
         .attr("text-anchor", "middle")
@@ -2375,12 +2473,18 @@ function updateNeuralMap(graphData) {
         .attr("fill", "#94a3b8")
         .text(d => d.id);
 
-    // Update Pulse for active links
+    // Update Pulse for active links (based on timestamp closeness if needed)
+    // For now, we trust newLinks array order or activity
     newLinks.forEach(l => {
+        const isFresh = (Date.now() - l.last_interaction_ms) < 4000;
+        if (isFresh) {
+            triggerThoughtTrace(l);
+        }
+
         const line = neuralGraph.container.selectAll(".link")
-            .filter(d => d.source.id === l.source && d.target.id === l.target);
+            .filter(d => (d.source === l.source && d.target === l.target) || 
+                         (d.source.id === l.source && d.target.id === l.target));
         
-        // Brief pulse on new/updated interaction
         line.transition().duration(200).attr("stroke", "#60a5fa").attr("stroke-width", 4)
             .transition().duration(1000).attr("stroke", "#374151").attr("stroke-width", 2);
     });
@@ -2399,6 +2503,39 @@ function updateNeuralMap(graphData) {
         node
             .attr("transform", d => `translate(${d.x},${d.y})`);
     });
+}
+
+const traceTracking = new Set();
+function triggerThoughtTrace(linkData) {
+    const key = `${linkData.source}-${linkData.target}-${linkData.last_interaction_ms}`;
+    if (traceTracking.has(key)) return;
+    traceTracking.add(key);
+
+    // Find the actual nodes in current graph to get coords
+    const sourceNode = neuralGraph.nodes.find(n => n.id === linkData.source);
+    const targetNode = neuralGraph.nodes.find(n => n.id === linkData.target);
+    if (!sourceNode || !targetNode) return;
+
+    // Pulse effect: create a flying particle
+    const particle = neuralGraph.container.append("circle")
+        .attr("r", 4)
+        .attr("fill", "#60a5fa")
+        .attr("cx", sourceNode.x)
+        .attr("cy", sourceNode.y)
+        .attr("filter", "drop-shadow(0 0 4px #3b82f6)");
+
+    particle.transition()
+        .duration(1200)
+        .ease(d3.easeCubicInOut)
+        .attr("cx", targetNode.x)
+        .attr("cy", targetNode.y)
+        .on("end", () => particle.remove());
+
+    // Cleanup tracking set periodically
+    if (traceTracking.size > 100) {
+        const oldest = Array.from(traceTracking)[0];
+        traceTracking.delete(oldest);
+    }
 }
 
 function dragstarted(event) {

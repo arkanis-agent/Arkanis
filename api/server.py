@@ -46,10 +46,14 @@ _agent_executor = concurrent.futures.ThreadPoolExecutor(
     thread_name_prefix="arkanis-agent"
 )
 
-async def run_agent(fn, *args, timeout: float = 120.0):
+import functools
+
+async def run_agent(fn, *args, timeout: float = 120.0, **kwargs):
     """Run a blocking agent function in the dedicated executor with a timeout."""
     loop = asyncio.get_event_loop()
-    future = loop.run_in_executor(_agent_executor, fn, *args)
+    # Use partial to pass both *args and **kwargs to the executor
+    func = functools.partial(fn, *args, **kwargs)
+    future = loop.run_in_executor(_agent_executor, func)
     try:
         return await asyncio.wait_for(future, timeout=timeout)
     except asyncio.TimeoutError:
@@ -563,6 +567,37 @@ async def finalize_onboarding(request: OnboardingFinalizeRequest):
         
     return {"status": "success"}
 
+@app.get("/system/logs")
+async def get_system_logs(lines: int = 50):
+    """Returns the last N lines of the human-readable system log."""
+    log_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "arkanis.log")
+    try:
+        if not os.path.exists(log_path):
+            return {"logs": ["Arquivo de log ainda não criado."]}
+            
+        with open(log_path, "r", encoding="utf-8") as f:
+            all_lines = f.readlines()
+            # Return last N lines, stripped
+            return {"logs": [l.strip() for l in all_lines[-lines:]]}
+    except Exception as e:
+        return {"logs": [f"Erro ao ler logs: {str(e)}"]}
+
+@app.get("/system/timeline")
+async def get_auto_heal_timeline():
+    """Returns a list of all suggestions that have been 'applied'."""
+    try:
+        # Check both potential agents
+        agent_instance = agent_bus.get_agent("architect_agent") or agent_bus.get_agent("dev_agent")
+        if not agent_instance:
+             return {"timeline": []}
+             
+        all_suggestions = agent_instance.get_suggestions()
+        timeline = [s for s in all_suggestions if s.get("status") == "applied"]
+        return {"timeline": timeline}
+    except Exception as e:
+        logger.error(f"Erro ao carregar timeline: {e}")
+        return {"timeline": []}
+
 # Serving the static UI (assuming it's in V3/webui/)
 webui_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "webui")
 if os.path.exists(webui_path):
@@ -622,6 +657,7 @@ async def handle_suggestion_action(sug_id: str, action: str):
                 agent_instance.update_suggestion_status(sug_id, "applied")
     
     return {"status": "success", "suggestion_id": sug_id, "new_status": action}
+
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000)
