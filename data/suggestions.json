@@ -1,1 +1,17 @@
-[]
+[
+    {
+        "title": "Adicionar Exporta\u00e7\u00f5es \u00dateis em __init__.py",
+        "description": "O arquivo __init__.py est\u00e1 vazio. Podemos utiliz\u00e1-lo para exportar funcionalidades principais dos m\u00f3dulos, melhorando a organiza\u00e7\u00e3o e facilitando a importa\u00e7\u00e3o.",
+        "type": "feature",
+        "file_path": "/home/diego/\u00c1rea de trabalho/Arkanis_V3.1/modules/__init__.py",
+        "proposed_code": "# Exportando funcionalidades principais\nfrom .core_module import CoreFunction\nfrom .utils_module import UtilityClass\nfrom .security_module import SecurityLayer\n\n__all__ = ['CoreFunction', 'UtilityClass', 'SecurityLayer']",
+        "id": "sug_1775227331",
+        "status": "pending",
+        "timestamp": "2026-04-03 11:42:11"
+    },
+    {
+        "id": "sug_1775227017",
+        "status": "pending",
+        "timestamp": "2026-04-03 11:36:57"
+    }
+]

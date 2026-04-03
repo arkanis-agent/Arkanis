@@ -51,22 +51,33 @@ class SpeechToTextTool(BaseTool):
                 loop = None
 
             if loop and loop.is_running():
-                # We are inside an active loop (common in FastAPI/Telegram)
-                # We must run the async task in a way that doesn't block or conflict.
+                # We are unfortunately inside an active loop. To avoid deadlocking FastAPI,
+                # we must spawn a fire-and-forget thread that creates its own loop safely without waiting.
+                # However, since tools expect a sync string return, we'll offload safely:
                 import threading
-                from concurrent.futures import ThreadPoolExecutor
+                import queue
                 
-                def _run_sync():
-                    new_loop = asyncio.new_event_loop()
-                    asyncio.set_event_loop(new_loop)
+                result_queue = queue.Queue()
+                
+                def _run_isolated():
                     try:
-                        return new_loop.run_until_complete(self.execute_async(**kwargs))
+                        new_loop = asyncio.new_event_loop()
+                        asyncio.set_event_loop(new_loop)
+                        res = new_loop.run_until_complete(self.execute_async(**kwargs))
+                        result_queue.put(res)
+                    except Exception as ex:
+                        result_queue.put({"error": str(ex), "status": "failed"})
                     finally:
-                        new_loop.close()
-
-                with ThreadPoolExecutor() as executor:
-                    future = executor.submit(_run_sync)
-                    return json.dumps(future.result())
+                        if 'new_loop' in locals():
+                            new_loop.close()
+                
+                t = threading.Thread(target=_run_isolated, daemon=True)
+                t.start()
+                t.join(timeout=300) # Prevents indefinite hangout
+                
+                if t.is_alive():
+                    return json.dumps({"error": "Transição de áudio excedeu o tempo limite (Timeout).", "status": "failed"})
+                return json.dumps(result_queue.get())
             else:
                 # No loop running, safe to use asyncio.run
                 return json.dumps(asyncio.run(self.execute_async(**kwargs)))
@@ -96,6 +107,7 @@ class SpeechToTextTool(BaseTool):
                 'ffmpeg', '-y', '-i', temp_input,
                 '-ar', '16000', '-ac', '1', '-c:a', 'pcm_s16le',
                 temp_wav,
+                stdin=asyncio.subprocess.DEVNULL,
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.PIPE
             )
@@ -110,7 +122,10 @@ class SpeechToTextTool(BaseTool):
             if not os.path.exists(self.model_path):
                 return {"error": f"Modelo Whisper não encontrado em {self.model_path}", "status": "failed"}
                 
-            threads = os.cpu_count() or 4
+            # Limit to max 2 threads to prevent 100% CPU lockup freezing WebUI
+            cpu_cores = os.cpu_count() or 4
+            threads = 2 if cpu_cores >= 4 else 1 
+            
             # Correct paths for whisper.cpp shared libraries found in libs/whisper.cpp/build/
             build_path = os.path.dirname(os.path.dirname(self.binary_path))
             
@@ -125,6 +140,7 @@ class SpeechToTextTool(BaseTool):
                 '-nt', # No timestamps
                 '-t', str(threads),
                 '-l', 'pt', # Force Portuguese for STT stability
+                stdin=asyncio.subprocess.DEVNULL,
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.PIPE,
                 env=env
