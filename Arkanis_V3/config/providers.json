@@ -232,6 +232,12 @@
       "name": "DeepSeek V3 (OR)",
       "provider": "openrouter",
       "enabled": true
+    },
+    {
+      "id": "qwen2.5-coder:7b",
+      "name": "Qwen 2.5 Coder 7B (Ollama)",
+      "provider": "ollama",
+      "enabled": true
     }
   ]
 }
