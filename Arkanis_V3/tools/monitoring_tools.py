@@ -15,6 +15,7 @@ import urllib3
 from typing import Dict, Any
 from tools.base_tool import BaseTool
 from tools.registry import registry
+from core.config_manager import config_manager
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
@@ -214,68 +215,116 @@ class GetSportsScoreTool(BaseTool):
         }
 
     def execute(self, **kwargs) -> str:
-        team = kwargs.get("team", "").strip()
+        team_search = kwargs.get("team", "").strip()
         search_type = kwargs.get("type", "last").strip().lower()
 
-        if not team:
-            return "Error: nome do time ausente."
+        if not team_search:
+            return "Error: nome do time ou liga ausente."
+
+        # Load API Key from integrations config
+        integrations = config_manager.load_integrations()
+        tsdb_cfg = integrations.get("thesportsdb", {})
+        api_key = tsdb_cfg.get("api_key", "123") # Default to '123' if not set
+        
+        headers = HEADERS.copy()
+        headers["X-API-KEY"] = api_key
+        
+        base_v2 = "https://www.thesportsdb.com/api/v2/json"
 
         try:
-            # TheSportsDB — API gratuita
-            search_data = _cached_get(
-                "https://www.thesportsdb.com/api/v1/json/3/searchteams.php",
-                params={"t": team},
-                ttl=600
+            # 1. Search for the team to get ID
+            search_resp = requests.get(
+                f"{base_v2}/search/team/{team_search}",
+                headers=headers,
+                timeout=10,
+                verify=False
             )
+            search_resp.raise_for_status()
+            search_data = search_resp.json()
             teams = search_data.get("teams", [])
 
             if not teams:
-                return f"Time '{team}' não encontrado no TheSportsDB."
-
-            found_team = teams[0]
-            team_id = found_team.get("idTeam")
-            team_name = found_team.get("strTeam")
-            league = found_team.get("strLeague", "N/A")
-
-            # Buscar últimos ou próximos jogos
-            if search_type == "next":
-                events_data = _cached_get(
-                    "https://www.thesportsdb.com/api/v1/json/3/eventsnext.php",
-                    params={"id": team_id},
-                    ttl=300
+                # Try searching as a league if team doesn't work
+                search_resp = requests.get(
+                    f"{base_v2}/search/league/{team_search}",
+                    headers=headers,
+                    timeout=10,
+                    verify=False
                 )
-                events = events_data.get("events", []) or []
+                search_data = search_resp.json()
+                leagues = search_data.get("leagues", [])
+                if not leagues:
+                    return f"Nenhum time ou liga encontrado para '{team_search}' no TheSportsDB."
+                
+                # If league found, let's get results by league
+                league_id = leagues[0].get("idLeague")
+                league_name = leagues[0].get("strLeague")
+                
+                if search_type == "next":
+                    endpoint = f"/schedule/next/league/{league_id}"
+                    label = f"Próximos Jogos: {league_name}"
+                else:
+                    endpoint = f"/livescore/league/{league_id}"
+                    label = f"Placar ao Vivo / Últimos: {league_name}"
             else:
-                events_data = _cached_get(
-                    "https://www.thesportsdb.com/api/v1/json/3/eventslast.php",
-                    params={"id": team_id},
-                    ttl=300
-                )
-                events = events_data.get("results", []) or []
+                found_team = teams[0]
+                team_id = found_team.get("idTeam")
+                team_name = found_team.get("strTeam")
+                
+                if search_type == "next":
+                    endpoint = f"/schedule/next/team/{team_id}"
+                    label = f"Próximos Jogos: {team_name}"
+                else:
+                    endpoint = f"/livescore/all" # Or /livescore/league/{idLeague}
+                    label = f"Resultados: {team_name}"
+                    # For specific team, we might want to filter from /livescore/all 
+                    # but TSDB V2 has better schedule/previous/team/{id}
+                    if search_type == "last":
+                        endpoint = f"/schedule/previous/team/{team_id}"
 
-            label = "Próximos Jogos" if search_type == "next" else "Últimos Resultados"
-            header = f"⚽ **{team_name}** ({league})\n{label}:\n"
+            # 2. Fetch Events
+            events_resp = requests.get(
+                f"{base_v2}{endpoint}",
+                headers=headers,
+                timeout=10,
+                verify=False
+            )
+            events_resp.raise_for_status()
+            events_data = events_resp.json()
+            
+            # The key in JSON varies (events, livescore, results)
+            events = events_data.get("events") or events_data.get("livescore") or events_data.get("results") or []
 
+            header_str = f"⚽ **TheSportsDB V2**\n{label}:\n"
             if not events:
-                return header + "  Nenhum jogo encontrado no momento."
+                return header_str + "  Nenhum evento encontrado no momento."
 
             lines = []
-            for ev in events[:5]:
-                home = ev.get("strHomeTeam", "?")
-                away = ev.get("strAwayTeam", "?")
-                date = ev.get("dateEvent", "?")
-                score_home = ev.get("intHomeScore", "")
-                score_away = ev.get("intAwayScore", "")
-                if score_home is not None and score_away is not None and score_home != "":
-                    result = f"{score_home} x {score_away}"
-                else:
-                    result = ev.get("strTime", "")
-                lines.append(f"  📅 {date} — {home} vs {away} → {result}")
+            for ev in events[:8]:
+                home = ev.get("strHomeTeam") or ev.get("strEvent", "").split(" vs ")[0]
+                away = ev.get("strAwayTeam") or ev.get("strEvent", "").split(" vs ")[-1]
+                date = ev.get("dateEvent") or ev.get("strTimestamp", "Hoje")
+                
+                s_home = ev.get("intHomeScore")
+                s_away = ev.get("intAwayScore")
+                
+                status = ev.get("strStatus", "")
+                progress = ev.get("strProgress", "")
+                
+                result_str = f"{s_home} x {s_away}" if s_home is not None else "Agendado"
+                if progress: result_str += f" ({progress}')"
+                elif status: result_str += f" [{status}]"
+                
+                lines.append(f"  📅 {date} — {home} vs {away} → **{result_str}**")
 
-            return header + "\n".join(lines)
+            return header_str + "\n".join(lines)
 
+        except requests.HTTPError as e:
+            if e.response.status_code == 401:
+                return "⚠️ Erro de Autenticação (401). Verifique sua API Key 123 no painel de Integrações."
+            return f"Error TSDB API: {e}"
         except Exception as e:
-            return f"Error ao buscar resultados esportivos: {str(e)}"
+            return f"Error ao buscar esportes: {str(e)}"
 
 
 # ─────────────────────────────────────────────

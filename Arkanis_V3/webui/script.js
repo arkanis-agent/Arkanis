@@ -889,6 +889,12 @@ function renderIntegrations() {
     integrationCardsContainer.appendChild(createIntegrationCard('tavily', 'Tavily Search', 'search', tavily, [
         { key: 'api_key', label: 'API Key', type: 'password', value: tavily.api_key, placeholder: 'tvly-...' }
     ]));
+
+    // TheSportsDB
+    const tsdb = currentIntegrationsConfig.thesportsdb || {enabled: false, api_key: ''};
+    integrationCardsContainer.appendChild(createIntegrationCard('thesportsdb', 'TheSportsDB API', 'sports_soccer', tsdb, [
+        { key: 'api_key', label: 'API Key', type: 'password', value: tsdb.api_key, placeholder: '123' }
+    ]));
 }
 
 function createIntegrationCard(id, title, icon, data, fields) {
@@ -949,7 +955,7 @@ async function saveIntegrationsConfig() {
     saveConfigBtn.innerHTML = '<span class="material-symbols-outlined animate-spin">sync</span> Salvando...';
     
     // Update config object from UI
-    ['telegram', 'supabase', 'tavily'].forEach(id => {
+    ['telegram', 'supabase', 'tavily', 'thesportsdb'].forEach(id => {
         if (!currentIntegrationsConfig[id]) currentIntegrationsConfig[id] = { enabled: false };
         
         if (id === 'telegram') {
@@ -958,7 +964,7 @@ async function saveIntegrationsConfig() {
             currentIntegrationsConfig[id].url = document.getElementById(`int-${id}-url`)?.value || '';
             currentIntegrationsConfig[id].anon_key = document.getElementById(`int-${id}-anon_key`)?.value || '';
             currentIntegrationsConfig[id].service_role_key = document.getElementById(`int-${id}-service_role_key`)?.value || '';
-        } else if (id === 'tavily') {
+        } else if (id === 'tavily' || id === 'thesportsdb') {
             currentIntegrationsConfig[id].api_key = document.getElementById(`int-${id}-api_key`)?.value || '';
         }
     });
