@@ -108,7 +108,7 @@ class ArkanisAgent:
             symbol = symbols.get(log_type, "🧠")
             arkanis_logger.info(clean_msg, symbol=symbol)
 
-    def handle_input(self, user_input: str, images: Optional[List[str]] = None) -> str:
+    def handle_input(self, user_input: str, images: Optional[List[str]] = None, files: Optional[List[Dict[str, str]]] = None) -> str:
         """Process user input with strict priority routing and vision support."""
         # Clean and lower for processing
         clean_input = user_input.strip()
@@ -182,7 +182,11 @@ class ArkanisAgent:
 
         # 5. MANUAL MODE (standard planning)
         self.mode = "manual"
-        return self._handle_manual_mode(clean_input, images=images)
+        # Log generic file count if any
+        if files and len(files) > 0:
+            self.log(f"Recebido {len(files)} arquivos anexados.", "system")
+            
+        return self._handle_manual_mode(clean_input, images=images, files=files)
 
     def _get_status_report(self) -> str:
         """Detailed Agent Status Panel."""
@@ -238,8 +242,8 @@ Se NÃO houver dados factuais e o usuário fez uma pergunta específica, admita 
             return response
         return raw  # fallback to raw if formatter fails
 
-    def _handle_manual_mode(self, user_input: str, images: Optional[List[str]] = None) -> str:
-        """Process user input manually with vision support: Context -> Plan -> Execute -> Remember."""
+    def _handle_manual_mode(self, user_input: str, images: Optional[List[str]] = None, files: Optional[List[Dict[str, str]]] = None) -> str:
+        """Process user input manually with vision and attachment support: Context -> Plan -> Execute -> Remember."""
         self.status = "running"
         self.current_action = "Preparando contexto..."
         # Check for Awakening

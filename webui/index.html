@@ -729,6 +729,7 @@
                             <button id="imageBtn" class="p-2.5 rounded-xl hover:bg-white/5 text-slate-400 hover:text-indigo-400 transition-all" title="Enviar Imagem">
                                 <span class="material-symbols-outlined text-[20px]">image</span>
                                 <input type="file" id="imageInput" class="hidden" accept="image/*" multiple />
+                                <input type="file" id="fileInput" class="hidden" multiple />
                             </button>
                             <button id="voiceBtn" class="p-2.5 rounded-xl hover:bg-white/5 text-slate-400 hover:text-emerald-400 transition-all" title="Comando de Voz">
                                 <span class="material-symbols-outlined text-[20px]">mic</span>
@@ -737,8 +738,9 @@
 
                         <!-- Main Input -->
                         <div class="flex-1 flex flex-col min-h-[52px] justify-center">
-                            <!-- Image previews inside the capsule -->
+                            <!-- Attachment previews inside the capsule -->
                             <div id="imagePreviews" class="hidden flex-wrap gap-2 py-2 mb-1"></div>
+                            <div id="filePreviews" class="hidden flex-wrap gap-2 py-2 mb-1"></div>
                             
                             <textarea id="userInput" 
                                 class="w-full bg-transparent border-none focus:ring-0 text-slate-100 placeholder-slate-500 font-body py-3.5 resize-none custom-scrollbar max-h-48 text-[15px] leading-relaxed" 

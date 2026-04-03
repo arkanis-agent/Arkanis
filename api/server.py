@@ -83,6 +83,7 @@ agent: ArkanisAgent = None
 class MessageRequest(BaseModel):
     text: str
     images: Optional[List[str]] = None
+    files: Optional[List[Dict[str, str]]] = None
 
 class ModelSelectRequest(BaseModel):
     model_id: str
@@ -281,8 +282,8 @@ async def handle_message(request: MessageRequest):
             agent.logs = []
             
         # Run in dedicated agent executor — never blocks uvicorn polling threads
-        # Note: We update handle_input to accept images in the next step
-        response = await run_agent(agent.handle_input, request.text, images=request.images)
+        # Propagate text, images and universal file attachments
+        response = await run_agent(agent.handle_input, request.text, images=request.images, files=request.files)
         return {"response": response}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

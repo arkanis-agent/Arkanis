@@ -120,15 +120,17 @@ async function sendMessage(textOverride = null) {
 
     const messageArea = document.getElementById('messageArea');
     
-    // Snapshot images before clearing
+    // Snapshot images and files before clearing
     const imagesToSend = [...uploadedImagesArr];
+    const filesToSend = [...uploadedFilesArr];
 
     // Add User Message (with image previews if any)
     if (!textOverride) {
-        addUserMessageWithImages(text, imagesToSend);
+        // Updated to handle both images and general files
+        addUserMessageWithAttachments(text, imagesToSend, filesToSend);
         userInput.value = '';
         adjustTextArea();
-        clearImages(); // clear after snapshot
+        clearAttachments(); // clear after snapshot
     }
 
     // Add Thinking UI
@@ -137,9 +139,8 @@ async function sendMessage(textOverride = null) {
 
     try {
         const payload = { text: text || '' };
-        if (imagesToSend.length > 0) {
-            payload.images = imagesToSend;
-        }
+        if (imagesToSend.length > 0) payload.images = imagesToSend;
+        if (filesToSend.length > 0) payload.files = filesToSend;
 
         const response = await fetch('/message', {
             method: 'POST',
@@ -289,24 +290,45 @@ function addUserMessage(text) {
     scrollDown();
 }
 
-function addUserMessageWithImages(text, images = []) {
-    if (!images || images.length === 0) {
-        addUserMessage(text);
-        return;
-    }
+function addUserMessageWithAttachments(text, images = [], files = []) {
     const area = document.getElementById('messageArea');
+    if (!area) return;
+    
     const wrap = document.createElement('div');
-    wrap.className = 'flex justify-end mb-6';
+    wrap.className = 'flex justify-end mb-8 animate-in slide-in-from-right-4 duration-500';
 
-    const imgThumbsHtml = images.map(src => `
-        <img src="${src}" class="w-20 h-20 rounded-xl object-cover border border-white/10 shadow-lg" />
-    `).join('');
+    let attachmentsHtml = '';
+    
+    // Render Image Previews
+    if (images && images.length > 0) {
+        const imgThumbs = images.map(src => `
+            <div class="w-24 h-24 rounded-xl overflow-hidden border border-white/10 shadow-lg group">
+                <img src="${src}" class="w-full h-full object-cover transition-transform group-hover:scale-110" />
+            </div>
+        `).join('');
+        attachmentsHtml += `<div class="flex flex-wrap gap-2 mb-3">${imgThumbs}</div>`;
+    }
+
+    // Render General File Chips
+    if (files && files.length > 0) {
+        const fileChips = files.map(file => `
+            <div class="flex items-center gap-2 px-3 py-1.5 bg-white/5 border border-white/10 rounded-full text-slate-300">
+                <span class="material-symbols-outlined text-blue-400 text-[16px]">description</span>
+                <span class="text-[11px] font-bold truncate max-w-[150px]">${file.name}</span>
+            </div>
+        `).join('');
+        attachmentsHtml += `<div class="flex flex-wrap gap-2 mb-3">${fileChips}</div>`;
+    }
 
     wrap.innerHTML = `
-        <div class="bubble-glass bubble-user text-white px-6 py-4 rounded-3xl rounded-br-none max-w-[85%] text-[15px] font-body leading-relaxed space-y-3">
-            ${images.length > 0 ? `<div class="flex flex-wrap gap-2">${imgThumbsHtml}</div>` : ''}
-            ${text ? `<span>${text}</span>` : ''}
+        <div class="flex flex-col items-end max-w-[85%] gap-2">
+            <div class="bubble-glass bubble-user text-white px-6 py-4 rounded-3xl rounded-br-none text-[15px] font-body leading-relaxed shadow-2xl relative">
+                ${attachmentsHtml}
+                ${text ? `<div>${text.replace(/\n/g, '<br>')}</div>` : ''}
+                <div class="absolute -bottom-6 right-2 text-[9px] text-slate-500 font-bold uppercase tracking-[0.2em] opacity-40">Enviado</div>
+            </div>
         </div>`;
+
     area.appendChild(wrap);
     scrollDown();
 }
@@ -2644,12 +2666,12 @@ function dragended(event) {
 // --- Vision Support (Images) ---
 
 let uploadedImagesArr = []; // Explicitly named to avoid confusion
+let uploadedFilesArr = []; // New: universal file attachments
 
 function handleImageSelect(files) {
     if (!files) return;
     Array.from(files).forEach(file => {
         if (!file.type.startsWith('image/')) return;
-        
         const reader = new FileReader();
         reader.onload = (e) => {
             const base64 = e.target.result;
@@ -2660,13 +2682,49 @@ function handleImageSelect(files) {
     });
 }
 
+function handleFileSelect(files) {
+    if (!files) return;
+    Array.from(files).forEach(file => {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            uploadedFilesArr.push({
+                name: file.name,
+                type: file.type,
+                content: e.target.result // Base64
+            });
+            renderFilePreviews();
+        };
+        reader.readAsDataURL(file);
+    });
+}
+
 function renderImagePreviews() {
     const container = document.getElementById('imagePreviews');
     if (!container) return;
+    if (uploadedImagesArr.length > 0) container.classList.remove('hidden');
+    else container.classList.add('hidden');
+    
     container.innerHTML = uploadedImagesArr.map((src, idx) => `
         <div class="relative w-16 h-16 rounded-lg overflow-hidden border border-white/10 group animate-in fade-in zoom-in duration-200">
             <img src="${src}" class="w-full h-full object-cover" />
             <button onclick="removeImage(${idx})" class="absolute top-0 right-0 p-0.5 bg-black/60 text-white hover:text-rose-400 transition-colors opacity-0 group-hover:opacity-100">
+                <span class="material-symbols-outlined text-[14px]">close</span>
+            </button>
+        </div>
+    `).join('');
+}
+
+function renderFilePreviews() {
+    const container = document.getElementById('filePreviews');
+    if (!container) return;
+    if (uploadedFilesArr.length > 0) container.classList.remove('hidden');
+    else container.classList.add('hidden');
+
+    container.innerHTML = uploadedFilesArr.map((file, idx) => `
+        <div class="flex items-center gap-2 px-3 py-1.5 bg-slate-800/80 border border-white/5 rounded-full group animate-in fade-in slide-in-from-left-2 duration-200">
+            <span class="material-symbols-outlined text-blue-400 text-[14px]">description</span>
+            <span class="text-[11px] text-slate-300 font-bold truncate max-w-[120px]">${file.name}</span>
+            <button onclick="removeFile(${idx})" class="text-slate-500 hover:text-rose-400 transition-colors">
                 <span class="material-symbols-outlined text-[14px]">close</span>
             </button>
         </div>
@@ -2678,18 +2736,32 @@ function removeImage(idx) {
     renderImagePreviews();
 }
 
-function clearImages() {
-    uploadedImagesArr = [];
-    const container = document.getElementById('imagePreviews');
-    if (container) container.innerHTML = '';
+function removeFile(idx) {
+    uploadedFilesArr.splice(idx, 1);
+    renderFilePreviews();
 }
 
-// Global listeners for vision
+function clearAttachments() {
+    uploadedImagesArr = [];
+    uploadedFilesArr = [];
+    renderImagePreviews();
+    renderFilePreviews();
+}
+
+// Global listeners for vision and attachments
 document.addEventListener('DOMContentLoaded', () => {
     const imgInput = document.getElementById('imageInput');
+    const fileInput = document.getElementById('fileInput');
     const attBtn = document.getElementById('attachBtn');
-    if (attBtn && imgInput) {
-        attBtn.onclick = () => imgInput.click();
+    const imgBtn = document.getElementById('imageBtn');
+
+    if (attBtn && fileInput) {
+        attBtn.onclick = (e) => { e.preventDefault(); fileInput.click(); };
+        fileInput.onchange = (e) => handleFileSelect(e.target.files);
+    }
+
+    if (imgBtn && imgInput) {
+        imgBtn.onclick = (e) => { e.preventDefault(); imgInput.click(); };
         imgInput.onchange = (e) => handleImageSelect(e.target.files);
     }
 

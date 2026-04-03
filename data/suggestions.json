@@ -1,5 +1,31 @@
 [
     {
+        "title": "Implementa\u00e7\u00e3o de um Sistema de Feedback Autom\u00e1tico para Ajuste Din\u00e2mico de Prompt e Fun\u00e7\u00f5es",
+        "description": "Atualmente, a precis\u00e3o e autonomia do Arkanis dependem fortemente da qualidade dos prompts e fun\u00e7\u00f5es escolhidas para cada tarefa. Proponho a cria\u00e7\u00e3o de um Feedback Module no core/ que monitora continuamente a efetividade das execu\u00e7\u00f5es (atrav\u00e9s de m\u00e9tricas como: precis\u00e3o nas respostas, tempo de execu\u00e7\u00e3o, custo computacional) e ajusta dinamicamente tanto os prompts quanto a sele\u00e7\u00e3o de fun\u00e7\u00f5es/ferramentas. Este m\u00f3dulo seria integrado ao goal_planner.py e task_engine.py, permitindo que o sistema \"aprenda\" com suas pr\u00f3prias execu\u00e7\u00f5es.",
+        "type": "arch",
+        "priority": "high",
+        "files_involved": [
+            "core/goal_planner.py",
+            "core/task_engine.py",
+            "core/llm_router.py",
+            "core/model_strategy.py"
+        ],
+        "proposed_code": "class FeedbackModule:\n    def __init__(self):\n        self.execution_history = []\n\n    def log_execution(self, task_id, prompt_used, tools_used, metrics):\n        self.execution_history.append({\n            'task_id': task_id,\n            'prompt': prompt_used,\n            'tools': tools_used,\n            'metrics': metrics\n        })\n\n    def optimize_prompt(self, task_type):\n        # Analyzes past executions to suggest prompt improvements\n        pass\n\n    def recommend_tools(self, task_type):\n        # Suggests optimal tools based on historical performance\n        pass",
+        "id": "arch_1775249048",
+        "status": "pending",
+        "timestamp": "2026-04-03 17:44:08"
+    },
+    {
+        "title": "Melhoria no BaseTool com Documenta\u00e7\u00e3o Detalhada e Type Hinting",
+        "description": "Adicionando docstrings mais detalhadas com exemplos e melhorando as type hints para maior clareza e manuten\u00e7\u00e3o no futuro",
+        "type": "refactor",
+        "file_path": "/home/diego/\u00c1rea de trabalho/Arkanis_V3.1/tools/base_tool.py",
+        "proposed_code": "from abc import ABC, abstractmethod\nfrom typing import Any, Dict, Optional\n\nclass BaseTool(ABC):\n    \"\"\"\n    Abstract base class defining the interface for all Arkanis tools.\n\n    Subclasses must implement:\n    - name: Unique identifier for the tool\n    - description: Brief explanation of tool's purpose\n    - arguments: Dictionary of required arguments\n    - execute: Main logic implementation\n\n    Example:\n        class MyTool(BaseTool):\n            @property\n            def name(self) -> str:\n                return 'my_tool'\n            \n            @property\n            def description(self) -> str:\n                return 'Performs specific operation'\n            \n            @property\n            def arguments(self) -> Dict[str, str]:\n                return {'param1': 'Description of param1'}\n            \n            def execute(self, **kwargs) -> Any:\n                # Implementation logic\n    \"\"\"\n    \n    @property\n    @abstractmethod\n    def name(self) -> str:\n        \"\"\"\n        Returns the unique identifier name of the tool.\n\n        This name should be:\n        - Unique across all tools\n        - Lowercase with underscores\n        - Descriptive of the tool's function\n\n        Returns:\n            str: Tool's unique identifier\n        \"\"\"\n        pass\n\n    @property\n    @abstractmethod\n    def description(self) -> str:\n        \"\"\"\n        Returns a brief explanation of what the tool does.\n\n        The description should be:\n        - Concise (1-2 sentences)\n        - Clear about the tool's purpose\n        - Written for end-users to understand\n\n        Returns:\n            str: Brief description of the tool\n        \"\"\"\n        pass\n\n    @property\n    @abstractmethod\n    def arguments(self) -> Dict[str, str]:\n        \"\"\"\n        Returns the dictionary mapping argument names to their descriptions.\n\n        The dictionary should include:\n        - Keys as argument names\n        - Values as clear descriptions of each argument\n\n        Returns:\n            Dict[str, str]: Dictionary of argument descriptions\n        \"\"\"\n        pass\n\n    @abstractmethod\n    def execute(self, **kwargs) -> Any:\n        \"\"\"\n        Executes the main logic of the tool.\n\n        Args:\n            **kwargs: Variable keyword arguments expected by the tool\n\n        Returns:\n            Any: The result of executing the tool\n\n        Raises:\n            ToolExecutionError: If execution fails\n        \"\"\"\n        pass",
+        "id": "sug_1775248912",
+        "status": "pending",
+        "timestamp": "2026-04-03 17:41:52"
+    },
+    {
         "title": "Melhoria de Robustez no Hardware Detection",
         "description": "Adicionando tratamento mais robusto de exce\u00e7\u00f5es e logging para melhor diagn\u00f3stico de problemas, al\u00e9m de melhorar a precis\u00e3o na detec\u00e7\u00e3o de GPU considerando outras placas al\u00e9m da NVIDIA.",
         "type": "refactor",
