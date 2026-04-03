@@ -224,78 +224,113 @@ class GetSportsScoreTool(BaseTool):
         # Load API Key from integrations config
         integrations = config_manager.load_integrations()
         tsdb_cfg = integrations.get("thesportsdb", {})
-        api_key = tsdb_cfg.get("api_key", "123") # Default to '123' if not set
+        api_key = tsdb_cfg.get("api_key", "123")
+        
+        # Determine if we should start with V2 or V1
+        # Keys '123' or '3' are officially for V1 test access
+        is_test_key = api_key in ["123", "3"]
         
         headers = HEADERS.copy()
-        headers["X-API-KEY"] = api_key
+        if not is_test_key:
+            headers["X-API-KEY"] = api_key
         
         base_v2 = "https://www.thesportsdb.com/api/v2/json"
+        # The V1 uses the key in the URL: https://www.thesportsdb.com/api/v1/json/{api_key}/...
+        base_v1 = f"https://www.thesportsdb.com/api/v1/json/{api_key}"
 
         try:
-            # 1. Search for the team to get ID
-            search_resp = requests.get(
-                f"{base_v2}/search/team/{team_search}",
-                headers=headers,
-                timeout=10,
-                verify=False
-            )
-            search_resp.raise_for_status()
-            search_data = search_resp.json()
-            teams = search_data.get("teams", [])
+            # 1. Search Logic
+            teams = []
+            leagues = []
+            
+            if not is_test_key:
+                # Try V2 Search first
+                try:
+                    search_resp = requests.get(f"{base_v2}/search/team/{team_search}", headers=headers, timeout=10, verify=False)
+                    if search_resp.ok:
+                        teams = search_resp.json().get("teams", [])
+                    
+                    if not teams:
+                        search_resp = requests.get(f"{base_v2}/search/league/{team_search}", headers=headers, timeout=10, verify=False)
+                        if search_resp.ok:
+                            leagues = search_resp.json().get("leagues", [])
+                except:
+                    pass # Fallback to V1 if V2 fails or times out
 
-            if not teams:
-                # Try searching as a league if team doesn't work
-                search_resp = requests.get(
-                    f"{base_v2}/search/league/{team_search}",
-                    headers=headers,
-                    timeout=10,
-                    verify=False
-                )
-                search_data = search_resp.json()
-                leagues = search_data.get("leagues", [])
-                if not leagues:
-                    return f"Nenhum time ou liga encontrado para '{team_search}' no TheSportsDB."
+            # Fallback to V1 Search if V2 failed or skipped
+            if not teams and not leagues:
+                # V1 Team Search
+                search_resp = requests.get(f"{base_v1}/searchteams.php", params={"t": team_search}, timeout=10, verify=False)
+                if search_resp.ok:
+                    teams = search_resp.json().get("teams", [])
                 
-                # If league found, let's get results by league
-                league_id = leagues[0].get("idLeague")
-                league_name = leagues[0].get("strLeague")
-                
-                if search_type == "next":
-                    endpoint = f"/schedule/next/league/{league_id}"
-                    label = f"Próximos Jogos: {league_name}"
-                else:
-                    endpoint = f"/livescore/league/{league_id}"
-                    label = f"Placar ao Vivo / Últimos: {league_name}"
-            else:
+                # V1 League Search (if no team found)
+                if not teams:
+                    search_resp = requests.get(f"{base_v1}/search_all_leagues.php", params={"s": team_search}, timeout=10, verify=False)
+                    if search_resp.ok:
+                        leagues = search_resp.json().get("leagues", [])
+
+            if not teams and not leagues:
+                return f"Nenhum time ou liga encontrado para '{team_search}' no TheSportsDB."
+
+            # 2. Results Fetching
+            label = ""
+            endpoint_v2 = ""
+            endpoint_v1 = ""
+            v1_params = {}
+
+            if teams:
                 found_team = teams[0]
                 team_id = found_team.get("idTeam")
                 team_name = found_team.get("strTeam")
                 
                 if search_type == "next":
-                    endpoint = f"/schedule/next/team/{team_id}"
+                    endpoint_v2 = f"/schedule/next/team/{team_id}"
+                    endpoint_v1 = "eventsnext.php"
+                    v1_params = {"id": team_id}
                     label = f"Próximos Jogos: {team_name}"
                 else:
-                    endpoint = f"/livescore/all" # Or /livescore/league/{idLeague}
-                    label = f"Resultados: {team_name}"
-                    # For specific team, we might want to filter from /livescore/all 
-                    # but TSDB V2 has better schedule/previous/team/{id}
-                    if search_type == "last":
-                        endpoint = f"/schedule/previous/team/{team_id}"
+                    endpoint_v2 = f"/schedule/previous/team/{team_id}"
+                    endpoint_v1 = "eventslast.php"
+                    v1_params = {"id": team_id}
+                    label = f"Últimos Resultados: {team_name}"
+            else:
+                found_league = leagues[0]
+                league_id = found_league.get("idLeague")
+                league_name = found_league.get("strLeague")
+                
+                if search_type == "next":
+                    endpoint_v2 = f"/schedule/next/league/{league_id}"
+                    endpoint_v1 = "eventsnextleague.php"
+                    v1_params = {"id": league_id}
+                    label = f"Próximos Jogos: {league_name}"
+                else:
+                    endpoint_v2 = f"/livescore/league/{league_id}"
+                    endpoint_v1 = "eventslast.php" # Fallback
+                    v1_params = {"id": league_id}
+                    label = f"Placar / Últimos: {league_name}"
 
-            # 2. Fetch Events
-            events_resp = requests.get(
-                f"{base_v2}{endpoint}",
-                headers=headers,
-                timeout=10,
-                verify=False
-            )
-            events_resp.raise_for_status()
-            events_data = events_resp.json()
-            
-            # The key in JSON varies (events, livescore, results)
-            events = events_data.get("events") or events_data.get("livescore") or events_data.get("results") or []
+            # Fetch implementation
+            events = []
+            # Try V2 first if not test key
+            if not is_test_key and endpoint_v2:
+                try:
+                    ev_resp = requests.get(f"{base_v2}{endpoint_v2}", headers=headers, timeout=10, verify=False)
+                    if ev_resp.ok:
+                        events_data = ev_resp.json()
+                        events = events_data.get("events") or events_data.get("livescore") or events_data.get("results") or []
+                except:
+                    pass
 
-            header_str = f"⚽ **TheSportsDB V2**\n{label}:\n"
+            # Fallback to V1
+            if not events and endpoint_v1:
+                ev_resp = requests.get(f"{base_v1}/{endpoint_v1}", params=v1_params, timeout=10, verify=False)
+                if ev_resp.ok:
+                    ed = ev_resp.json()
+                    events = ed.get("events") or ed.get("results") or []
+
+            # 3. Format Output
+            header_str = f"⚽ **TheSportsDB {'(V2)' if not is_test_key else '(V1)'}**\n{label}:\n"
             if not events:
                 return header_str + "  Nenhum evento encontrado no momento."
 
@@ -308,23 +343,13 @@ class GetSportsScoreTool(BaseTool):
                 s_home = ev.get("intHomeScore")
                 s_away = ev.get("intAwayScore")
                 
-                status = ev.get("strStatus", "")
-                progress = ev.get("strProgress", "")
-                
                 result_str = f"{s_home} x {s_away}" if s_home is not None else "Agendado"
-                if progress: result_str += f" ({progress}')"
-                elif status: result_str += f" [{status}]"
-                
                 lines.append(f"  📅 {date} — {home} vs {away} → **{result_str}**")
 
             return header_str + "\n".join(lines)
 
-        except requests.HTTPError as e:
-            if e.response.status_code == 401:
-                return "⚠️ Erro de Autenticação (401). Verifique sua API Key 123 no painel de Integrações."
-            return f"Error TSDB API: {e}"
         except Exception as e:
-            return f"Error ao buscar esportes: {str(e)}"
+            return f"Error ao buscar esportes (V1/V2): {str(e)}"
 
 
 # ─────────────────────────────────────────────

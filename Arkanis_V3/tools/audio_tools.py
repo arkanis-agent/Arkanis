@@ -40,20 +40,39 @@ class SpeechToTextTool(BaseTool):
         }
 
     def execute(self, **kwargs) -> str:
-        """Standard sync wrapper for tool registry compatibility."""
+        """
+        Standard sync wrapper for tool registry compatibility.
+        Ensures execution works even if called from within another event loop.
+        """
         try:
-            loop = asyncio.get_event_loop()
-            if loop.is_running():
-                # In FastAPI, you should use execute_async directly.
-                # This fallback is for legacy CLI usage.
-                import concurrent.futures
-                with concurrent.futures.ThreadPoolExecutor() as executor:
-                    future = executor.submit(lambda: asyncio.run(self.execute_async(**kwargs)))
+            try:
+                loop = asyncio.get_running_loop()
+            except RuntimeError:
+                loop = None
+
+            if loop and loop.is_running():
+                # We are inside an active loop (common in FastAPI/Telegram)
+                # We must run the async task in a way that doesn't block or conflict.
+                import threading
+                from concurrent.futures import ThreadPoolExecutor
+                
+                def _run_sync():
+                    new_loop = asyncio.new_event_loop()
+                    asyncio.set_event_loop(new_loop)
+                    try:
+                        return new_loop.run_until_complete(self.execute_async(**kwargs))
+                    finally:
+                        new_loop.close()
+
+                with ThreadPoolExecutor() as executor:
+                    future = executor.submit(_run_sync)
                     return json.dumps(future.result())
             else:
+                # No loop running, safe to use asyncio.run
                 return json.dumps(asyncio.run(self.execute_async(**kwargs)))
         except Exception as e:
-            return json.dumps({"error": str(e), "status": "failed"})
+            logger.error(f"Critical STT Execution Error: {str(e)}")
+            return json.dumps({"error": f"Erro crítico na execução: {str(e)}", "status": "failed"})
 
     async def execute_async(self, **kwargs) -> Dict[str, Any]:
         """Async execution with robust logging and error handling."""
