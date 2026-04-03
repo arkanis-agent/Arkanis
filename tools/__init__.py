@@ -1,10 +1,25 @@
+from core.logger import logger
 from tools.registry import registry
-import tools.standard
-import tools.ai_tools
-import tools.audio_tools
-import tools.browser_tools
-import tools.network_tools
-import tools.system_tools
-import tools.monitoring_tools
+
+def safe_import_tool(module_name):
+    try:
+        import importlib
+        importlib.import_module(module_name)
+    except ImportError as e:
+        logger.error(f"Erro ao importar ferramenta [{module_name}]: {e}", symbol="⚠️")
+        # Registra no logger para o Sentinel ver depois
+
+modules = [
+    "tools.standard",
+    "tools.ai_tools",
+    "tools.audio_tools",
+    "tools.browser_tools",
+    "tools.network_tools",
+    "tools.system_tools",
+    "tools.monitoring_tools"
+]
+
+for mod in modules:
+    safe_import_tool(mod)
 
 __all__ = ["registry"]
