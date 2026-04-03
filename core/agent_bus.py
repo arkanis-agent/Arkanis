@@ -167,10 +167,15 @@ class AgentBus:
                 for aid, inst in self._agents.items()
             ]
 
+            # Ensure virtual nodes (system, ALL) are present in the graph nodes
+            graph_nodes = [{"id": a["id"], "role": a["role"], "status": a["status"]} for a in agents_snapshot]
+            graph_nodes.append({"id": "ALL", "role": "Broadcast", "status": "idle"})
+            graph_nodes.append({"id": "system", "role": "ARKANIS OS", "status": "running"})
+
             return {
                 "agents": agents_snapshot,
                 "graph": {
-                    "nodes": [{"id": a["id"], "role": a["role"], "status": a["status"]} for a in agents_snapshot] + [{"id": "ALL", "role": "Broadcast", "status": "idle"}],
+                    "nodes": graph_nodes,
                     "links": self.connections
                 },
                 "history": self.message_history[-20:],
