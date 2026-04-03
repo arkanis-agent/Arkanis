@@ -111,7 +111,7 @@ async function sendMessage(textOverride = null) {
     if (welcomeScreen && !welcomeScreen.classList.contains('hidden')) {
         welcomeScreen.classList.add('hidden');
         chatDisplay.innerHTML = `
-            <div class="max-w-4xl mx-auto space-y-8 pb-32" id="messageArea">
+            <div class="max-w-4xl mx-auto space-y-8 pb-60" id="messageArea">
                 <div class="flex justify-center py-4 opacity-30 select-none">
                     <img src="assets/logo.png" class="h-8 object-contain filter grayscale invert" alt="Arkanis Logo">
                 </div>
@@ -231,7 +231,7 @@ async function sendVoiceMessage(blob) {
     if (welcomeScreen && !welcomeScreen.classList.contains('hidden')) {
         welcomeScreen.classList.add('hidden');
         chatDisplay.innerHTML = `
-            <div class="max-w-4xl mx-auto space-y-8 pb-32" id="messageArea">
+            <div class="max-w-4xl mx-auto space-y-8 pb-60" id="messageArea">
                 <div class="flex justify-center py-4 opacity-30 select-none">
                     <img src="assets/logo.png" class="h-8 object-contain filter grayscale invert" alt="Arkanis Logo">
                 </div>
@@ -2285,7 +2285,7 @@ async function loadChatHistory() {
             if (welcomeScreen && !welcomeScreen.classList.contains('hidden')) {
                 welcomeScreen.classList.add('hidden');
                 chatDisplay.innerHTML = `
-                    <div class="max-w-4xl mx-auto space-y-8 pb-32" id="messageArea">
+                    <div class="max-w-4xl mx-auto space-y-8 pb-60" id="messageArea">
                         <div class="flex justify-center py-4 opacity-30 select-none">
                             <img src="assets/logo.png" class="h-8 object-contain filter grayscale invert" alt="Arkanis Logo">
                         </div>

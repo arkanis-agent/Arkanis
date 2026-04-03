@@ -1,5 +1,31 @@
 [
     {
+        "title": "Implementa\u00e7\u00e3o de Module Orchestrator",
+        "description": "Atualmente, a conex\u00e3o entre os diversos m\u00f3dulos do sistema \u00e9 feita de forma direta, o que pode levar a acoplamento excessivo e dificuldade na evolu\u00e7\u00e3o e manuten\u00e7\u00e3o do c\u00f3digo. A introdu\u00e7\u00e3o de um Module Orchestrator centralizado permitiria uma comunica\u00e7\u00e3o mais eficiente e desacoplada entre os componentes, aumentando a autonomia do sistema ao permitir a troca din\u00e2mica de m\u00f3dulos e estrat\u00e9gias sem impacto no funcionamento geral.",
+        "type": "arch",
+        "priority": "high",
+        "files_involved": [
+            "core/__init__.py",
+            "core/task_engine.py",
+            "core/agent_bus.py",
+            "core/llm_router.py"
+        ],
+        "proposed_code": "class ModuleOrchestrator:\n    def __init__(self):\n        self.modules = {}\n        self.handlers = {}\n\n    def register_module(self, module_name, module_instance):\n        self.modules[module_name] = module_instance\n\n    def register_handler(self, event_type, handler_function):\n        if event_type not in self.handlers:\n            self.handlers[event_type] = []\n        self.handlers[event_type].append(handler_function)\n\n    def dispatch_event(self, event_type, event_data=None):\n        if event_type in self.handlers:\n            for handler in self.handlers[event_type]:\n                handler(event_data)\n\n# Example usage:\n# orchestrator = ModuleOrchestrator()\n# orchestrator.register_module('llm_client', LLMClient())\n# orchestrator.register_handler('task_completed', handle_task_completed)\n# orchestrator.dispatch_event('task_completed', {'task_id': 123, 'status': 'success'})",
+        "id": "arch_1775249662",
+        "status": "pending",
+        "timestamp": "2026-04-03 17:54:22"
+    },
+    {
+        "title": "Melhorias de Seguran\u00e7a e Tratamento de Exce\u00e7\u00f5es",
+        "description": "Adicionei verifica\u00e7\u00f5es de seguran\u00e7a para caminho de arquivo e melhor tratamento de exce\u00e7\u00f5es espec\u00edficas para opera\u00e7\u00f5es de arquivo. Isso evita problemas de seguran\u00e7a como path traversal e melhora a qualidade das mensagens de erro.",
+        "type": "security",
+        "file_path": "/home/diego/\u00c1rea de trabalho/Arkanis_V3.1/tools/standard.py",
+        "proposed_code": "from typing import Any, Dict\nfrom tools.base_tool import BaseTool\nimport json\nimport os\n\nclass WriteFileTool(BaseTool):\n    \"\"\"A tool to write text to a file.\"\"\"\n    \n    @property\n    def name(self) -> str:\n        return \"write_file\"\n\n    @property\n    def description(self) -> str:\n        return \"Write code, HTML, CSS or text to a file. USE THIS to build systems, pages and apps.\"\n\n    @property\n    def arguments(self) -> Dict[str, str]:\n        return {\n            \"path\": \"The destination file path.\",\n            \"content\": \"The string content to write.\"\n        }\n\n    def execute(self, **kwargs) -> str:\n        # LLMs often guess 'file_path' instead of 'path', so we accept both safely.\n        path = kwargs.get(\"path\") or kwargs.get(\"file_path\")\n        content = kwargs.get(\"content\", \"\")\n        \n        if not path:\n            return \"Error: Missing file path.\"\n\n        # Security check to prevent path traversal\n        try:\n            path = os.path.abspath(path)\n            if not path.startswith(os.getcwd()):\n                return \"Error: Invalid file path. Cannot write outside working directory.\"\n\n            # Ensure directory exists\n            os.makedirs(os.path.dirname(path), exist_ok=True)\n\n            with open(path, \"w\") as f:\n                f.write(content)\n            return f\"Successfully wrote to {path}.\"\n        except PermissionError:\n            return \"Error: Permission denied.\"\n        except IsADirectoryError:\n            return \"Error: Path is a directory.\"\n        except FileNotFoundError:\n            return \"Error: Invalid path or directory.\"\n        except Exception as e:\n            return f\"Error writing file: {str(e)}\"\n\n\nclass PrintTool(BaseTool):\n    \"\"\"A tool to display a message.\"\"\"\n    \n    @property\n    def name(self) -> str:\n        return \"print_message\"\n\n    @property\n    def description(self) -> str:\n        return \"Display a message in the console.\"\n\n    @property\n    def arguments(self) -> Dict[str, str]:\n        return {\n            \"message\": \"The message to display.\"\n        }\n\n    def execute(self, **kwargs) -> str:\n        message = kwargs.get(\"message\", \"No message provided.\")\n        print(f\"\\n[Agent Output] {message}\")\n        return f\"Message displayed: {message}\"\n\n# Registration logic\nfrom tools.registry import registry\nregistry.register(WriteFileTool())\nregistry.register(PrintTool())",
+        "id": "sug_1775249599",
+        "status": "pending",
+        "timestamp": "2026-04-03 17:53:19"
+    },
+    {
         "title": "Melhoria de Seguran\u00e7a e Performance na Limpeza de Arquivos Tempor\u00e1rios",
         "description": "No m\u00e9todo execute_async, a limpeza de arquivos tempor\u00e1rios \u00e9 feita apenas no arquivo WAV convertido, mas o processo poderia falhar antes de chegar nessa etapa, deixando arquivos tempor\u00e1rios no sistema. Al\u00e9m disso, a remo\u00e7\u00e3o poderia ser mais eficiente com a fun\u00e7\u00e3o `shutil.rmtree` para limpeza recursiva.",
         "type": "security",
