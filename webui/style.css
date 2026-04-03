@@ -359,3 +359,91 @@ input:checked ~ .peer-checked\:bg-primary {
 .impact-high { color: #f43f5e; border-color: rgba(244, 63, 94, 0.2); }
 .impact-mid { color: #3b82f6; border-color: rgba(59, 130, 246, 0.2); }
 .impact-low { color: #10b981; border-color: rgba(16, 185, 129, 0.2); }
+
+/* ============================================================
+   ELITE CHAT — Premium Messenger & Input Styles
+   ============================================================ */
+
+/* Mascot Floating Hero */
+.mascot-container {
+    perspective: 1000px;
+}
+.mascot-hero {
+    filter: drop-shadow(0 0 40px rgba(59, 130, 246, 0.4));
+    animation: mascot-float 6s ease-in-out infinite;
+    transform-style: preserve-3d;
+}
+.mascot-shadow {
+    background: radial-gradient(ellipse at center, rgba(0,0,0,0.5) 0%, transparent 70%);
+    animation: shadow-pulse 6s ease-in-out infinite;
+    filter: blur(10px);
+}
+
+@keyframes mascot-float {
+    0%, 100% { transform: translateY(0) rotate(-1deg); }
+    50% { transform: translateY(-25px) rotate(1deg); }
+}
+@keyframes shadow-pulse {
+    0%, 100% { transform: scale(1); opacity: 0.6; }
+    50% { transform: scale(0.7); opacity: 0.3; }
+}
+
+/* Neural Glass Bubbles */
+.bubble-glass {
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    animation: bubble-in 0.45s cubic-bezier(0.175, 0.885, 0.32, 1.1) both;
+}
+
+.bubble-bot {
+    background: rgba(15, 23, 42, 0.7);
+    border: 1px solid rgba(59, 130, 246, 0.15);
+    box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.5), inset 0 0 20px rgba(255, 255, 255, 0.02);
+}
+
+.bubble-user {
+    background: linear-gradient(135deg, rgba(37, 99, 235, 0.9), rgba(29, 78, 216, 0.9));
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    box-shadow: 0 10px 30px -10px rgba(37, 99, 235, 0.3);
+}
+
+@keyframes bubble-in {
+    from { opacity: 0; transform: translateY(20px) scale(0.95); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* Floating Command Capsule */
+.command-capsule {
+    background: rgba(15, 23, 42, 0.85);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow: 0 -10px 40px -10px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.03);
+    transition: all 0.3s ease;
+}
+.command-capsule:focus-within {
+    border-color: rgba(59, 130, 246, 0.4);
+    box-shadow: 0 -10px 50px -10px rgba(0, 0, 0, 0.7), 0 0 20px rgba(59, 130, 246, 0.15);
+    transform: translateY(-2px);
+}
+
+/* Typing Indicator Mascot */
+.typing-mascot {
+    width: 24px;
+    height: 24px;
+    background-image: url('assets/mascot.png');
+    background-size: contain;
+    background-repeat: no-repeat;
+    animation: typing-bounce 1s infinite alternate;
+}
+
+@keyframes typing-bounce {
+    from { transform: translateY(0); }
+    to { transform: translateY(-5px); }
+}
+
+/* Scroll Snap for Chat */
+#chatDisplay {
+    scroll-behavior: smooth;
+}

@@ -250,28 +250,42 @@
         <section id="chatDisplay" class="flex-1 overflow-y-auto px-8 md:px-24 py-12 custom-scrollbar">
             <div class="max-w-4xl mx-auto space-y-10">
                 <!-- Welcome Screen -->
-                <div id="welcomeScreen" class="text-center py-12 space-y-4">
-                    <h2 class="text-4xl md:text-5xl font-headline font-extrabold text-on-surface tracking-tight">
-                        Olá, eu sou <span class="text-primary">ARKANIS</span>.
-                    </h2>
-                    <p class="text-on-surface-variant text-lg font-body max-w-xl mx-auto">
-                        Como posso elevar sua produtividade hoje? Estou pronto para analisar dados, criar conteúdo ou resolver problemas complexos.
-                    </p>
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 pb-12 pt-10">
-                        <button class="suggestion-card p-6 bg-surface-container-low rounded-lg text-left hover:bg-surface-container transition-all group border border-outline-variant/5" data-action="auto: Analisar estrutura do diretório atual">
-                            <span class="material-symbols-outlined text-primary mb-3">analytics</span>
-                            <h3 class="text-on-surface font-bold text-sm mb-1">Análise de Ambiente</h3>
-                            <p class="text-on-surface-variant text-xs leading-relaxed">Eu verifico todos os arquivos e dou um reporte técnico.</p>
+                <div id="welcomeScreen" class="text-center py-12 space-y-8 flex flex-col items-center">
+                    <div class="mascot-container relative w-64 h-64 mb-4">
+                        <div class="mascot-shadow absolute bottom-0 left-1/2 -translate-x-1/2 w-40 h-8 rounded-[100%]"></div>
+                        <img src="assets/mascot.png" alt="Arkanis Mascot" class="mascot-hero w-full h-full object-contain relative z-10">
+                    </div>
+                    
+                    <div class="space-y-4 max-w-2xl px-6">
+                        <h2 class="text-4xl md:text-6xl font-headline font-extrabold text-white tracking-tight drop-shadow-sm">
+                            Olá, eu sou <span class="text-blue-500 text-glow-blue uppercase">Arkanis</span>
+                        </h2>
+                        <p class="text-slate-400 text-lg font-body leading-relaxed">
+                            Seu Centro de Comando para Inteligência de Elite. Estou pronto para analisar, criar e evoluir seu ambiente.
+                        </p>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 w-full max-w-5xl px-6 pt-4">
+                        <button class="suggestion-card p-6 bg-slate-900/40 rounded-2xl text-left hover:bg-slate-800/60 transition-all group border border-white/5 backdrop-blur-sm shadow-xl" data-action="auto: Analisar estrutura do diretório atual">
+                            <div class="w-10 h-10 rounded-lg bg-blue-500/10 flex items-center justify-center mb-4 border border-blue-500/20 group-hover:scale-110 transition-transform">
+                                <span class="material-symbols-outlined text-blue-400 text-xl">analytics</span>
+                            </div>
+                            <h3 class="text-white font-bold text-sm mb-1">Análise de Ambiente</h3>
+                            <p class="text-slate-500 text-xs leading-relaxed">Varredura completa e reporte técnico do diretório atual.</p>
                         </button>
-                        <button class="suggestion-card p-6 bg-surface-container-low rounded-lg text-left hover:bg-surface-container transition-all group border border-outline-variant/5" data-action="auto: Buscar últimas notícias de tecnologia e salvar em tech_news.txt">
-                            <span class="material-symbols-outlined text-primary mb-3">auto_awesome</span>
-                            <h3 class="text-on-surface font-bold text-sm mb-1">Web Research</h3>
-                            <p class="text-on-surface-variant text-xs leading-relaxed">Eu busco na rede, resumo e arquivo autonomamente.</p>
+                        <button class="suggestion-card p-6 bg-slate-900/40 rounded-2xl text-left hover:bg-slate-800/60 transition-all group border border-white/5 backdrop-blur-sm shadow-xl" data-action="auto: Buscar últimas notícias de tecnologia e salvar em tech_news.txt">
+                            <div class="w-10 h-10 rounded-lg bg-indigo-500/10 flex items-center justify-center mb-4 border border-indigo-500/20 group-hover:scale-110 transition-transform">
+                                <span class="material-symbols-outlined text-indigo-400 text-xl">auto_awesome</span>
+                            </div>
+                            <h3 class="text-white font-bold text-sm mb-1">Web Research</h3>
+                            <p class="text-slate-500 text-xs leading-relaxed">Busca autônoma na rede com síntese inteligente de dados.</p>
                         </button>
-                        <button class="suggestion-card p-6 bg-surface-container-low rounded-lg text-left hover:bg-surface-container transition-all group border border-outline-variant/5" data-action="auto: Ler server.py e sugerir melhorias de segurança">
-                            <span class="material-symbols-outlined text-primary mb-3">code</span>
-                            <h3 class="text-on-surface font-bold text-sm mb-1">Audit de Código</h3>
-                            <p class="text-on-surface-variant text-xs leading-relaxed">Cole seu código e eu encontrarei falhas e sugerirei melhorias.</p>
+                        <button class="suggestion-card p-6 bg-slate-900/40 rounded-2xl text-left hover:bg-slate-800/60 transition-all group border border-white/5 backdrop-blur-sm shadow-xl" data-action="auto: Ler server.py e sugerir melhorias de segurança">
+                            <div class="w-10 h-10 rounded-lg bg-emerald-500/10 flex items-center justify-center mb-4 border border-emerald-500/20 group-hover:scale-110 transition-transform">
+                                <span class="material-symbols-outlined text-emerald-400 text-xl">code</span>
+                            </div>
+                            <h3 class="text-white font-bold text-sm mb-1">Audit de Código</h3>
+                            <p class="text-slate-500 text-xs leading-relaxed">Identificação de falhas, vulnerabilidades e otimização estrutural.</p>
                         </button>
                     </div>
                 </div>
@@ -690,41 +704,67 @@
             </div>
         </div>
 
-        <!-- Input Area -->
-        <footer class="p-8 md:px-24 pb-10">
-            <div class="max-w-4xl mx-auto">
+        <!-- Input Area (Premium Floating Capsule) -->
+        <footer class="fixed bottom-0 left-64 right-0 p-8 z-50 pointer-events-none">
+            <div class="max-w-4xl mx-auto pointer-events-auto">
                 <div class="relative group">
-                    <!-- Activity Ticker -->
-                    <div id="activityTickerContainer" class="flex items-center justify-between gap-4 mb-4 px-4 py-2 bg-blue-500/5 rounded-full border border-blue-500/10">
+                    <!-- Activity Ticker (Futuristic mini-display) -->
+                    <div id="activityTickerContainer" class="flex items-center justify-between gap-4 mb-3 px-5 py-2 bg-slate-900/60 backdrop-blur-md rounded-full border border-white/5 shadow-2xl">
                         <div class="flex items-center gap-3 overflow-hidden flex-1">
-                            <span class="material-symbols-outlined text-blue-500 text-sm animate-pulse">monitoring</span>
-                            <div id="activityTickerText" class="text-[11px] text-blue-400 font-medium whitespace-nowrap overflow-hidden transition-all duration-500">Pronto para novas ordens.</div>
+                            <span class="material-symbols-outlined text-blue-500 text-[14px] animate-pulse">monitoring</span>
+                            <div id="activityTickerText" class="text-[10px] text-blue-400 font-bold uppercase tracking-[0.1em] whitespace-nowrap overflow-hidden transition-all duration-500">Sistemas Operacionais: Prontidão Total</div>
                         </div>
-                        <button id="logToggleBtn" class="flex items-center gap-1 text-[10px] font-bold text-slate-500 hover:text-blue-400 transition-colors">
-                            LOGS <span class="material-symbols-outlined text-xs">keyboard_arrow_up</span>
+                        <button id="logToggleBtn" class="flex items-center gap-1.5 text-[9px] font-extrabold text-slate-500 hover:text-blue-400 transition-colors uppercase tracking-[0.15em]">
+                            Logs <span class="material-symbols-outlined text-[10px]">keyboard_arrow_up</span>
                         </button>
                     </div>
 
-                    <!-- Image Previews Container -->
-                    <div id="imagePreviews" class="flex flex-wrap gap-2 mb-2 px-6"></div>
-
-                    <!-- Main Input -->
-                    <div class="bg-surface-container-lowest/85 backdrop-blur-xl rounded-xl shadow-2xl ring-1 ring-white/5 flex items-center p-2 pl-6">
-                        <textarea id="userInput" class="flex-1 bg-transparent border-none focus:ring-0 text-on-surface placeholder-on-surface-variant/60 font-body py-3 resize-none custom-scrollbar max-h-48" placeholder="Pergunte algo à ARKANIS..." rows="1"></textarea>
-                        <div class="flex items-center gap-2 pr-2">
-                            <input type="file" id="imageInput" class="hidden" accept="image/*" multiple />
-                            <button id="attachBtn" class="p-2.5 rounded-lg text-on-surface-variant hover:bg-surface-container-high transition-all">
-                                <span class="material-symbols-outlined">attach_file</span>
+                    <!-- Floating Command Capsule -->
+                    <div class="command-capsule rounded-[28px] overflow-hidden p-2 flex items-end gap-3 px-5 group-focus-within:border-blue-500/40 transition-all">
+                        <!-- Tool Actions -->
+                        <div class="flex items-center gap-1.5 mb-2">
+                            <button id="attachBtn" class="p-2.5 rounded-xl hover:bg-white/5 text-slate-400 hover:text-blue-400 transition-all" title="Anexar Arquivos">
+                                <span class="material-symbols-outlined text-[20px]">attach_file</span>
                             </button>
-                            <button id="voiceBtn" class="p-2.5 rounded-lg text-on-surface-variant hover:bg-surface-container-high transition-all">
-                                <span class="material-symbols-outlined">mic</span>
+                            <button id="imageBtn" class="p-2.5 rounded-xl hover:bg-white/5 text-slate-400 hover:text-indigo-400 transition-all" title="Enviar Imagem">
+                                <span class="material-symbols-outlined text-[20px]">image</span>
+                                <input type="file" id="imageInput" class="hidden" accept="image/*" multiple />
                             </button>
-                            <button id="sendBtn" class="bg-primary hover:bg-primary-dim text-white p-3 rounded-xl flex items-center justify-center transition-all active:scale-95 shadow-lg shadow-primary/20">
-                                <span class="material-symbols-outlined">arrow_upward</span>
+                            <button id="voiceBtn" class="p-2.5 rounded-xl hover:bg-white/5 text-slate-400 hover:text-emerald-400 transition-all" title="Comando de Voz">
+                                <span class="material-symbols-outlined text-[20px]">mic</span>
                             </button>
                         </div>
+
+                        <!-- Main Input -->
+                        <div class="flex-1 flex flex-col min-h-[52px] justify-center">
+                            <!-- Image previews inside the capsule -->
+                            <div id="imagePreviews" class="hidden flex-wrap gap-2 py-2 mb-1"></div>
+                            
+                            <textarea id="userInput" 
+                                class="w-full bg-transparent border-none focus:ring-0 text-slate-100 placeholder-slate-500 font-body py-3.5 resize-none custom-scrollbar max-h-48 text-[15px] leading-relaxed" 
+                                placeholder="Insira seu comando à Elite Arkanis..." rows="1"></textarea>
+                            
+                            <!-- Voice visualizer (Elite style) -->
+                            <div id="voiceIndicator" class="hidden items-center gap-3 py-4">
+                                <div class="flex gap-1">
+                                    <div class="w-1 h-3 bg-emerald-500/80 rounded-full animate-bounce" style="animation-delay: 0.1s"></div>
+                                    <div class="w-1 h-5 bg-emerald-500/80 rounded-full animate-bounce" style="animation-delay: 0.2s"></div>
+                                    <div class="w-1 h-3 bg-emerald-500/80 rounded-full animate-bounce" style="animation-delay: 0.3s"></div>
+                                </div>
+                                <span class="text-[10px] font-extrabold text-emerald-400 uppercase tracking-[0.2em]">Sincronização Vocal Ativa...</span>
+                            </div>
+                        </div>
+
+                        <!-- Send Button -->
+                        <button id="sendBtn" class="mb-1.5 p-3.5 rounded-2xl bg-blue-600 hover:bg-blue-500 text-white shadow-xl shadow-blue-600/30 transition-all transform hover:scale-105 active:scale-95 disabled:opacity-30 disabled:grayscale" disabled>
+                            <span class="material-symbols-outlined text-[22px]" style="font-variation-settings: 'FILL' 1;">send</span>
+                        </button>
                     </div>
                 </div>
+                
+                <p class="text-[9px] text-center text-slate-600 mt-4 font-bold uppercase tracking-[0.3em] opacity-40">
+                    Arkanis V3.1 — Interface Neural Autônoma
+                </p>
             </div>
         </footer>
     </main>
