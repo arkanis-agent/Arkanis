@@ -1003,7 +1003,8 @@ function setActivePanel(panelId) {
         'providers': { element: providersPanel, nav: navProviders, showFooter: false },
         history: { element: document.getElementById('historyPanel'), nav: navHistory, showFooter: false },
         observability: { element: document.getElementById('observabilityPanel'), nav: navObservability, showFooter: false },
-        'tasks': { element: tasksPanel, nav: navTasks, showFooter: false }
+        'tasks': { element: tasksPanel, nav: navTasks, showFooter: false },
+        'integrations': { element: document.getElementById('integrationsPanel'), nav: null, showFooter: false }
     };
 
     // Close log drawer when switching to deep configuration
@@ -1017,14 +1018,14 @@ function setActivePanel(panelId) {
     Object.keys(panels).forEach(id => {
         const p = panels[id];
         if (id === panelId) {
-            p.element.classList.remove('hidden');
+            if (p.element) p.element.classList.remove('hidden');
             if (p.nav) {
                 p.nav.classList.replace('text-slate-500', 'text-blue-400');
                 p.nav.classList.replace('dark:text-slate-400', 'dark:text-blue-400');
                 p.nav.classList.add('bg-slate-800/80');
             }
         } else {
-            p.element.classList.add('hidden');
+            if (p.element) p.element.classList.add('hidden');
             if (p.nav) {
                 p.nav.classList.replace('text-blue-400', 'text-slate-500');
                 p.nav.classList.replace('dark:text-blue-400', 'dark:text-slate-400');
@@ -1067,9 +1068,16 @@ function showHistory() { setActivePanel('history'); }
 function showProviders() {
     setActivePanel('providers');
     loadProvidersConfig();
+}
+function showIntegrations() {
+    setActivePanel('integrations');
     loadIntegrationsConfig();
 }
-function showTasks() { setActivePanel('tasks'); }
+function showTasks() { 
+    setActivePanel('tasks'); 
+    loadTasks();
+    loadGoals();
+}
 function showObservability() { 
     setActivePanel('observability'); 
     fetchObservabilityData();
@@ -1494,35 +1502,17 @@ if (showCreateGoalModalBtn) {
     showCreateGoalModalBtn.addEventListener('click', createGoal);
 }
 
-if (tabLlmsBtn && tabIntegrationsBtn) {
-    tabLlmsBtn.addEventListener('click', () => {
-        activeConfigTab = 'llms';
-        tabLlmsBtn.className = 'py-3 text-sm font-bold text-blue-400 border-b-2 border-primary transition-all';
-        tabIntegrationsBtn.className = 'py-3 text-sm font-bold text-slate-500 border-b-2 border-transparent hover:text-slate-300 transition-all';
-        tabLlmsContent.classList.remove('hidden');
-        tabLlmsContent.classList.add('block');
-        tabIntegrationsContent.classList.remove('block');
-        tabIntegrationsContent.classList.add('hidden');
-    });
-
-    tabIntegrationsBtn.addEventListener('click', () => {
-        activeConfigTab = 'integrations';
-        tabIntegrationsBtn.className = 'py-3 text-sm font-bold text-blue-400 border-b-2 border-primary transition-all';
-        tabLlmsBtn.className = 'py-3 text-sm font-bold text-slate-500 border-b-2 border-transparent hover:text-slate-300 transition-all';
-        tabIntegrationsContent.classList.remove('hidden');
-        tabIntegrationsContent.classList.add('block');
-        tabLlmsContent.classList.remove('block');
-        tabLlmsContent.classList.add('hidden');
-    });
-}
+const saveIntegrationsBtn = document.getElementById('saveIntegrationsBtn');
 
 if (saveConfigBtn) {
     saveConfigBtn.addEventListener('click', () => {
-        if (activeConfigTab === 'llms') {
-            saveProvidersConfig();
-        } else {
-            saveIntegrationsConfig();
-        }
+        saveProvidersConfig();
+    });
+}
+
+if (saveIntegrationsBtn) {
+    saveIntegrationsBtn.addEventListener('click', () => {
+        saveIntegrationsConfig();
     });
 }
 
@@ -1536,7 +1526,7 @@ if (navChat) {
 }
 
 const topNavChat = document.getElementById('topNavChat');
-const topNavObs = document.getElementById('topNavObs');
+const topNavIntegrations = document.getElementById('topNavIntegrations');
 
 if (topNavChat) {
     topNavChat.addEventListener('click', () => {
@@ -1545,15 +1535,15 @@ if (topNavChat) {
     });
 }
 
-if (topNavObs) {
-    topNavObs.addEventListener('click', () => {
-        showObservability();
-        updateTopNav('obs');
+if (topNavIntegrations) {
+    topNavIntegrations.addEventListener('click', () => {
+        showIntegrations();
+        updateTopNav('integrations');
     });
 }
 
 function updateTopNav(activeId) {
-    if (!topNavChat || !topNavObs) return;
+    if (!topNavChat || !topNavIntegrations) return;
     
     const activeClasses = ['text-blue-600', 'dark:text-blue-400', 'border-b-2', 'border-blue-600', 'dark:border-blue-400', 'pb-1'];
     const inactiveClasses = ['text-slate-500', 'dark:text-slate-400', 'hover:text-slate-800', 'dark:hover:text-slate-200', 'transition-colors'];
@@ -1561,16 +1551,16 @@ function updateTopNav(activeId) {
     if (activeId === 'chat') {
         topNavChat.classList.add(...activeClasses);
         topNavChat.classList.remove(...inactiveClasses);
-        topNavObs.classList.remove(...activeClasses);
-        topNavObs.classList.add(...inactiveClasses);
+        topNavIntegrations.classList.remove(...activeClasses);
+        topNavIntegrations.classList.add(...inactiveClasses);
         topNavChat.classList.remove('cursor-pointer');
-        topNavObs.classList.add('cursor-pointer');
+        topNavIntegrations.classList.add('cursor-pointer');
     } else {
-        topNavObs.classList.add(...activeClasses);
-        topNavObs.classList.remove(...inactiveClasses);
+        topNavIntegrations.classList.add(...activeClasses);
+        topNavIntegrations.classList.remove(...inactiveClasses);
         topNavChat.classList.remove(...activeClasses);
         topNavChat.classList.add(...inactiveClasses);
-        topNavObs.classList.remove('cursor-pointer');
+        topNavIntegrations.classList.remove('cursor-pointer');
         topNavChat.classList.add('cursor-pointer');
     }
 }

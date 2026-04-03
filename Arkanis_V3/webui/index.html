@@ -169,7 +169,7 @@
             
             <nav class="flex gap-8 items-center font-manrope text-sm tracking-tight font-medium">
                 <a id="topNavChat" class="text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400 pb-1 cursor-pointer">Mensagens</a>
-                <a id="topNavObs" class="text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 transition-colors cursor-pointer">Status Global</a>
+                <a id="topNavIntegrations" class="text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 transition-colors cursor-pointer">Integrações</a>
             </nav>
         </div>
         <div class="flex items-center gap-4">
@@ -276,30 +276,19 @@
         <!-- Providers & Models Panel (Hidden by default) -->
         <section id="providersPanel" class="hidden flex-1 overflow-y-auto p-10 custom-scrollbar">
             <div class="max-w-5xl mx-auto space-y-8 pb-24">
-                <div class="flex items-center justify-between">
+                <div class="flex items-center justify-between border-b border-white/10 pb-4">
                     <div>
-                        <h2 class="text-3xl font-headline font-extrabold text-on-surface">Configurações & Integrações</h2>
-                        <p class="text-on-surface-variant text-sm mt-1">Gerencie seus provedores de API, modelos e conexões externas.</p>
+                        <h2 class="text-3xl font-headline font-extrabold text-on-surface">Provedores de APIs</h2>
+                        <p class="text-on-surface-variant text-sm mt-1">Gerencie seus provedores de LLM e chaves de acesso externas.</p>
                     </div>
-                </div>
-
-                <!-- Tabs Navigation -->
-                <div class="flex border-b border-white/10 gap-8">
-                    <button id="tabLlmsBtn" class="py-3 text-sm font-bold text-blue-400 border-b-2 border-primary transition-all">
-                        Modelos & APIs
-                    </button>
-                    <button id="tabIntegrationsBtn" class="py-3 text-sm font-bold text-slate-500 border-b-2 border-transparent hover:text-slate-300 transition-all">
-                        Integrações Externas
-                    </button>
-                    
-                    <button id="saveConfigBtn" class="ml-auto bg-primary hover:bg-primary-dim text-white px-5 py-2 mb-2 rounded-xl text-xs font-bold flex items-center gap-2 transition-all shadow-lg shadow-primary/20">
+                    <button id="saveConfigBtn" class="bg-primary hover:bg-primary-dim text-white px-5 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition-all shadow-lg shadow-primary/20">
                         <span class="material-symbols-outlined text-sm">save</span>
-                        Salvar Alterações
+                        Salvar Modelos
                     </button>
                 </div>
 
                 <!-- LLMs Content Tab -->
-                <div id="tabLlmsContent" class="space-y-8 block">
+                <div id="tabLlmsContent" class="space-y-8 block mt-6">
 
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     <!-- Provider Cards will be injected here by script.js -->
@@ -317,10 +306,102 @@
                     </div>
                 </div>
 
-                <!-- Integrations Content Tab -->
-                <div id="tabIntegrationsContent" class="space-y-8 hidden">
+            </div>
+        </section>
+
+        <!-- Integrations Panel -->
+        <section id="integrationsPanel" class="hidden flex-1 overflow-y-auto p-10 custom-scrollbar">
+            <div class="max-w-5xl mx-auto space-y-8 pb-24">
+                <div class="flex items-center justify-between border-b border-white/10 pb-4">
+                    <div>
+                        <h2 class="text-3xl font-headline font-extrabold text-on-surface">Integrações Externas</h2>
+                        <p class="text-on-surface-variant text-sm mt-1">Gerencie chaves e configurações para integrações com serviços de terceiros (ex: GitHub, Jira).</p>
+                    </div>
+                    <button id="saveIntegrationsBtn" class="bg-primary hover:bg-primary-dim text-white px-5 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition-all shadow-lg shadow-primary/20">
+                        <span class="material-symbols-outlined text-sm">save</span>
+                        Salvar Integrações
+                    </button>
+                </div>
+
+                <div class="mt-6">
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6" id="integrationCardsContainer">
                         <!-- Integration Cards will be injected here by script.js -->
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Tasks Panel -->
+        <section id="tasksPanel" class="hidden flex-1 overflow-y-auto p-10 custom-scrollbar">
+            <div class="max-w-6xl mx-auto space-y-8 pb-24">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h2 class="text-3xl font-headline font-extrabold text-on-surface">Agentes & Tarefas</h2>
+                        <p class="text-on-surface-variant text-sm mt-1">Gerencie tarefas contínuas e fluxos de trabalho autônomos.</p>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <button onclick="loadTasks(); loadGoals();" class="flex items-center gap-2 bg-slate-800 hover:bg-slate-700 text-slate-300 px-4 py-2 rounded-xl text-xs font-bold transition-all">
+                            <span class="material-symbols-outlined text-sm">cached</span> Atualizar
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Create Continuous Task Form -->
+                <div class="bg-slate-900/40 rounded-2xl border border-white/5 p-6 space-y-4">
+                    <h3 class="text-[11px] font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2">
+                        <span class="material-symbols-outlined text-sm">add_task</span> Nova Tarefa Contínua
+                    </h3>
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                        <div class="col-span-1 md:col-span-2">
+                            <label class="text-[10px] font-bold text-slate-500 uppercase tracking-widest block mb-1">Descrição / Comando</label>
+                            <input id="newTaskDesc" type="text" class="w-full bg-slate-800 border border-white/10 rounded-xl px-4 py-2 text-sm text-white focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Ex: Monitorar preço do bitcoin, Acompanhar jogo...">
+                        </div>
+                        <div>
+                            <label class="text-[10px] font-bold text-slate-500 uppercase tracking-widest block mb-1">Tipo de Tarefa</label>
+                            <select id="newTaskType" class="w-full bg-slate-800 border border-white/10 rounded-xl px-4 py-2 text-sm text-white focus:ring-2 focus:ring-blue-500 outline-none">
+                                <option value="interval">Recorrente</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="text-[10px] font-bold text-slate-500 uppercase tracking-widest block mb-1">Intervalo (s)</label>
+                            <input id="newTaskInterval" type="number" value="300" class="w-full bg-slate-800 border border-white/10 rounded-xl px-4 py-2 text-sm text-white focus:ring-2 focus:ring-blue-500 outline-none">
+                        </div>
+                        <div class="col-span-1 md:col-span-2">
+                            <label class="text-[10px] font-bold text-slate-500 uppercase tracking-widest block mb-1">Condição de parada (Opcional)</label>
+                            <input id="newTaskCondition" type="text" class="w-full bg-slate-800 border border-white/10 rounded-xl px-4 py-2 text-sm text-white focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Ex: Quando o preço atingir 100000">
+                        </div>
+                        <div class="col-span-1 md:col-span-1">
+                            <label class="text-[10px] font-bold text-slate-500 uppercase tracking-widest block mb-1">Objetivo Global (Opcional)</label>
+                            <select id="newTaskGoalId" class="w-full bg-slate-800 border border-white/10 rounded-xl px-4 py-2 text-sm text-white focus:ring-2 focus:ring-blue-500 outline-none">
+                                <option value="">Nenhum Objetivo</option>
+                            </select>
+                        </div>
+                        <div class="col-span-1 flex items-end">
+                            <button id="createTaskBtn" class="w-full bg-blue-600 hover:bg-blue-500 text-white py-2 rounded-xl font-bold text-sm transition-all shadow-lg shadow-blue-600/20 flex items-center justify-center gap-2">
+                                <span class="material-symbols-outlined text-sm">play_arrow</span> Iniciar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Active Tasks -->
+                <div class="space-y-4">
+                    <h3 class="text-[11px] font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2">
+                        <span class="material-symbols-outlined text-sm">sync</span> Tarefas Ativas
+                    </h3>
+                    <div id="tasksListContainer" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+                        <!-- Loaded by JS renderTasks -->
+                    </div>
+                </div>
+                
+                <!-- Goals -->
+                <div class="space-y-4 pt-10">
+                    <h3 class="text-[11px] font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2">
+                        <span class="material-symbols-outlined text-sm">flag</span> Objetivos Globais
+                        <button id="showCreateGoalModalBtn" class="ml-2 bg-blue-500/20 hover:bg-blue-500/40 text-blue-400 px-3 py-1 rounded text-[10px] transition-colors border border-blue-500/30">Criar Novo</button>
+                    </h3>
+                    <div id="goalsListContainer" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                        <!-- Loaded by JS renderGoals -->
                     </div>
                 </div>
 
