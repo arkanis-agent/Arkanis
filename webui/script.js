@@ -107,10 +107,15 @@ async function sendMessage(textOverride = null) {
     const text = textOverride || userInput.value.trim();
     if (!text && uploadedImagesArr.length === 0) return;
 
-    // Reset UI
+    // Reset UI for the first message
     if (welcomeScreen && !welcomeScreen.classList.contains('hidden')) {
         welcomeScreen.classList.add('hidden');
-        chatDisplay.innerHTML = '<div class="max-w-4xl mx-auto space-y-10" id="messageArea"></div>';
+        chatDisplay.innerHTML = `
+            <div class="max-w-4xl mx-auto space-y-8 pb-32" id="messageArea">
+                <div class="flex justify-center py-4 opacity-30 select-none">
+                    <img src="assets/logo.png" class="h-8 object-contain filter grayscale invert" alt="Arkanis Logo">
+                </div>
+            </div>`;
     }
 
     const messageArea = document.getElementById('messageArea');
@@ -224,7 +229,12 @@ async function sendVoiceMessage(blob) {
     // 1. Prepare UI
     if (welcomeScreen && !welcomeScreen.classList.contains('hidden')) {
         welcomeScreen.classList.add('hidden');
-        chatDisplay.innerHTML = '<div class="max-w-4xl mx-auto space-y-10" id="messageArea"></div>';
+        chatDisplay.innerHTML = `
+            <div class="max-w-4xl mx-auto space-y-8 pb-32" id="messageArea">
+                <div class="flex justify-center py-4 opacity-30 select-none">
+                    <img src="assets/logo.png" class="h-8 object-contain filter grayscale invert" alt="Arkanis Logo">
+                </div>
+            </div>`;
     }
 
     addUserMessage("🎙️ [Áudio Enviado]");
@@ -271,9 +281,10 @@ async function sendVoiceMessage(blob) {
 
 function addUserMessage(text) {
     const area = document.getElementById('messageArea');
+    if (!area) return;
     const wrap = document.createElement('div');
     wrap.className = 'flex justify-end mb-6';
-    wrap.innerHTML = `<div class="bg-blue-600 text-white px-6 py-4 rounded-2xl rounded-br-none max-w-[80%] shadow-lg shadow-blue-900/20 text-sm font-body leading-relaxed">${text}</div>`;
+    wrap.innerHTML = `<div class="bubble-glass bubble-user text-white px-6 py-4 rounded-3xl rounded-br-none max-w-[85%] text-[15px] font-body leading-relaxed">${text}</div>`;
     area.appendChild(wrap);
     scrollDown();
 }
@@ -292,7 +303,7 @@ function addUserMessageWithImages(text, images = []) {
     `).join('');
 
     wrap.innerHTML = `
-        <div class="bg-blue-600 text-white px-6 py-4 rounded-2xl rounded-br-none max-w-[80%] shadow-lg shadow-blue-900/20 text-sm font-body leading-relaxed space-y-3">
+        <div class="bubble-glass bubble-user text-white px-6 py-4 rounded-3xl rounded-br-none max-w-[85%] text-[15px] font-body leading-relaxed space-y-3">
             ${images.length > 0 ? `<div class="flex flex-wrap gap-2">${imgThumbsHtml}</div>` : ''}
             ${text ? `<span>${text}</span>` : ''}
         </div>`;
@@ -302,22 +313,26 @@ function addUserMessageWithImages(text, images = []) {
 
 function addBotMessage(text, id = null) {
     const area = document.getElementById('messageArea');
+    if (!area) return;
     const wrap = document.createElement('div');
     wrap.className = 'flex justify-start items-start gap-4 mb-8';
     if (id) wrap.id = id;
     
-    // Create a unique internal ID for the content to target with typewriter
     const contentId = `bot-content-${id || Date.now()}`;
     
     wrap.innerHTML = `
-        <div class="w-8 h-8 rounded-lg bg-blue-500/20 flex-shrink-0 flex items-center justify-center border border-blue-500/20">
-            <span class="material-symbols-outlined text-blue-400 text-sm" style="font-variation-settings: 'FILL' 1;">bolt</span>
+        <div class="w-10 h-10 rounded-xl bg-slate-900 flex-shrink-0 flex items-center justify-center border border-white/10 shadow-lg p-1">
+            <img src="assets/mascot.png" class="w-full h-full object-contain" alt="A">
         </div>
-        <div class="bg-slate-900/50 text-slate-200 px-8 py-6 rounded-2xl rounded-bl-none max-w-[85%] border border-white/5 shadow-xl">
-            <div id="${contentId}" class="space-y-4 font-body leading-relaxed text-sm">${text}</div>
-            <div class="pt-4 flex gap-2 opacity-50 hover:opacity-100 transition-opacity">
-                <button class="px-2 py-1 rounded hover:bg-white/5 text-[10px] uppercase font-bold tracking-tighter">Copiar</button>
-                <button class="px-2 py-1 rounded hover:bg-white/5 text-[10px] uppercase font-bold tracking-tighter">Regenerar</button>
+        <div class="bubble-glass bubble-bot text-slate-200 px-8 py-6 rounded-3xl rounded-bl-none max-w-[88%] shadow-2xl">
+            <div id="${contentId}" class="space-y-4 font-body leading-relaxed text-[15px]">${text}</div>
+            <div class="pt-5 flex gap-4 opacity-30 hover:opacity-100 transition-opacity">
+                <button class="flex items-center gap-1.5 text-[10px] uppercase font-bold tracking-[0.2em] hover:text-blue-400 transition-colors" onclick="copyToClipboard('${contentId}')">
+                    <span class="material-symbols-outlined text-sm">content_copy</span> Copiar
+                </button>
+                <button class="flex items-center gap-1.5 text-[10px] uppercase font-bold tracking-[0.2em] hover:text-blue-400 transition-colors">
+                    <span class="material-symbols-outlined text-sm">refresh</span> Regenerar
+                </button>
             </div>
         </div>
     `;
@@ -2247,7 +2262,12 @@ async function loadChatHistory() {
         if (data.history && data.history.length > 0) {
             if (welcomeScreen && !welcomeScreen.classList.contains('hidden')) {
                 welcomeScreen.classList.add('hidden');
-                chatDisplay.innerHTML = '<div class="max-w-4xl mx-auto space-y-10" id="messageArea"></div>';
+                chatDisplay.innerHTML = `
+                    <div class="max-w-4xl mx-auto space-y-8 pb-32" id="messageArea">
+                        <div class="flex justify-center py-4 opacity-30 select-none">
+                            <img src="assets/logo.png" class="h-8 object-contain filter grayscale invert" alt="Arkanis Logo">
+                        </div>
+                    </div>`;
             }
             const messageArea = document.getElementById('messageArea') || chatDisplay;
 
