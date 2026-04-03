@@ -301,6 +301,50 @@ class UpdateGoalProgressTool(BaseTool):
         except Exception as e:
             return f"Error updating goal: {e}"
 
+class ReplaceFileContentTool(BaseTool):
+    """A tool to non-destructively edit a file by searching and replacing specific text blocks."""
+    @property
+    def name(self) -> str: return "replace_file_content"
+    @property
+    def description(self) -> str:
+        return (
+            "Edits a file by replacing a specific 'target' string with 'replacement' content. "
+            "USE THIS for minor updates, fixes, or adding code to existing files without overwriting everything. "
+            "The 'target' MUST match exactly (including whitespace)."
+        )
+    @property
+    def arguments(self) -> Dict[str, str]:
+        return {
+            "path": "The path to the file.",
+            "target": "The exact string to be replaced.",
+            "replacement": "The new string to put in place of target."
+        }
+    def execute(self, **kwargs) -> str:
+        path = kwargs.get("path")
+        target = kwargs.get("target")
+        replacement = kwargs.get("replacement")
+        if not path or target is None or replacement is None: return "Error: Missing parameters."
+        if not is_safe_path(path): return "Error: Path violation."
+        
+        try:
+            path = normalize_path(path)
+            if not os.path.exists(path): return f"Error: File {path} does not exist."
+            
+            with open(path, "r", encoding="utf-8") as f:
+                content = f.read()
+            
+            if target not in content:
+                return f"Error: Target string not found in {path}. Make sure it matches exactly (spaces/tabs)."
+            
+            new_content = content.replace(target, replacement)
+            with open(path, "w", encoding="utf-8") as f:
+                f.write(new_content)
+                
+            agent_bus.broadcast_message("system", f"[SECURITY LOG] dev_agent edited file: {path}")
+            return f"Successfully updated {path}."
+        except Exception as e:
+            return f"Error replacing content in {path}: {str(e)}"
+
 # Auto-registration
 registry.register(GetCurrentDateTimeTool())
 registry.register(ListFilesTool())
@@ -314,3 +358,4 @@ registry.register(SendMessageTool())
 registry.register(BroadcastMessageTool())
 registry.register(SaveMemoryTool())
 registry.register(UpdateGoalProgressTool())
+registry.register(ReplaceFileContentTool())

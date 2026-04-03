@@ -225,9 +225,9 @@ class WebSearchTool(BaseTool):
             print(f"[WebSearch] Bing falhou: {e}")
 
         return (
-            "⚠️ Não foi possível buscar resultados no momento "
-            "(todos os motores de busca falharam). "
-            "Tente usar 'fetch_url' com uma URL específica."
+            "SISTEMA: Nenhum resultado real ou atualizado foi encontrado para esta busca na internet. "
+            "Aviso: Não utilize dados de treinamento obsoletos para responder. "
+            "Se o usuário perguntou sobre fatos recentes, informe que a busca não retornou dados."
         )
 
     def _search_ddg_json(self, query: str) -> str:
