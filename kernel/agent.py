@@ -1,3 +1,4 @@
+from typing import List, Optional
 from kernel.planner import Planner
 from kernel.executor import Executor
 from core.agents.critic_agent import CriticAgent
@@ -350,7 +351,7 @@ Se NÃO houver dados factuais e o usuário fez uma pergunta específica, admita 
         # 4. Format response with SOUL personality
         self.current_action = "Formatando resposta..."
         self.log("Formatando resposta com SOUL...", "system")
-        response = self._format_response_with_soul(user_input, results, task_hint=task_hint)
+        response = self._format_response_with_soul(user_input, results, task_hint=task_hint, images=images)
 
         # 5. Salvar Interação Histórica Completa na Memória
         self.memory.add_interaction(user_input=user_input, plan=final_plan, result=response)

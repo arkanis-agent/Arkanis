@@ -1,5 +1,25 @@
 [
     {
+        "title": "Inicializa\u00e7\u00e3o do Pacote Arkanis V3",
+        "description": "O arquivo __init__.py est\u00e1 vazio. Ele deve ser usado para definir interfaces p\u00fablicas e inicializa\u00e7\u00f5es importantes do pacote.",
+        "type": "feature",
+        "file_path": "/home/diego/\u00c1rea de trabalho/Arkanis_V3.1/__init__.py",
+        "proposed_code": "__version__ = '3.0.0'\n\nfrom flask import Flask\nfrom flask_sqlalchemy import SQLAlchemy\n\n# Inicializa\u00e7\u00e3o da aplica\u00e7\u00e3o Flask\napp = Flask(__name__)\napp.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///arkanis_v3.db'\n\n# Inicializa\u00e7\u00e3o do SQLAlchemy\ndb = SQLAlchemy(app)\n\nfrom .routes import *\nfrom .models import *\n",
+        "id": "sug_1775241554",
+        "status": "pending",
+        "timestamp": "2026-04-03 15:39:14"
+    },
+    {
+        "title": "Am\u00e9lioration de la gestion des exceptions",
+        "description": "Ajout d'un bloc try-except plus g\u00e9n\u00e9rique pour capturer et logguer toutes les exceptions, au lieu de les laisser remonter jusqu'au syst\u00e8me.",
+        "type": "refactor",
+        "file_path": "/home/diego/\u00c1rea de trabalho/Arkanis_V3.1/main.py",
+        "proposed_code": "#!/usr/bin/env python3\nimport sys\nimport os\nimport logging\n\n# Adjusting python path to allow internal imports relative to /V3\nsys.path.append(os.path.dirname(os.path.abspath(__file__)))\n\n# Simple built-in .env loader to avoid external dependencies\nenv_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), \".env\")\nif os.path.exists(env_path):\n    with open(env_path, \"r\") as f:\n        for line in f:\n            if line.strip() and not line.startswith(\"#\"):\n                key, val = line.strip().split(\"=\", 1)\n                os.environ[key.strip()] = val.strip()\n\nfrom kernel.agent import ArkanisAgent\nfrom interfaces.cli import ArkanisCLI\n\ndef main():\n    try:\n        # 1. Initialize the Kernel (Agent)\n        agent = ArkanisAgent()\n        \n        # 2. Interface Selection (Default to Web, or CLI/Telegram)\n        arg = sys.argv[1].lower() if len(sys.argv) > 1 else \"\"\n        \n        if arg == \"--telegram\":\n            from interfaces.telegram import TelegramInterface\n            print(\"\\n[Boot] Initializing Telegram Interface...\")\n            ui = TelegramInterface(agent)\n            ui.start_loop()\n        elif arg == \"--cli\":\n            from interfaces.cli import ArkanisCLI\n            print(\"\\n[Boot] Initializing Standard CLI...\")\n            ui = ArkanisCLI(agent)\n            ui.start_loop()\n        else:\n            # Default to WEB\n            import uvicorn\n            import webbrowser\n            import api.server as api_server\n            from api.server import app\n            \n            # Inject the kernel instance into the API server (Fixing Double Agent bug)\n            api_server.agent = agent\n            \n            print(\"\\n[Boot] Initializing Web Interface (FastAPI)...\")\n            print(\"[INFO] Access ARKANIS at: http://127.0.0.1:8000\")\n            \n            # Auto-open browser in a separate thread to not block server startup\n            def open_browser():\n                import time\n                time.sleep(1.5)\n                webbrowser.open(\"http://127.0.0.1:8000\")\n            \n            import threading\n            threading.Thread(target=open_browser, daemon=True).start()\n            \n            uvicorn.run(app, host=\"0.0.0.0\", port=8000)\n    except Exception as e:\n        logging.error(\"Arkanis V3 crashed: %s\", str(e))\n        sys.exit(1)\n\nif __name__ == \"__main__\":\n    main()",
+        "id": "sug_1775241239",
+        "status": "pending",
+        "timestamp": "2026-04-03 15:33:59"
+    },
+    {
         "title": "Simplifica\u00e7\u00e3o de Importa\u00e7\u00f5es em __init__.py",
         "description": "As importa\u00e7\u00f5es est\u00e3o redundantes ao usar o mesmo nome para classes. Podemos simplificar o c\u00f3digo seguindo boas pr\u00e1ticas Python.",
         "type": "refactor",

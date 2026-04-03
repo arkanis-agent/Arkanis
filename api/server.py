@@ -2,7 +2,7 @@ import os
 import sys
 import anyio
 import logging
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, List
 from fastapi import FastAPI, HTTPException, Request
 
 # Load .env before any module imports so singletons (router, config_manager) pick up env vars

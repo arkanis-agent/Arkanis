@@ -105,7 +105,7 @@ let isRecording = false;
 
 async function sendMessage(textOverride = null) {
     const text = textOverride || userInput.value.trim();
-    if (!text) return;
+    if (!text && uploadedImagesArr.length === 0) return;
 
     // Reset UI
     if (welcomeScreen && !welcomeScreen.classList.contains('hidden')) {
@@ -115,22 +115,31 @@ async function sendMessage(textOverride = null) {
 
     const messageArea = document.getElementById('messageArea');
     
-    // Add User Message
+    // Snapshot images before clearing
+    const imagesToSend = [...uploadedImagesArr];
+
+    // Add User Message (with image previews if any)
     if (!textOverride) {
-        addUserMessage(text);
+        addUserMessageWithImages(text, imagesToSend);
         userInput.value = '';
         adjustTextArea();
+        clearImages(); // clear after snapshot
     }
 
     // Add Thinking UI
     const thinkingId = 'thinking-' + Date.now();
-    addBotMessage('<div class="flex items-center gap-2"><span class="animate-pulse">Analyzing...</span></div>', thinkingId);
+    addBotMessage('<div class="flex items-center gap-2"><span class="animate-pulse">Analisando...</span></div>', thinkingId);
 
     try {
+        const payload = { text: text || '' };
+        if (imagesToSend.length > 0) {
+            payload.images = imagesToSend;
+        }
+
         const response = await fetch('/message', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ text: text })
+            body: JSON.stringify(payload)
         });
         
         const data = await response.json();
@@ -139,7 +148,7 @@ async function sendMessage(textOverride = null) {
             // Use the typewriter effect for a natural feel
             const contentDiv = thinkingMsg.querySelector('[id^="bot-content-"]');
             if (contentDiv) {
-                contentDiv.innerHTML = ""; // Clear "Analyzing..."
+                contentDiv.innerHTML = ""; // Clear "Analisando..."
                 await typeWriter(contentDiv, formatResponse(data.response));
             } else {
                 thinkingMsg.innerHTML = formatResponse(data.response);
@@ -265,6 +274,28 @@ function addUserMessage(text) {
     const wrap = document.createElement('div');
     wrap.className = 'flex justify-end mb-6';
     wrap.innerHTML = `<div class="bg-blue-600 text-white px-6 py-4 rounded-2xl rounded-br-none max-w-[80%] shadow-lg shadow-blue-900/20 text-sm font-body leading-relaxed">${text}</div>`;
+    area.appendChild(wrap);
+    scrollDown();
+}
+
+function addUserMessageWithImages(text, images = []) {
+    if (!images || images.length === 0) {
+        addUserMessage(text);
+        return;
+    }
+    const area = document.getElementById('messageArea');
+    const wrap = document.createElement('div');
+    wrap.className = 'flex justify-end mb-6';
+
+    const imgThumbsHtml = images.map(src => `
+        <img src="${src}" class="w-20 h-20 rounded-xl object-cover border border-white/10 shadow-lg" />
+    `).join('');
+
+    wrap.innerHTML = `
+        <div class="bg-blue-600 text-white px-6 py-4 rounded-2xl rounded-br-none max-w-[80%] shadow-lg shadow-blue-900/20 text-sm font-body leading-relaxed space-y-3">
+            ${images.length > 0 ? `<div class="flex flex-wrap gap-2">${imgThumbsHtml}</div>` : ''}
+            ${text ? `<span>${text}</span>` : ''}
+        </div>`;
     area.appendChild(wrap);
     scrollDown();
 }
@@ -2174,43 +2205,55 @@ function renderSuggestions(suggestions) {
         return;
     }
 
-    suggestionsGrid.innerHTML = suggestions.map(s => `
-        <div class="bg-slate-900 border border-white/5 rounded-2xl p-6 hover:border-purple-500/30 transition-all flex flex-col gap-4 shadow-xl">
-            <div class="flex items-start justify-between">
-                <div class="flex items-center gap-3">
-                    <div class="w-10 h-10 rounded-xl bg-purple-500/10 flex items-center justify-center">
-                        <span class="material-symbols-outlined text-purple-400 text-xl">
-                            ${s.type === 'feature' ? 'rocket_launch' : s.type === 'bug' ? 'bug_report' : 'speed'}
-                        </span>
+    suggestionsGrid.innerHTML = suggestions.map(s => {
+        const isArch = s.type === 'arch';
+        const typeLabel = isArch ? 'MAESTRO ARCHITECT' : 'DEV AGENT';
+        const typeColor = isArch ? 'text-indigo-400 bg-indigo-500/10' : 'text-purple-400 bg-purple-500/10';
+        const icon = isArch ? 'architecture' : (s.type === 'feature' ? 'rocket_launch' : s.type === 'bug' ? 'bug_report' : 'speed');
+        const iconBg = isArch ? 'bg-indigo-500/10' : 'bg-purple-500/10';
+        const iconColor = isArch ? 'text-indigo-400' : 'text-purple-400';
+        const cardBorder = isArch ? 'hover:border-indigo-500/40' : 'hover:border-purple-500/30';
+
+        return `
+            <div class="bg-slate-900 border border-white/5 rounded-2xl p-6 ${cardBorder} transition-all flex flex-col gap-4 shadow-xl relative overflow-hidden">
+                ${isArch ? '<div class="absolute top-0 right-0 w-24 h-24 bg-indigo-500/5 blur-2xl -mr-12 -mt-12 pointer-events-none"></div>' : ''}
+                <div class="flex items-start justify-between relative z-10">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-xl ${iconBg} flex items-center justify-center">
+                            <span class="material-symbols-outlined ${iconColor} text-xl">${icon}</span>
+                        </div>
+                        <div>
+                            <div class="flex items-center gap-2">
+                                <h4 class="font-bold text-slate-100 text-sm">${s.title}</h4>
+                                <span class="text-[9px] font-black ${typeColor} px-1.5 py-0.5 rounded border border-white/5">${typeLabel}</span>
+                            </div>
+                            <span class="text-[9px] font-bold uppercase py-0.5 px-2 rounded-full ${s.priority === 'high' ? 'bg-rose-500/20 text-rose-400' : 'bg-blue-500/20 text-blue-400'}">
+                                ${s.priority} priority
+                            </span>
+                        </div>
                     </div>
-                    <div>
-                        <h4 class="font-bold text-slate-100 text-sm">${s.title}</h4>
-                        <span class="text-[9px] font-bold uppercase py-0.5 px-2 rounded-full ${s.priority === 'high' ? 'bg-rose-500/20 text-rose-400' : 'bg-blue-500/20 text-blue-400'}">
-                            ${s.priority} priority
-                        </span>
+                    <div class="text-[10px] text-slate-500 font-mono">
+                        ID: ${s.id.substring(0,8)}
                     </div>
                 </div>
-                <div class="text-[10px] text-slate-500 font-mono">
-                    ID: ${s.id.substring(0,8)}
+
+                <p class="text-xs text-slate-400 leading-relaxed relative z-10">${s.description}</p>
+
+                <div class="bg-black/40 rounded-xl p-4 border border-white/5 overflow-x-auto relative z-10">
+                    <code class="text-[10px] ${iconColor} font-mono whitespace-pre">${s.code_preview || '// No code preview available'}</code>
+                </div>
+
+                <div class="flex items-center gap-3 mt-auto relative z-10">
+                    <button onclick="suggestionAction('${s.id}', 'approve')" class="flex-1 ${isArch ? 'bg-indigo-600 hover:bg-indigo-500' : 'bg-purple-600 hover:bg-purple-500'} text-white text-[11px] font-bold py-2 rounded-lg transition-all shadow-lg shadow-black/20">
+                        Aplicar Melhoria
+                    </button>
+                    <button onclick="suggestionAction('${s.id}', 'reject')" class="flex-1 bg-slate-800 hover:bg-slate-700 text-slate-300 text-[11px] font-bold py-2 rounded-lg transition-all border border-white/5">
+                        Ignorar
+                    </button>
                 </div>
             </div>
-
-            <p class="text-xs text-slate-400 leading-relaxed">${s.description}</p>
-
-            <div class="bg-black/40 rounded-xl p-4 border border-white/5 overflow-x-auto">
-                <code class="text-[10px] text-purple-300 font-mono whitespace-pre">${s.code_preview || '// No code preview available'}</code>
-            </div>
-
-            <div class="flex items-center gap-3 mt-auto">
-                <button onclick="suggestionAction('${s.id}', 'approve')" class="flex-1 bg-purple-600 hover:bg-purple-500 text-white text-[11px] font-bold py-2 rounded-lg transition-all shadow-lg shadow-purple-900/20">
-                    Aprovar Melhoria
-                </button>
-                <button onclick="suggestionAction('${s.id}', 'reject')" class="flex-1 bg-slate-800 hover:bg-slate-700 text-slate-300 text-[11px] font-bold py-2 rounded-lg transition-all border border-white/5">
-                    Ignorar
-                </button>
-            </div>
-        </div>
-    `).join('');
+        `;
+    }).join('');
 }
 
 async function suggestionAction(id, action) {

@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, List
 from core.llm_router import router
 
 class LLMClient:
