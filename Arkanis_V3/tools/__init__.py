@@ -5,5 +5,6 @@ import tools.audio_tools
 import tools.browser_tools
 import tools.network_tools
 import tools.system_tools
+import tools.monitoring_tools
 
 __all__ = ["registry"]
