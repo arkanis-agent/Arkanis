@@ -249,6 +249,18 @@ async def select_model(request: ModelSelectRequest):
         raise HTTPException(status_code=400, detail="Modelo inválido.")
     return {"status": "success", "active_model": router.active_model}
 
+@app.get("/chat/history")
+async def get_chat_history():
+    """Returns the chronological conversation history to rebuild the UI after a page refresh."""
+    from modules.memory.short_term import session_memory
+    history = []
+    for inter in session_memory.interactions:
+        history.append({
+            "user": inter.get("user_input", ""),
+            "agent": inter.get("result", "")
+        })
+    return {"history": history}
+
 @app.post("/strategy/toggle")
 async def toggle_strategy(request: StrategyToggleRequest):
     """Enable or disable Auto Model Strategy."""

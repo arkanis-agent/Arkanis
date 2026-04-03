@@ -2082,12 +2082,64 @@ setInterval(() => {
     }
 }, 3000);
 
+// --- History Logic ---
+async function loadChatHistory() {
+    try {
+        const response = await fetch('/chat/history');
+        const data = await response.json();
+        if (data.history && data.history.length > 0) {
+            if (welcomeScreen && !welcomeScreen.classList.contains('hidden')) {
+                welcomeScreen.classList.add('hidden');
+                chatDisplay.innerHTML = '<div class="max-w-4xl mx-auto space-y-10" id="messageArea"></div>';
+            }
+            const messageArea = document.getElementById('messageArea') || chatDisplay;
+
+            // Clear previous placeholder if exists
+            if (messageArea.id === 'messageArea') {
+                 messageArea.innerHTML = '';
+            }
+
+            for (const msg of data.history) {
+                if (msg.user) addUserMessage(msg.user);
+                
+                if (msg.agent) {
+                    const id = 'hist-' + Date.now() + Math.floor(Math.random() * 1000);
+                    const html = `
+                        <div class="flex items-start gap-4">
+                            <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center flex-shrink-0 shadow-lg shadow-indigo-500/20">
+                                <span class="material-symbols-outlined text-white text-[20px]">bolt</span>
+                            </div>
+                            <div class="flex-1 min-w-0 pt-1">
+                                <h4 class="font-bold text-slate-200 mb-1 flex items-center gap-2">Arkanis <span class="text-[10px] bg-indigo-500/20 text-indigo-300 px-2 py-0.5 rounded-full border border-indigo-500/20">AGENT</span></h4>
+                                <div class="bot-message prose prose-invert max-w-none text-slate-300 text-sm" id="bot-content-${id}">
+                                    ${formatResponse(msg.agent)}
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    if (messageArea.id === 'messageArea') {
+                        messageArea.insertAdjacentHTML('beforeend', html);
+                    }
+                }
+            }
+            
+            setTimeout(() => {
+                chatDisplay.scrollTop = chatDisplay.scrollHeight;
+            }, 100);
+        }
+    } catch (e) {
+        console.error('Failed to load chat history', e);
+    }
+}
+
 // Init
 pollStatus();
 pollLogs();
 fetchModels();
 loadGoals();
 loadGovernorState();
+loadChatHistory();
+
 // --- Dev Center Logic ---
 
 async function loadSuggestions() {

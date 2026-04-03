@@ -1,5 +1,15 @@
 [
     {
+        "title": "Melhoria de Inicializa\u00e7\u00e3o do Pacote",
+        "description": "O arquivo __init__.py est\u00e1 vazio, perdendo a oportunidade de inicializar o pacote e definir configura\u00e7\u00f5es importantes. Sugiro adicionar uma inicializa\u00e7\u00e3o b\u00e1sica com informa\u00e7\u00f5es do pacote e importa\u00e7\u00e3o de m\u00f3dulos essenciais.",
+        "type": "feature",
+        "file_path": "/home/diego/\u00c1rea de trabalho/Arkanis_V3.1/__init__.py",
+        "proposed_code": "\"\"\"\nArkanis V3.1 - Sistema Operacional\nVers\u00e3o: 3.1.0\nAutor: Diego M\n\"\"\"\n\n__version__ = '3.1.0'\n__author__ = 'Diego M'\n\n# Importando m\u00f3dulos essenciais\nfrom .core import ArkanisOS\nfrom .interface import CommandLineInterface\n\n# Inicializa\u00e7\u00e3o do Sistema\nos_instance = ArkanisOS()\ncli = CommandLineInterface(os_instance)",
+        "id": "sug_1775227983",
+        "status": "pending",
+        "timestamp": "2026-04-03 11:53:03"
+    },
+    {
         "title": "Adicionar Exporta\u00e7\u00f5es \u00dateis em __init__.py",
         "description": "O arquivo __init__.py est\u00e1 vazio. Podemos utiliz\u00e1-lo para exportar funcionalidades principais dos m\u00f3dulos, melhorando a organiza\u00e7\u00e3o e facilitando a importa\u00e7\u00e3o.",
         "type": "feature",
