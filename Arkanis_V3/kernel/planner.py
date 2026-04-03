@@ -185,17 +185,24 @@ FORMATO EXIGIDO:
         
         # --- PREMIUM AESTHETICS INJECTION (Elite Engineering Mode) ---
         premium_directive = ""
-        if task_hint == "engineering":
-            premium_directive = "\n\n🔥 DIRETIVA DE DESIGN PREMIUM (MANDATÓRIA - QUALIDADE ELITE):\n" + \
-                "- **ESTÉTICA DE ALTA FIDELIDADE**: Design ultra-moderno, 'Apple-style' ou 'SaaS Premium'.\n" + \
-                "- **CSS OBRIGATÓRIO**: Use Tailwind CSS 4.0 ou Modern CSS.\n" + \
-                "- **ELEMENTOS VISUAIS**: \n" + \
-                "  * Graded backgrounds (ex: `bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900`)\n" + \
-                "  * Glassmorphism (ex: `bg-white/10 backdrop-blur-md border border-white/20`)\n" + \
-                "  * Soft Shadows (`shadow-2xl`), Micro-interações (`hover:scale-105 transition-all`)\n" + \
-                "  * Fontes modernas (Sans-serif elegantes).\n" + \
-                "- **REGRA DE OURO**: Proibido layouts básicos ou cinzas. Se for criar um card, que seja um card com hover dinâmico e bordas suaves.\n" + \
-                "- **CONTEÚDO**: Use textos reais de marketing, não use 'Lorem Ipsum'.\n"
+        ui_keywords = ['layout', 'tela', 'interface', 'dashboard', 'frontend', 'site', 'css', 'html', 'ui', 'ux', 'visual', 'landing page', 'page', 'página', 'crm', 'web', 'sistema']
+        is_ui_task = any(kw in user_input.lower() for kw in ui_keywords) or task_hint == "engineering"
+        
+        if is_ui_task:
+            premium_directive = "\n\n🔥 DIRETIVA DE DESIGN DE INTERFACE PREMIUM (MANDATÓRIA PARA AÇÕES WEB/UI):\n" + \
+                "- VOCÊ DEVE CRIAR UM DESIGN ULTRA-MODERNO. ABOMINAMOS layouts básicos, cinzas ou 'anos 90'.\n" + \
+                "- **ESTRUTURA OBRIGATÓRIA**: Sempre importe as seguintes bibliotecas no HTML:\n" + \
+                "  1. Tailwind CSS via CDN: `<script src=\"https://cdn.tailwindcss.com\"></script>`\n" + \
+                "  2. Fonte 'Inter' e 'Outfit' do Google Fonts.\n" + \
+                "  3. FontAwesome para ícones: `<link rel=\"stylesheet\" href=\"https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css\">`\n" + \
+                "- **TAILWIND CONFIG**: Adicione `<script>tailwind.config = { theme: { extend: { fontFamily: { sans: ['Inter', 'sans-serif'], display: ['Outfit', 'sans-serif'] } } } };</script>`\n" + \
+                "- **ELEMENTOS ESTÉTICOS EXIGIDOS**: \n" + \
+                "  * Cores modernas e paletas combinadas (ex: fundos escuros slate/gray-900, gradients com blue-600/purple-600).\n" + \
+                "  * **Glassmorphism**: Use `backdrop-blur-xl bg-white/10 border border-white/20` para cards e navbars se estiver no escuro.\n" + \
+                "  * **Sombras Suaves & Bordas Arredondadas**: Sempre use `rounded-2xl` ou `rounded-3xl` com `shadow-xl` ou `shadow-2xl`.\n" + \
+                "  * **Micro-animações**: Hover obrigatório em botões e cards (`transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl hover:scale-105`).\n" + \
+                "  * **Tipografia**: Use títulos com `font-display`, peso `font-bold` ou `font-extrabold`, e gradientes de texto (`bg-clip-text text-transparent bg-gradient-to-r`).\n" + \
+                "- **CONTEÚDO FINAL**: Não deixe o HTML vazio com 'Lorem Ipsum'. Gere dados fictícios que pareçam um sistema real operando na produção.\n"
 
         system_prompt = self.SYSTEM_PROMPT.format(
             agent_identity=self.agent_identity,
