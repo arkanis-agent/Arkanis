@@ -1,8 +1,6 @@
 {
     "preferences": [],
     "facts": [
-        "Usuário disse \"oi\"",
-        "O usuário está interessado no clima em São Paulo",
         "O usuário me cumprimentou com um \"oi\"",
         "Não foi necessário usar nenhuma ferramenta para obter essa informação.",
         "Usuário pediu para buscar informações sobre tempo e temperatura na internet",
@@ -19,7 +17,10 @@
         "O usuário relatou que a internet dele não está funcionando.",
         "Módulo de rede do Arkanis V3 com problema de importação, impedindo conexão de internet do usuário.",
         "Não encontrei nenhuma informação sobre o nome do usuário nos registros disponíveis.",
-        "Usuário mencionou problema de acesso à memória - corrigido em 03/04/2026"
+        "Usuário mencionou problema de acesso à memória - corrigido em 03/04/2026",
+        "Usuário se chama Diego",
+        "usuário solicitou análise de imagem/texto que retornou erro de parsing",
+        "O botão de anexar imagem está com problema."
     ],
     "recurrent_tasks": []
 }
