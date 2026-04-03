@@ -61,10 +61,11 @@
             "Plano não cria a pasta 'ProjetoTeste' nem o arquivo 'index.html' na área de trabalho, conforme solicitado pelo usuário",
             "Erro crítico no parsing do Plano JSON, impedindo a execução adequada da tarefa.",
             "O plano não inclui as ações necessárias para criar a pasta 'ProjetoTeste' e o arquivo 'index.html' na área de trabalho, conforme solicitado pelo usuário.",
-            "Não contém as instruções necessárias para criar a pasta 'ProjetoTeste' e o arquivo 'index.html' na área de trabalho do usuário."
+            "Não contém as instruções necessárias para criar a pasta 'ProjetoTeste' e o arquivo 'index.html' na área de trabalho do usuário.",
+            "Erro de parsing no formato da auditoria."
         ],
-        "fail_count": 7,
-        "last_seen": "Fri Apr  3 03:01:47 2026"
+        "fail_count": 11,
+        "last_seen": "Fri Apr  3 10:16:06 2026"
     },
     {
         "goal_pattern": "Quero te chamar de R2D2 e eu sou o Diego",
@@ -142,13 +143,5 @@
         ],
         "fail_count": 8,
         "last_seen": "Fri Apr  3 10:08:55 2026"
-    },
-    {
-        "goal_pattern": "monitorar o preço do bitcoin",
-        "lessons": [
-            "Erro de parsing no formato da auditoria."
-        ],
-        "fail_count": 1,
-        "last_seen": "Fri Apr  3 10:13:54 2026"
     }
 ]

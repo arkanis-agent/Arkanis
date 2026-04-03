@@ -127,22 +127,38 @@ class ArkanisAgent:
             self.log("Stop signal sent. Resetting to IDLE.", "control")
             return "[Control] Stop signal sent. Resetting to IDLE."
 
-        # 2. AUTO MODE (prefix based)
+        # 2. AUTO MODE / GOAL MODE (prefix based)
         if lower_input.startswith("auto:") or lower_input.startswith("objetivo:"):
             if self.status != "idle":
-                return f"[Warning] Agent is currently {self.status}. Stop or finish current task first."
+                return f"[Warning] O agente já está ocupado ({self.status}). Pare ou aguarde antes de iniciar um novo objetivo global."
             
             # Extract target goal
-            self.goal = clean_input.split(":", 1)[1].strip()
+            g_desc = clean_input.split(":", 1)[1].strip()
+            self.goal = g_desc
             self.mode = "auto"
+            
+            # Create in GoalManager for persistence
+            new_goal = goal_manager.create_goal(g_desc, priority="high")
+            self.log(f"Objetivo Global criado [ID: {new_goal.id}]: {g_desc}", "success")
             
             # Launch async thread
             self.auto_thread = threading.Thread(target=self._handle_auto_mode, args=(self.goal,), daemon=True)
             self.auto_thread.start()
             
-            return f"[Control] Auto Mode started for objective: '{self.goal}'. Type 'status' for progress."
+            return f"🚀 [SENTINEL] Modo Auto iniciado: '{self.goal}'. O sistema irá persistir até concluir (ID: {new_goal.id})."
 
-        # 3. MANUAL MODE (standard planning)
+        # 3. GOAL MANAGEMENT COMMANDS
+        if lower_input.startswith("concluir "):
+            g_id = lower_input.replace("concluir ", "").strip()
+            goal_manager.update_status(g_id, "completed")
+            return f"✅ Objetivo {g_id} marcado como concluído."
+            
+        if lower_input == "limpar objetivos":
+            for g in goal_manager.goals.values():
+                goal_manager.update_status(g.id, "completed")
+            return "🧹 Todos os objetivos globais foram finalizados."
+
+        # 4. MANUAL MODE (standard planning)
         self.mode = "manual"
         return self._handle_manual_mode(clean_input)
 
@@ -285,8 +301,9 @@ Se NÃO houver dados factuais e o usuário fez uma pergunta específica, admita 
                 refine_count += 1
                 continue
             else:
-                self.log("🔴 Auditor não aprovou o plano após múltiplas tentativas.", "error")
-                return "Não consegui processar o pedido de forma segura no momento. Pode tentar de outra forma?"
+                reason = critic_report.get("reasoning", "Sem detalhes técnicos.")
+                self.log(f"🔴 Auditor não aprovou o plano após múltiplas tentativas. Motivo: {reason}", "error")
+                return f"⚠️ [CONTROLE DE SEGURANÇA] Não pude processar seu pedido porque o Auditor o considerou inseguro ou incompleto.\n\n👉 **Motivo**: {reason}\n\nTente reformular o pedido ou diga 'está tudo bem' para eu tentar ser mais flexível."
 
         self.current_action = f"Executando {len(final_plan)} passos..."
         self.log(f"Processando plano validado pelo Auditor ({len(final_plan)} passos)...", "executor")
