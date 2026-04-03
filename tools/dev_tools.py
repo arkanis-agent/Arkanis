@@ -1,0 +1,256 @@
+import os
+import subprocess
+import json
+import logging
+from typing import Dict, Any, List, Optional
+from tools.base_tool import BaseTool
+from tools.registry import registry
+from core.agent_bus import agent_bus
+
+logger = logging.getLogger("uvicorn")
+
+def is_safe_command(command: str) -> bool:
+    """Security check to block dangerous shell commands."""
+    blocked_patterns = [
+        "rm -rf /", "rm -rf .", "rm -rf *",
+        "mkfs", "dd if=", "shred", "shutdown", "reboot",
+        "> /dev/", ":(){ :|: & };:", "chmod -R 777",
+        "chown", "passwd"
+    ]
+    for pattern in blocked_patterns:
+        if pattern in command:
+            return False
+    return True
+
+class ShellExecTool(BaseTool):
+    """A tool to execute safe shell commands."""
+    @property
+    def name(self) -> str: return "shell_exec"
+    @property
+    def description(self) -> str:
+        return "Executes a shell command and returns output. Allowed: ls, ldd, file, cat, grep, pip, python, which, ffmpeg, ps, df, etc."
+    @property
+    def arguments(self) -> Dict[str, str]:
+        return {"command": "The shell command to execute."}
+    
+    def execute(self, **kwargs) -> str:
+        cmd = kwargs.get("command")
+        if not cmd: return "Error: No command provided."
+        
+        if not is_safe_command(cmd):
+            return "Error: Command rejected for security reasons."
+            
+        try:
+            # Run with timeout to prevent hang
+            result = subprocess.run(
+                cmd, shell=True, capture_output=True, text=True, timeout=30
+            )
+            output = {
+                "stdout": result.stdout,
+                "stderr": result.stderr,
+                "returncode": result.returncode
+            }
+            agent_bus.broadcast_message("system", f"[DEV_TOOL] Command executed: {cmd[:50]}...")
+            return json.dumps(output)
+        except subprocess.TimeoutExpired:
+            return "Error: Command timed out after 30s."
+        except Exception as e:
+            return f"Error executing command: {str(e)}"
+
+class ReadFileLinesTool(BaseTool):
+    """Reads specific range of lines from a file."""
+    @property
+    def name(self) -> str: return "read_file_lines"
+    @property
+    def description(self) -> str: return "Reads a specific range of lines from a file. Useful for large logs."
+    @property
+    def arguments(self) -> Dict[str, str]:
+        return {"path": "Path to file", "start": "Start line (1-indexed)", "count": "Number of lines to read"}
+    
+    def execute(self, **kwargs) -> str:
+        path = kwargs.get("path")
+        start = int(kwargs.get("start", 1))
+        count = int(kwargs.get("count", 50))
+        
+        if not path or not os.path.exists(path): return f"Error: File {path} not found."
+        
+        try:
+            with open(path, 'r', encoding='utf-8', errors='ignore') as f:
+                lines = f.readlines()
+                selected = lines[max(0, start-1) : start-1+count]
+                return "".join(selected)
+        except Exception as e:
+            return f"Error reading lines: {str(e)}"
+
+class GrepInFileTool(BaseTool):
+    """Search for a pattern in a file."""
+    @property
+    def name(self) -> str: return "grep_in_file"
+    @property
+    def description(self) -> str: return "Searches for a text pattern in a file and returns matching lines."
+    @property
+    def arguments(self) -> Dict[str, str]:
+        return {"path": "Path to file", "pattern": "Text to search for"}
+    
+    def execute(self, **kwargs) -> str:
+        path = kwargs.get("path")
+        pattern = kwargs.get("pattern")
+        if not path or not pattern: return "Error: Missing path or pattern."
+        
+        try:
+            matches = []
+            with open(path, 'r', encoding='utf-8', errors='ignore') as f:
+                for i, line in enumerate(f, 1):
+                    if pattern in line:
+                        matches.append(f"{i}: {line.strip()}")
+            return json.dumps(matches) if matches else "No matches found."
+        except Exception as e:
+            return f"Error searching file: {str(e)}"
+
+class CheckBinaryTool(BaseTool):
+    """Check binary dependencies and properties."""
+    @property
+    def name(self) -> str: return "check_binary"
+    @property
+    def description(self) -> str: return "Checks binary existence, type, and shared library dependencies (ldd)."
+    @property
+    def arguments(self) -> Dict[str, str]:
+        return {"binary_path": "Path to the executable binary."}
+    
+    def execute(self, **kwargs) -> str:
+        path = kwargs.get("binary_path")
+        if not path: return "Error: No path provided."
+        
+        report = {"exists": os.path.exists(path)}
+        if not report["exists"]: return json.dumps(report)
+        
+        try:
+            # File info
+            f_info = subprocess.run(["file", path], capture_output=True, text=True)
+            report["file_info"] = f_info.stdout.strip()
+            
+            # LDD info
+            ldd_info = subprocess.run(["ldd", path], capture_output=True, text=True)
+            report["dependencies"] = ldd_info.stdout
+            report["missing_libs"] = "not found" in ldd_info.stdout
+            
+            return json.dumps(report)
+        except Exception as e:
+            return f"Error checking binary: {str(e)}"
+
+class PatchFileLineTool(BaseTool):
+    """Replace a specific line in a file."""
+    @property
+    def name(self) -> str: return "patch_file_line"
+    @property
+    def description(self) -> str: return "Replaces a specific line number in a file with new content."
+    @property
+    def arguments(self) -> Dict[str, str]:
+        return {"path": "Path to file", "line_number": "Line to replace (1-indexed)", "new_content": "New line text"}
+    
+    def execute(self, **kwargs) -> str:
+        path = kwargs.get("path")
+        line_num = int(kwargs.get("line_number", 0))
+        new_content = kwargs.get("new_content")
+        
+        if not path or not line_num or new_content is None: return "Error: Missing parameters."
+        
+        try:
+            with open(path, 'r', encoding='utf-8') as f:
+                lines = f.readlines()
+            
+            if 1 <= line_num <= len(lines):
+                lines[line_num - 1] = new_content + "\n"
+                with open(path, 'w', encoding='utf-8') as f:
+                    f.writelines(lines)
+                agent_bus.broadcast_message("system", f"[DEV_TOOL] Patched file {path} at line {line_num}")
+                return f"Successfully patched line {line_num} in {path}."
+            else:
+                return f"Error: Line number {line_num} out of range (1-{len(lines)})."
+        except Exception as e:
+            return f"Error patching file: {str(e)}"
+
+class InstallPythonPackageTool(BaseTool):
+    """Install a python package via pip."""
+    @property
+    def name(self) -> str: return "install_python_package"
+    @property
+    def description(self) -> str: return "Installs a Python package using pip."
+    @property
+    def arguments(self) -> Dict[str, str]:
+        return {"package": "Package name to install (e.g. 'requests==2.31.0')"}
+    
+    def execute(self, **kwargs) -> str:
+        pkg = kwargs.get("package")
+        if not pkg: return "Error: No package name provided."
+        
+        try:
+            # Try to use current venv if active
+            pip_cmd = [os.sys.executable, "-m", "pip", "install", pkg]
+            result = subprocess.run(pip_cmd, capture_output=True, text=True)
+            return json.dumps({
+                "stdout": result.stdout,
+                "stderr": result.stderr,
+                "success": result.returncode == 0
+            })
+        except Exception as e:
+            return f"Error installing package: {str(e)}"
+
+class GetProcessInfoTool(BaseTool):
+    """Get info about running processes."""
+    @property
+    def name(self) -> str: return "get_process_info"
+    @property
+    def description(self) -> str: return "Returns a list of active processes matching a name pattern."
+    @property
+    def arguments(self) -> Dict[str, str]:
+        return {"pattern": "Process name or pattern to search for."}
+    
+    def execute(self, **kwargs) -> str:
+        pattern = kwargs.get("pattern", "")
+        try:
+            cmd = f"ps aux | grep -v grep"
+            if pattern: cmd += f" | grep {pattern}"
+            result = subprocess.run(cmd, shell=True, capture_output=True, text=True)
+            return result.stdout or "No matching processes found."
+        except Exception as e:
+            return f"Error getting process info: {str(e)}"
+
+class WriteFullFileTool(BaseTool):
+    """Overwrites an entire file with new content."""
+    @property
+    def name(self) -> str: return "write_full_file"
+    @property
+    def description(self) -> str: return "Overwrites an entire file with the provided content. USE WITH EXTREME CARE."
+    @property
+    def arguments(self) -> Dict[str, str]:
+        return {"path": "Path to file", "content": "New content for the file"}
+    
+    def execute(self, **kwargs) -> str:
+        path = kwargs.get("path")
+        content = kwargs.get("content")
+        if not path or content is None: return "Error: Missing path or content."
+        
+        try:
+            # Backup before overwrite? (Optional, but safe)
+            # backup_path = path + ".bak"
+            # if os.path.exists(path):
+            #     os.rename(path, backup_path)
+            
+            with open(path, 'w', encoding='utf-8') as f:
+                f.write(content)
+            
+            agent_bus.broadcast_message("system", f"[DEV_TOOL] File overwritten: {path}")
+            return f"Successfully wrote {len(content)} characters to {path}."
+        except Exception as e:
+            return f"Error writing file: {str(e)}"
+
+# Registration
+registry.register(ShellExecTool())
+registry.register(ReadFileLinesTool())
+registry.register(GrepInFileTool())
+registry.register(CheckBinaryTool())
+registry.register(PatchFileLineTool())
+registry.register(InstallPythonPackageTool())
+registry.register(GetProcessInfoTool())
+registry.register(WriteFullFileTool())

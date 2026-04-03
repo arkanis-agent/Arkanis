@@ -4,6 +4,7 @@
     <meta charset="utf-8"/>
     <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
     <title>ARKANIS AI | Inteligência de Elite</title>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
     <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;700;800&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet"/>
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
@@ -432,6 +433,19 @@
                         <button id="refreshObservabilityBtn" class="flex items-center gap-2 bg-slate-800 hover:bg-slate-700 text-slate-300 px-4 py-2 rounded-xl text-xs font-bold transition-all">
                             <span class="material-symbols-outlined text-sm">cached</span> Atualizar
                         </button>
+                    </div>
+                </div>
+
+                <!-- Neural Map Section -->
+                <div class="bg-slate-950/60 border border-blue-500/10 rounded-2xl p-6 relative overflow-hidden h-[400px]">
+                    <div class="absolute top-4 left-6 z-10">
+                        <h3 class="text-[11px] font-bold text-blue-400 uppercase tracking-widest flex items-center gap-2">
+                            <span class="material-symbols-outlined text-sm">hub</span> Neural Map (Live)
+                        </h3>
+                        <p class="text-[9px] text-slate-500 uppercase font-bold">Fluxo de Comunicação entre Agentes</p>
+                    </div>
+                    <div id="neuralMapContainer" class="w-full h-full cursor-grab active:cursor-grabbing">
+                        <!-- SVG for D3 will be injected here -->
                     </div>
                 </div>
 

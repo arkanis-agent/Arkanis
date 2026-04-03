@@ -8,7 +8,9 @@ class AgentBus:
         self._agents: Dict[str, Any] = {}
         self._lock = threading.Lock()
         self.message_history: List[Dict[str, Any]] = []
+        self.connections: List[Dict[str, Any]] = [] # Track unique connections
         self.max_history = 500
+        self.max_connections = 100
 
     def register_agent(self, agent_id: str, agent_instance: Any):
         with self._lock:
@@ -82,6 +84,7 @@ class AgentBus:
                 if hasattr(target, "inbox"):
                     target.inbox.append(msg)
                 self._record_history(msg)
+                self._record_connection(from_agent, to_agent)
                 return True
             return False
 
@@ -99,11 +102,23 @@ class AgentBus:
                 if aid != from_agent and hasattr(target, "inbox"):
                     target.inbox.append(msg)
             self._record_history(msg)
+            self._record_connection(from_agent, "ALL")
 
     def _record_history(self, msg: Dict[str, Any]):
         self.message_history.append(msg)
         if len(self.message_history) > self.max_history:
             self.message_history.pop(0)
+
+    def _record_connection(self, from_aid: str, to_aid: str):
+        """Track communication edges for the graph visualization."""
+        conn = {"source": from_aid, "target": to_aid, "last_interaction": datetime.now().strftime("%H:%M:%S")}
+        for c in self.connections:
+            if c["source"] == from_aid and c["target"] == to_aid:
+                c["last_interaction"] = conn["last_interaction"]
+                return
+        self.connections.append(conn)
+        if len(self.connections) > self.max_connections:
+            self.connections.pop(0)
 
     def get_agent_detail(self, agent_id: str) -> Optional[Dict[str, Any]]:
         """Return full detail snapshot of a single agent for the Control Center."""
@@ -117,7 +132,6 @@ class AgentBus:
         """Build a rich status snapshot from any agent instance."""
         status = getattr(instance, "status", "idle")
         recent_logs = getattr(instance, "logs", [])
-        # Return only last 5 log entries for the card mini-feed
         mini_logs = recent_logs[-5:] if recent_logs else []
 
         return {
@@ -143,6 +157,10 @@ class AgentBus:
 
             return {
                 "agents": agents_snapshot,
+                "graph": {
+                    "nodes": [{"id": a["id"], "role": a["role"], "status": a["status"]} for a in agents_snapshot] + [{"id": "ALL", "role": "Broadcast", "status": "idle"}],
+                    "links": self.connections
+                },
                 "history": self.message_history[-20:],
                 "stats": {
                     "total": len(agents_snapshot),

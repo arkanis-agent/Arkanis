@@ -3,6 +3,7 @@ from kernel.executor import Executor
 from core.agents.critic_agent import CriticAgent
 from core.agents.auto_heal_agent import AutoHealAgent # New: Auto-Heal System
 from core.agents.dev_agent import DevAgent # New: Dev Center
+from core.agents.architect_agent import ArchitectAgent # New: Maestro Architect
 from modules.memory.short_term import session_memory
 from rich import print as rprint
 from rich.panel import Panel
@@ -30,10 +31,12 @@ class ArkanisAgent:
         self.critic = CriticAgent()
         self.sentinel = AutoHealAgent() # The Self-Maintenance Sentinel
         self.dev_agent = DevAgent() # The Developer Agent
+        self.architect = ArchitectAgent() # The Master Architect (Maestro)
         
         # Start background autonomous loops
         self.sentinel.start_loop()
         self.dev_agent.start_loop()
+        self.architect.start_loop()
         
         self.memory = session_memory
         
@@ -63,6 +66,7 @@ class ArkanisAgent:
         agent_bus.register_agent(self.id, self)
         agent_bus.register_agent(self.sentinel.id, self.sentinel)
         agent_bus.register_agent(self.dev_agent.id, self.dev_agent)
+        agent_bus.register_agent(self.architect.id, self.architect)
         
         # Virtual Sub-Agents for UI / Multi-Agent Simulation
         from collections import namedtuple

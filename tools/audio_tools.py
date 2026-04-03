@@ -130,8 +130,11 @@ class SpeechToTextTool(BaseTool):
             build_path = os.path.dirname(os.path.dirname(self.binary_path))
             
             # Setup environment with local library paths
+            src_path = os.path.join(build_path, "src")
+            ggml_src_path = os.path.join(build_path, "ggml", "src")
             env = os.environ.copy()
-            env["LD_LIBRARY_PATH"] = build_path + (f":{env.get('LD_LIBRARY_PATH', '')}" if env.get('LD_LIBRARY_PATH') else "")
+            new_ld = f"{src_path}:{ggml_src_path}"
+            env["LD_LIBRARY_PATH"] = new_ld + (f":{env.get('LD_LIBRARY_PATH', '')}" if env.get('LD_LIBRARY_PATH') else "")
             
             whisper_process = await asyncio.create_subprocess_exec(
                 self.binary_path, 

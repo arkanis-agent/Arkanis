@@ -90,6 +90,7 @@ let currentConfig = { providers: {}, models: [] };
 let currentIntegrationsConfig = {};
 let activeConfigTab = 'llms'; // 'llms' or 'integrations'
 let observabilityInterval = null;
+let neuralGraph = { simulation: null, svg: null, container: null, nodes: [], links: [] };
 
 // Model picker state
 let allModelsList = [];      // all models (local + cloud + OR fetched)
@@ -609,6 +610,10 @@ document.addEventListener('DOMContentLoaded', () => {
         searchInput.addEventListener('input', () => renderModelPicker());
         searchInput.addEventListener('click', e => e.stopPropagation());
     }
+    
+    // Initialize Neural Map
+    initNeuralMap();
+
     // Filter buttons
     document.querySelectorAll('.model-filter').forEach(btn => {
         btn.addEventListener('click', (e) => {
@@ -1873,6 +1878,11 @@ function renderObservability(data) {
             tableBody.appendChild(row);
         });
     }
+
+    // Update Neural Map
+    if (data.graph) {
+        updateNeuralMap(data.graph);
+    }
 }
 
 // --- Agent Lifecycle Controls ---
@@ -2219,4 +2229,148 @@ async function suggestionAction(id, action) {
         console.error('Failed to act on suggestion', e);
         showToast('Erro ao processar sugestão.', 'rose');
     }
+}
+
+// --- 6. Neural Map (D3 Graph Visualization) ---
+
+function initNeuralMap() {
+    const container = document.getElementById('neuralMapContainer');
+    if (!container) return;
+
+    const width = container.clientWidth || 800;
+    const height = container.clientHeight || 400;
+
+    neuralGraph.svg = d3.select("#neuralMapContainer")
+        .append("svg")
+        .attr("width", "100%")
+        .attr("height", "100%")
+        .attr("viewBox", [0, 0, width, height])
+        .attr("style", "max-width: 100%; height: auto;");
+
+    // Add arrowhead markers for links
+    neuralGraph.svg.append("defs").append("marker")
+        .attr("id", "arrowhead")
+        .attr("viewBox", "0 -5 10 10")
+        .attr("refX", 20)
+        .attr("refY", 0)
+        .attr("markerWidth", 6)
+        .attr("markerHeight", 6)
+        .attr("orient", "auto")
+        .append("path")
+        .attr("d", "M0,-5L10,0L0,5")
+        .attr("fill", "#3b82f6");
+
+    neuralGraph.container = neuralGraph.svg.append("g");
+
+    // Zoom/Pan
+    neuralGraph.svg.call(d3.zoom()
+        .extent([[0, 0], [width, height]])
+        .scaleExtent([0.5, 4])
+        .on("zoom", ({transform}) => {
+            neuralGraph.container.attr("transform", transform);
+        }));
+
+    neuralGraph.simulation = d3.forceSimulation()
+        .force("link", d3.forceLink().id(d => d.id).distance(100))
+        .force("charge", d3.forceManyBody().strength(-300))
+        .force("center", d3.forceCenter(width / 2, height / 2))
+        .force("x", d3.forceX())
+        .force("y", d3.forceY());
+}
+
+function updateNeuralMap(graphData) {
+    if (!neuralGraph.simulation) return;
+
+    const { nodes: newNodes, links: newLinks } = graphData;
+
+    // Preserve existing node positions
+    const oldNodes = new Map(neuralGraph.nodes.map(d => [d.id, d]));
+    neuralGraph.nodes = newNodes.map(d => Object.assign(oldNodes.get(d.id) || {}, d));
+    neuralGraph.links = newLinks.map(d => Object.assign({}, d));
+
+    const link = neuralGraph.container.selectAll(".link")
+        .data(neuralGraph.links, d => `${d.source}-${d.target}`)
+        .join("line")
+        .attr("class", "link")
+        .attr("stroke", "#374151")
+        .attr("stroke-opacity", 0.6)
+        .attr("stroke-width", 2)
+        .attr("marker-end", "url(#arrowhead)");
+
+    const node = neuralGraph.container.selectAll(".node")
+        .data(neuralGraph.nodes, d => d.id)
+        .join("g")
+        .attr("class", "node")
+        .call(d3.drag()
+            .on("start", dragstarted)
+            .on("drag", dragged)
+            .on("end", dragended));
+
+    node.html(""); // Clear and rebuild
+    
+    // Node Circle
+    node.append("circle")
+        .attr("r", 15)
+        .attr("fill", d => d.id === 'ALL' ? '#8b5cf6' : (d.status === 'running' ? '#3b82f6' : '#1e293b'))
+        .attr("stroke", d => d.status === 'running' ? '#60a5fa' : '#334155')
+        .attr("stroke-width", 2);
+
+    // Node Icons/Labels
+    node.append("text")
+        .attr("dy", "0.35em")
+        .attr("text-anchor", "middle")
+        .attr("font-family", "Material Symbols Outlined")
+        .attr("font-size", "14px")
+        .attr("fill", "#fff")
+        .text(d => d.id === 'ALL' ? 'hub' : 'smart_toy');
+
+    node.append("text")
+        .attr("dy", "30px")
+        .attr("text-anchor", "middle")
+        .attr("font-size", "10px")
+        .attr("font-weight", "bold")
+        .attr("fill", "#94a3b8")
+        .text(d => d.id);
+
+    // Update Pulse for active links
+    newLinks.forEach(l => {
+        const line = neuralGraph.container.selectAll(".link")
+            .filter(d => d.source.id === l.source && d.target.id === l.target);
+        
+        // Brief pulse on new/updated interaction
+        line.transition().duration(200).attr("stroke", "#60a5fa").attr("stroke-width", 4)
+            .transition().duration(1000).attr("stroke", "#374151").attr("stroke-width", 2);
+    });
+
+    neuralGraph.simulation.nodes(neuralGraph.nodes);
+    neuralGraph.simulation.force("link").links(neuralGraph.links);
+    neuralGraph.simulation.alpha(0.3).restart();
+
+    neuralGraph.simulation.on("tick", () => {
+        link
+            .attr("x1", d => d.source.x)
+            .attr("y1", d => d.source.y)
+            .attr("x2", d => d.target.x)
+            .attr("y2", d => d.target.y);
+
+        node
+            .attr("transform", d => `translate(${d.x},${d.y})`);
+    });
+}
+
+function dragstarted(event) {
+    if (!event.active) neuralGraph.simulation.alphaTarget(0.3).restart();
+    event.subject.fx = event.subject.x;
+    event.subject.fy = event.subject.y;
+}
+
+function dragged(event) {
+    event.subject.fx = event.x;
+    event.subject.fy = event.y;
+}
+
+function dragended(event) {
+    if (!event.active) neuralGraph.simulation.alphaTarget(0);
+    event.subject.fx = null;
+    event.subject.fy = null;
 }
