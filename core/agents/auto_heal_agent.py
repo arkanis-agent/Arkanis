@@ -39,7 +39,9 @@ Você deve retornar um plano de ação (JSON) que use ferramentas para investiga
 """
 
     def __init__(self, api_key: Optional[str] = None):
+        from kernel.executor import Executor
         self.llm = LLMClient(api_key=api_key)
+        self.executor = Executor() # Sentinel can now actually FIX things
         self.id = "auto_heal_agent"
         self.role = "Engenheiro de Manutenção (Sentinel)"
         self.status = "idle"
@@ -74,6 +76,20 @@ Baseado nisso, identifique o problema e proponha uma solução técnica definiti
 Se for um erro de código em 'Arkanis_V3/tools/network_tools.py' ou similar, explique exatamente o que trocar.
 """
         response = self.llm.generate(self.SYSTEM_PROMPT, prompt)
+        
+        # 3. EXTRAÇÃO E EXECUÇÃO (Se o LLM propôs um plano JSON de reparo)
+        if "```json" in response:
+            try:
+                import json
+                match = re.search(r"```json\n?(.*?)\n?```", response, re.DOTALL)
+                if match:
+                    repair_plan = json.loads(match.group(1))
+                    broadcast(f"🛠️ Executando plano de reparo automático ({len(repair_plan)} passos)...")
+                    results = self.executor.execute_plan(repair_plan)
+                    broadcast(f"✨ Reparo concluído: {results}")
+                    response += f"\n\n[SENTINEL LOG]: Reparo executado com sucesso.\nResultados: {results}"
+            except Exception as e:
+                broadcast(f"❌ Falha ao executar plano de reparo: {e}")
         
         broadcast(f"✅ Análise concluída: {response[:150]}...")
         self.status = "idle"

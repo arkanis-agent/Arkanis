@@ -158,7 +158,15 @@ class ArkanisAgent:
                 goal_manager.update_status(g.id, "completed")
             return "🧹 Todos os objetivos globais foram finalizados."
 
-        # 4. MANUAL MODE (standard planning)
+        # 4. PANIC TRIGGER (Se o usuário relatar falha, ativar Sentinel)
+        panic_keywords = ["não funciona", "ajuda", "quebrou", "corrija", "parou", "falha", "arrume", "conserta", "bug", "erro"]
+        if any(kw in lower_input for kw in panic_keywords):
+            self.log("Gatilho de Pânico detectado! Ativando Sentinel para auto-diagnóstico...", "error")
+            self.current_action = "Sentinel: Diagnóstico Reativo..."
+            repair_report = self.sentinel.diagnose_and_fix(f"O usuário relatou um problema: '{clean_input}'")
+            return self._format_response_with_soul(clean_input, [f"[SENTINEL / AUTO-HEAL]: {repair_report}"], task_hint="problem_solving")
+
+        # 5. MANUAL MODE (standard planning)
         self.mode = "manual"
         return self._handle_manual_mode(clean_input)
 
