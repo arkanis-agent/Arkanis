@@ -111,10 +111,12 @@ async function sendMessage(textOverride = null) {
     if (welcomeScreen && !welcomeScreen.classList.contains('hidden')) {
         welcomeScreen.classList.add('hidden');
         chatDisplay.innerHTML = `
-            <div class="max-w-4xl mx-auto space-y-8 pb-96" id="messageArea">
-                <div class="flex justify-center py-4 opacity-30 select-none">
-                    <img src="assets/logo.png" class="h-8 object-contain filter grayscale invert" alt="Arkanis Logo">
+            <div class="max-w-4xl mx-auto space-y-8 pb-12" id="messageArea">
+                <div class="flex justify-center py-4 opacity-10 select-none">
+                    <img src="assets/logo.png" class="h-10 object-contain filter grayscale invert" alt="Arkanis Logo">
                 </div>
+                <!-- Dynamic Content Here -->
+                <div class="h-[400px] w-full pointer-events-none opacity-0" id="bottomSpacer"></div>
             </div>`;
     }
 
@@ -231,10 +233,12 @@ async function sendVoiceMessage(blob) {
     if (welcomeScreen && !welcomeScreen.classList.contains('hidden')) {
         welcomeScreen.classList.add('hidden');
         chatDisplay.innerHTML = `
-            <div class="max-w-4xl mx-auto space-y-8 pb-96" id="messageArea">
-                <div class="flex justify-center py-4 opacity-30 select-none">
-                    <img src="assets/logo.png" class="h-8 object-contain filter grayscale invert" alt="Arkanis Logo">
+            <div class="max-w-4xl mx-auto space-y-8 pb-12" id="messageArea">
+                <div class="flex justify-center py-4 opacity-10 select-none">
+                    <img src="assets/logo.png" class="h-10 object-contain filter grayscale invert" alt="Arkanis Logo">
                 </div>
+                <!-- Dynamic Content Here -->
+                <div class="h-[400px] w-full pointer-events-none opacity-0" id="bottomSpacer"></div>
             </div>`;
     }
 
@@ -405,15 +409,24 @@ function formatResponse(text) {
 }
 
 function scrollDown() {
-    // Clear styles that might prevent perfect scrolling
+    if (!chatDisplay) return;
+    
+    // Physical fix: Always ensure the spacer is at the end
+    const spacer = document.getElementById('bottomSpacer');
+    const area = document.getElementById('messageArea');
+    if (spacer && area && area.lastElementChild !== spacer) {
+        area.appendChild(spacer);
+    }
+
     setTimeout(() => {
-        chatDisplay.style.scrollBehavior = 'auto'; // Instant fix
+        chatDisplay.style.scrollBehavior = 'auto'; 
         chatDisplay.scrollTop = chatDisplay.scrollHeight;
         
-        // Re-apply smooth for user-initiated scrolls
+        // Minor secondary adjustment for late-rendering images
         setTimeout(() => {
+            chatDisplay.scrollTop = chatDisplay.scrollHeight;
             chatDisplay.style.scrollBehavior = 'smooth';
-        }, 100);
+        }, 150);
     }, 50);
 }
 

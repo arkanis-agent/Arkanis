@@ -1,5 +1,15 @@
 [
     {
+        "title": "Melhoria de Importa\u00e7\u00e3o no Decoder",
+        "description": "O arquivo atual simplesmente reexporta tudo do m\u00f3dulo python_multipart.decoders, o que pode levar a polui\u00e7\u00e3o de namespace e importa\u00e7\u00f5es desnecess\u00e1rias. Sugiro importar apenas o que \u00e9 essencial ou usar namespaces expl\u00edcitos.",
+        "type": "refactor",
+        "file_path": "/home/diego/\u00c1rea de trabalho/Arkanis_V3.1/multipart/decoders.py",
+        "proposed_code": "from python_multipart.decoders import parse_form_data, FileUpload  # Importe apenas o necess\u00e1rio\\n\\n# OU alternativamente:\\n# import python_multipart.decoders as decoders  # Para acesso expl\u00edcito via namespace",
+        "id": "sug_1775251205",
+        "status": "pending",
+        "timestamp": "2026-04-03 18:20:05"
+    },
+    {
         "title": "Melhoria de Seguran\u00e7a e Resili\u00eancia no AskLLMTool",
         "description": "O c\u00f3digo atual poderia ser melhorado com: 1) Valida\u00e7\u00e3o de entrada mais robusta 2) Tratamento espec\u00edfico para erros de API 3) Caching de configura\u00e7\u00e3o do LLMClient para melhor performance",
         "type": "refactor",
