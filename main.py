@@ -16,13 +16,7 @@ if os.path.exists(env_path):
 
 from kernel.agent import ArkanisAgent
 from interfaces.cli import ArkanisCLI
-from tools import standard # This triggers tool registration
-from tools import system_tools # This triggers system tool registration
-from tools import network_tools # This triggers network tool registration
-from tools import ai_tools # This triggers AI tool registration
-from tools import browser_tools # This triggers browser tool registration
-from tools import audio_tools # This triggers audio tool registration
-from tools import monitoring_tools # This triggers monitoring tool registration (crypto, exchange, sports, weather)
+# Note: Tools are already safely imported via tools/__init__.py
 
 def main():
     """

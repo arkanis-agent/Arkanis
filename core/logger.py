@@ -41,26 +41,26 @@ class ArkanisLogger:
         print(f"{symbol} {msg}")
         self._write_system_log("info", msg)
 
-    def success(self, msg: str):
+    def success(self, msg: str, symbol: str = "🟢"):
         """User-friendly success log."""
-        print(f"🟢 {msg}")
+        print(f"{symbol} {msg}")
         self._write_system_log("success", msg)
 
-    def warning(self, msg: str):
+    def warning(self, msg: str, symbol: str = "⚠️"):
         """User-friendly warning log."""
-        print(f"⚠️  {msg}")
+        print(f"{symbol} {msg}")
         self._write_system_log("warning", msg)
 
-    def error(self, msg: str, fix: Optional[str] = None):
+    def error(self, msg: str, fix: Optional[str] = None, symbol: str = "🔴"):
         """User-friendly error log with optional fix suggestion."""
-        print(f"🔴 {msg}")
+        print(f"{symbol} {msg}")
         if fix:
             print(f"   👉 Fix: {fix}")
         self._write_system_log("error", msg, {"fix_suggestion": fix} if fix else None)
 
-    def critic(self, msg: str):
+    def critic(self, msg: str, symbol: str = "🛡️"):
         """User-friendly critic/auditor log."""
-        print(f"🛡️  {msg}")
+        print(f"{symbol} {msg}")
         self._write_system_log("critic", msg)
 
     def request(self, provider: str, model: str):

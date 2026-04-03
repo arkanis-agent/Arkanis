@@ -34,8 +34,21 @@ REGRAS DE OURO:
 - Se o problema for interno (erro no nosso código), CORRIJA IMEDIATAMENTE.
 - Mantenha a integridade do sistema operacional.
 
-FORMATO DE RESPOSTA PARA O PLANNER:
-Você deve retornar um plano de ação (JSON) que use ferramentas para investigar e consertar o problema.
+FORMATO DE RESPOSTA OBRIGATÓRIO (JSON):
+Você DEVE retornar SEMPRE um bloco de código JSON com a seguinte estrutura para que o Executor possa agir:
+```json
+{
+  "diagnosis": "Descrição curta do que quebrou",
+  "steps": [
+    {
+      "tool": "nome_da_ferramenta",
+      "args": {"arg1": "valor1"},
+      "description": "Por que estou fazendo isso"
+    }
+  ]
+}
+```
+Use ferramentas como 'move_item' (para restaurar arquivos .broken), 'replace_file_content' ou 'run_command'.
 """
 
     def __init__(self, api_key: Optional[str] = None):
@@ -83,7 +96,16 @@ Se for um erro de código em 'Arkanis_V3/tools/network_tools.py' ou similar, exp
                 import json
                 match = re.search(r"```json\n?(.*?)\n?```", response, re.DOTALL)
                 if match:
-                    repair_plan = json.loads(match.group(1))
+                    raw_data = json.loads(match.group(1))
+                    
+                    # Garantir que temos uma lista de passos
+                    if isinstance(raw_data, dict) and "steps" in raw_data:
+                        repair_plan = raw_data["steps"]
+                    elif isinstance(raw_data, list):
+                        repair_plan = raw_data
+                    else:
+                        repair_plan = [raw_data]
+
                     broadcast(f"🛠️ Executando plano de reparo automático ({len(repair_plan)} passos)...")
                     results = self.executor.execute_plan(repair_plan)
                     broadcast(f"✨ Reparo concluído: {results}")
