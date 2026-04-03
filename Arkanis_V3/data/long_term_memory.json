@@ -1,9 +1,6 @@
 {
     "preferences": [],
     "facts": [
-        "Usuário perguntou \"ainda está aí?\"",
-        "O usuário criou um diretório chamado \"teste 1\" na Área de Trabalho e um arquivo HTML dentro dele.",
-        "O usuário se chama Diego",
         "O usuário criou com sucesso o diretório /home/diego/Área de Trabalho/Diego",
         "Criação da pasta \"juliana\" na Área de Trabalho do usuário",
         "Usuário pediu para criar landing page do Projeto Arkanis na pasta \"juliana\"",
@@ -20,7 +17,10 @@
         "Ferramenta 'write_file' ausente, substituída por alternativa funcional.",
         "Erro no parsing do Plano JSON",
         "Padrão de erro reportado via Telegram",
-        "Olá, como posso ajudar?"
+        "Olá, como posso ajudar?",
+        "/home/diego/Área de trabalho/CP1",
+        "usuário=\"diego\", workspace=\"/home/diego/Área de trabalho\"",
+        "Usuário utiliza Playwright + Chromium para automação."
     ],
     "recurrent_tasks": []
 }
