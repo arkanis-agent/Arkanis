@@ -14,24 +14,25 @@ class ModelStrategy:
     def __init__(self):
         # Conversational tasks (basic chat without heavy lifting)
         self.conversation_keywords = [
-            r'^(olá|ola|oi|tudo bem|bom dia|boa tarde|boa noite|teste)\b',
-            r'\b(como você está|quem é você|me ajude|socorro)\b'
+            r'^(olá|ola|oi|tudo bem|bom dia|boa tarde|boa noite|teste|e ai|e aí|hey)\b',
+            r'^(\?|!|valeu|obrigado|obrigada|show|top|entendi)\b',
+            r'\b(como você está|quem é você|me ajude|socorro|qual seu nome|quem criou você)\b'
         ]
 
         # Simple utility tasks
         self.simple_keywords = [
-            r'\b(traduza|traduzir|resuma|resumir|corrija|corrigir|formate|ortografia)\b'
+            r'\b(traduza|traduzir|resuma|resumir|corrija|corrigir|formate|ortografia|leia|ler)\b'
         ]
 
         # Engineering/Coding specific tasks
         self.engineering_keywords = [
-            r'\b(landing\s*page|site|website|frontend|backend|react|vue|vite|css|tailwind|html|javascript|typescript|python|c\+\+|rust|golang|php|sql|api|rest|json|xml|yaml)\b',
-            r'\b(projeto|app|aplicativo|software|dev|desenvolva|crie um script|automatize|automacao|automação|faça|fazer|construa|monte|programe|codifique)\b'
+            r'\b(landing\s*page|site|website|frontend|backend|react|vue|vite|css|tailwind|html|javascript|typescript|python|c\+\+|rust|golang|php|sql|api|rest|json|xml|yaml|docker|container|kubernetes)\b',
+            r'\b(projeto|app|aplicativo|software|dev|desenvolva|crie um script|automatize|automacao|automação|faça|fazer|construa|monte|programe|codifique|implemente|execute)\b'
         ]
         
         # Deep engineering/reasoning
         self.complex_keywords = [
-            r'\b(arquitetura|analise|planejamento|codigo|código|sistema|implemente|debug|refatore|refatorar|documentacao|documentação|estrategia|estratégia)\b'
+            r'\b(arquitetura|analise|planejamento|codigo|código|sistema|debug|refatore|refatorar|documentacao|documentação|estrategia|estratégia|workflow|pipeline|auditoria|segurança)\b'
         ]
 
         # Hardcoded premium mappings for cloud models

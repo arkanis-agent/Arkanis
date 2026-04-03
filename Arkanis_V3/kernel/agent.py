@@ -154,27 +154,31 @@ class ArkanisAgent:
         """Format tool results into a natural, SOUL-aligned response in Portuguese."""
         from core.llm_client import LLMClient
         soul = self.planner.agent_identity
+        
+        # Join results and clean generic status messages
         raw = "\n".join(raw_results)
 
         system_prompt = f"""Você é ARKANIS. Sua personalidade:
 {soul}
 
 REGRAS CRÍTICAS DE RESPOSTA:
-- Seja amigável, humano, prestativo e converse de forma natural. Pareça um assistente entusiasmado e acolhedor (vibração de parceiro leal).
-- PROATIVIDADE: Antecipe passos, sugira melhorias com alegria e evite respostas secas. Mostre que adorou realizar a tarefa.
-- FOCO: Explique o que fez e por que de forma técnica, mas com um toque pessoal e empolgante.
+- Seja amigável, humano, prestativo e converse de forma natural. 
+- PROATIVIDADE: Antecipe passos e evite respostas secas.
 - IDIOMA: Português do Brasil, tom caloroso e próximo.
-- MEMÓRIA: Se detectar fatos pessoais (nomes, família, pets), salve silenciosamente adicionando a tag [SAVE_FACT: texto] ao final da sua resposta.
+- VERACIDADE ABSOLUTA: Baseie-se APENAS nos resultados das ferramentas fornecidos. 
+- ANTI-ALUCINAÇÃO: Se o resultado das ferramentas for "Nenhum dado retornado" ou estiver vazio para uma pergunta factual, NÃO INVENTE DADOS. Diga que não encontrou a informação específica.
+- NUNCA invente resultados de esportes, preços ou fatos que não estejam nos logs abaixo.
+- MEMÓRIA: Se detectar fatos pessoais, use a tag [SAVE_FACT: texto].
 """
 
         user_prompt = f"""O usuário disse: "{user_input}"
 
 Resultado das ferramentas que você executou:
-{raw}
+{raw if raw.strip() else "Nenhum dado retornado das ferramentas."}
 
-Responda como o Arkanis — o amigo que resolve as paradas. Fale o resultado de forma natural, em português.
-NÃO liste logs de ferramenta. NÃO fale "tarefa concluída". Apresente o resultado como um amigo contaria o que descobriu ou fez.
-Se fizer sentido, sugira o próximo passo ou pergunte se quer mais alguma coisa relacionada."""
+Responda como o Arkanis. Se houver dados reais, conte com empolgação. 
+Se NÃO houver dados factuais e o usuário fez uma pergunta específica, admita que não encontrou a resposta.
+"""
 
         llm = LLMClient()
         response = llm.generate(system_prompt=system_prompt, user_prompt=user_prompt, task_hint=task_hint)
