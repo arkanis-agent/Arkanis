@@ -111,7 +111,7 @@ async function sendMessage(textOverride = null) {
     if (welcomeScreen && !welcomeScreen.classList.contains('hidden')) {
         welcomeScreen.classList.add('hidden');
         chatDisplay.innerHTML = `
-            <div class="max-w-4xl mx-auto space-y-8 pb-60" id="messageArea">
+            <div class="max-w-4xl mx-auto space-y-8 pb-96" id="messageArea">
                 <div class="flex justify-center py-4 opacity-30 select-none">
                     <img src="assets/logo.png" class="h-8 object-contain filter grayscale invert" alt="Arkanis Logo">
                 </div>
@@ -231,7 +231,7 @@ async function sendVoiceMessage(blob) {
     if (welcomeScreen && !welcomeScreen.classList.contains('hidden')) {
         welcomeScreen.classList.add('hidden');
         chatDisplay.innerHTML = `
-            <div class="max-w-4xl mx-auto space-y-8 pb-60" id="messageArea">
+            <div class="max-w-4xl mx-auto space-y-8 pb-96" id="messageArea">
                 <div class="flex justify-center py-4 opacity-30 select-none">
                     <img src="assets/logo.png" class="h-8 object-contain filter grayscale invert" alt="Arkanis Logo">
                 </div>
@@ -405,7 +405,16 @@ function formatResponse(text) {
 }
 
 function scrollDown() {
-    chatDisplay.scrollTo({ top: chatDisplay.scrollHeight, behavior: 'smooth' });
+    // Clear styles that might prevent perfect scrolling
+    setTimeout(() => {
+        chatDisplay.style.scrollBehavior = 'auto'; // Instant fix
+        chatDisplay.scrollTop = chatDisplay.scrollHeight;
+        
+        // Re-apply smooth for user-initiated scrolls
+        setTimeout(() => {
+            chatDisplay.style.scrollBehavior = 'smooth';
+        }, 100);
+    }, 50);
 }
 
 // --- 2. Activity Ticker Logic ---
@@ -1683,7 +1692,9 @@ userInput.addEventListener('input', adjustTextArea);
 
 function adjustTextArea() {
     userInput.style.height = 'auto';
-    userInput.style.height = (userInput.scrollHeight) + 'px';
+    const newHeight = Math.min(userInput.scrollHeight, 192); // 192px is roughly max-h-48
+    userInput.style.height = newHeight + 'px';
+    userInput.style.overflowY = (userInput.scrollHeight > 192) ? 'auto' : 'hidden';
 }
 
 if (sendBtn) {
@@ -2285,7 +2296,7 @@ async function loadChatHistory() {
             if (welcomeScreen && !welcomeScreen.classList.contains('hidden')) {
                 welcomeScreen.classList.add('hidden');
                 chatDisplay.innerHTML = `
-                    <div class="max-w-4xl mx-auto space-y-8 pb-60" id="messageArea">
+                    <div class="max-w-4xl mx-auto space-y-8 pb-96" id="messageArea">
                         <div class="flex justify-center py-4 opacity-30 select-none">
                             <img src="assets/logo.png" class="h-8 object-contain filter grayscale invert" alt="Arkanis Logo">
                         </div>

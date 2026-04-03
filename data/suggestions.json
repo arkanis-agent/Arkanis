@@ -1,5 +1,44 @@
 [
     {
+        "title": "Melhorias no ToolRegistry",
+        "description": "Adicionar type hints consistentes, thread safety e logging apropriado",
+        "type": "refactor",
+        "file_path": "/home/diego/\u00c1rea de trabalho/Arkanis_V3.1/tools/registry.py",
+        "proposed_code": "from typing import Dict, Optional, Type, List\nimport threading\nimport logging\nfrom .base_tool import BaseTool\n\nlogger = logging.getLogger(__name__)\n\nclass ToolRegistry:\n    \"\"\"\n    A singleton class to manage the registration and discovery of tools.\n    Thread-safe implementation with proper type hints.\n    \"\"\"\n    _instance = None\n    _tools: Dict[str, BaseTool] = {}\n    _lock = threading.Lock()\n\n    def __new__(cls):\n        if cls._instance is None:\n            with cls._lock:\n                if cls._instance is None:\n                    cls._instance = super(ToolRegistry, cls).__new__(cls)\n        return cls._instance\n\n    def register(self, tool: BaseTool) -> None:\n        \"\"\"Register a tool instance.\"\"\"\n        with self._lock:\n            self._tools[tool.name] = tool\n            logger.info(f\"Tool registered: {tool.name}\")\n\n    def get_tool(self, name: str) -> Optional[BaseTool]:\n        \"\"\"Retrieve a tool by name.\"\"\"\n        with self._lock:\n            return self._tools.get(name)\n\n    def list_tools(self) -> Dict[str, str]:\n        \"\"\"Return a dictionary of tool names and their descriptions.\"\"\"\n        with self._lock:\n            return {name: tool.description for name, tool in self._tools.items()}\n\n    def get_all_tools(self) -> List[BaseTool]:\n        \"\"\"Return a list of all registered tool instances.\"\"\"\n        with self._lock:\n            return list(self._tools.values())\n\n# Global registry instance\nregistry = ToolRegistry()",
+        "id": "sug_1775250573",
+        "status": "pending",
+        "timestamp": "2026-04-03 18:09:33"
+    },
+    {
+        "title": "Implementa\u00e7\u00e3o de um Orchestrator Centralizado para Gerenciamento de Fluxos e Decis\u00f5es",
+        "description": "Atualmente, o sistema possui diversos componentes cr\u00edticos espalhados entre diferentes m\u00f3dulos (task_engine.py, goal_planner.py, agent_bus.py, etc.), o que pode levar a decis\u00f5es fragmentadas e falta de coordena\u00e7\u00e3o centralizada. Para aumentar a precis\u00e3o e autonomia do Arkanis, propomos a cria\u00e7\u00e3o de um 'Orchestrator' centralizado, respons\u00e1vel por gerenciar a comunica\u00e7\u00e3o entre m\u00f3dulos, tomar decis\u00f5es estrat\u00e9gicas baseadas em dados consolidados e garantir o alinhamento de objetivos.",
+        "type": "arch",
+        "priority": "high",
+        "files_involved": [
+            "core/task_engine.py",
+            "core/goal_planner.py",
+            "core/agent_bus.py",
+            "core/custom_agent.py",
+            "core/goal_manager.py",
+            "kernel/planner.py",
+            "kernel/executor.py"
+        ],
+        "proposed_code": "# Cria\u00e7\u00e3o do arquivo core/orchestrator.py\nclass Orchestrator:\n    def __init__(self, task_engine, goal_planner, agent_bus, goal_manager):\n        self.task_engine = task_engine\n        self.goal_planner = goal_planner\n        self.agent_bus = agent_bus\n        self.goal_manager = goal_manager\n        self.strategy_cache = {}\n\n    def sync_goals_and_tasks(self):\n        \"Sincroniza objetivos e tarefas entre m\u00f3dulos\"\n        goals = self.goal_manager.get_active_goals()\n        self.task_engine.update_tasks_based_on_goals(goals)\n\n    def evaluate_and_route(self, agent_request):\n        \"Avalia solicita\u00e7\u00f5es de agentes e roteia para o m\u00f3dulo apropriado\"\n        if agent_request['type'] == 'task':\n            return self.task_engine.process_task(agent_request)\n        elif agent_request['type'] == 'goal':\n            return self.goal_planner.generate_plan(agent_request)\n        elif agent_request['type'] == 'communication':\n            return self.agent_bus.broadcast(agent_request)\n\n    def execute_strategy(self, strategy_name):\n        \"Executa estrat\u00e9gias previamente armazenadas\"\n        if strategy_name in self.strategy_cache:\n            return self.strategy_cache[strategy_name].execute()\n        else:\n            raise ValueError(f'Estrat\u00e9gia {strategy_name} n\u00e3o encontrada no cache.')\n\n# Integra\u00e7\u00e3o nos m\u00f3dulos existentes\n# Exemplo em task_engine.py, goal_planner.py, etc., substituindo chamadas diretas por chamadas ao Orchestrator.",
+        "id": "arch_1775250278",
+        "status": "pending",
+        "timestamp": "2026-04-03 18:04:38"
+    },
+    {
+        "title": "Melhoria de Seguran\u00e7a e Logging em safe_import_tool",
+        "description": "A fun\u00e7\u00e3o safe_import_tool poderia registrar melhor os sucessos al\u00e9m dos erros, e incluir uma verifica\u00e7\u00e3o b\u00e1sica de seguran\u00e7a para nomes de m\u00f3dulos.",
+        "type": "security",
+        "file_path": "/home/diego/\u00c1rea de trabalho/Arkanis_V3.1/tools/__init__.py",
+        "proposed_code": "import re\nfrom core.logger import logger\nfrom tools.registry import registry\n\n\ndef safe_import_tool(module_name):\n    # Verifica\u00e7\u00e3o b\u00e1sica de seguran\u00e7a no nome do m\u00f3dulo\n    if not re.match(r'^[a-zA-Z0-9_.]+$', module_name):\n        logger.error(f\"Nome de m\u00f3dulo inv\u00e1lido: {module_name}\")\n        return\n\n    try:\n        import importlib\n        module = importlib.import_module(module_name)\n        logger.info(f\"M\u00f3dulo [{module_name}] importado com sucesso\", symbol=\"\u2705\")\n        return module\n    except ImportError as e:\n        logger.error(f\"Erro ao importar ferramenta [{module_name}]: {e}\", symbol=\"\u26a0\ufe0f\")\n        # Registra no logger para o Sentinel ver depois\n\n\nmodules = [\n    \"tools.standard\",\n    \"tools.ai_tools\",\n    \"tools.audio_tools\",\n    \"tools.browser_tools\",\n    \"tools.network_tools\",\n    \"tools.system_tools\",\n    \"tools.monitoring_tools\",\n    \"tools.dev_tools\"\n]\n\nfor mod in modules:\n    safe_import_tool(mod)\n\n__all__ = [\"registry\"]",
+        "id": "sug_1775250259",
+        "status": "pending",
+        "timestamp": "2026-04-03 18:04:19"
+    },
+    {
         "title": "Implementa\u00e7\u00e3o de Module Orchestrator",
         "description": "Atualmente, a conex\u00e3o entre os diversos m\u00f3dulos do sistema \u00e9 feita de forma direta, o que pode levar a acoplamento excessivo e dificuldade na evolu\u00e7\u00e3o e manuten\u00e7\u00e3o do c\u00f3digo. A introdu\u00e7\u00e3o de um Module Orchestrator centralizado permitiria uma comunica\u00e7\u00e3o mais eficiente e desacoplada entre os componentes, aumentando a autonomia do sistema ao permitir a troca din\u00e2mica de m\u00f3dulos e estrat\u00e9gias sem impacto no funcionamento geral.",
         "type": "arch",
