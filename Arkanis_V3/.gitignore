@@ -24,6 +24,7 @@ libs/
 
 # Runtime-generated wrappers
 arkanis_wrap.sh
+run.sh
 
 # Config with secrets (populated at runtime via WebUI/install)
 # config/ is included — providers.json is a safe template

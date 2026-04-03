@@ -169,13 +169,12 @@ REGRAS CRÍTICAS DE RESPOSTA:
 
         user_prompt = f"""O usuário disse: "{user_input}"
 
-Dados obtidos pelas ferramentas:
+Resultado das ferramentas que você executou:
 {raw}
 
-Lembre-se da sua alma e personalidade:
-{soul}
-
-Gere o relatório de execução técnico e direto."""
+Responda como o Arkanis — o amigo que resolve as paradas. Fale o resultado de forma natural, em português.
+NÃO liste logs de ferramenta. NÃO fale "tarefa concluída". Apresente o resultado como um amigo contaria o que descobriu ou fez.
+Se fizer sentido, sugira o próximo passo ou pergunte se quer mais alguma coisa relacionada."""
 
         llm = LLMClient()
         response = llm.generate(system_prompt=system_prompt, user_prompt=user_prompt, task_hint=task_hint)
