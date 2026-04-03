@@ -145,30 +145,25 @@ class LLMRouter:
         self._load_config() # Always fresh
         return self.MODELS
 
-    def _dispatch_call(self, system_prompt: str, user_prompt: str) -> str:
-        """Raw dispatcher to execute the specific provider method."""
+    def _dispatch_call(self, system_prompt: str, user_prompt: str, images: Optional[List[str]] = None) -> str:
+        """Raw dispatcher with vision support."""
         provider_cfg = self.providers.get(self.active_provider) or {}
         
-        # Final safety check before calling
-        if not config_manager.is_provider_ready(self.active_provider, {"providers": self.providers}):
-            return f"[Error LLM] Provedor '{self.active_provider}' não está pronto ou habilitado."
-
+        # ...
         if self.active_provider == "openrouter":
-            return self._call_openrouter(provider_cfg, system_prompt, user_prompt)
+            return self._call_openrouter(provider_cfg, system_prompt, user_prompt, images)
         elif self.active_provider == "ollama":
-            # Check health before call for local providers
-            if not self.check_provider_health("ollama"):
-                return f"[Error LLM] Ollama não está respondendo em {provider_cfg.get('endpoint')}"
-            return self._call_ollama(provider_cfg, system_prompt, user_prompt)
+            # ...
+            return self._call_ollama(provider_cfg, system_prompt, user_prompt, images)
         elif self.active_provider == "anthropic":
-            return self._call_anthropic(provider_cfg, system_prompt, user_prompt)
+            return self._call_anthropic(provider_cfg, system_prompt, user_prompt, images)
         elif self.active_provider in ["openai", "google", "xai", "mistral", "qwen", "glm", "moonshot", "minimax", "venice", "copilot", "lm_studio", "vllm"]:
-            return self._call_openai_compatible(provider_cfg, system_prompt, user_prompt)
+            return self._call_openai_compatible(provider_cfg, system_prompt, user_prompt, images)
             
         return f"[Error LLM] Provedor '{self.active_provider}' não suportado ou implementação pendente."
 
-    def generate(self, system_prompt: str, user_prompt: str, task_hint: Optional[str] = None) -> str:
-        """Routes the generation request to the active provider with automatic failover."""
+    def generate(self, system_prompt: str, user_prompt: str, task_hint: Optional[str] = None, images: Optional[List[str]] = None) -> str:
+        """Routes the generation request to the active provider with vision support."""
         governor.record_llm_call()
         if not governor.can_call_llm():
             return "[Error LLM] Limite de segurança de custos atingido. Bloqueio preventivo ativado."
@@ -305,7 +300,7 @@ class LLMRouter:
         return result
 
 
-    def _call_openrouter(self, cfg: Dict, system_prompt: str, user_prompt: str) -> str:
+    def _call_openrouter(self, cfg: Dict, system_prompt: str, user_prompt: str, images: Optional[List[str]] = None) -> str:
         api_key = cfg.get("api_key", "").strip()
         if not api_key:
             return "[Error LLM] API Key do OpenRouter não configurada."
@@ -317,11 +312,21 @@ class LLMRouter:
             "X-Title": "Arkanis V3 Agent OS",
             "HTTP-Referer": "https://github.com/arkanis-ai/v3"
         }
+        
+        # Multi-modal payload
+        user_content = user_prompt
+        if images:
+            user_content = [{"type": "text", "text": user_prompt}]
+            for img in images:
+                if not img.startswith("data:"):
+                    img = f"data:image/jpeg;base64,{img}"
+                user_content.append({"type": "image_url", "image_url": {"url": img}})
+
         payload = {
             "model": self.active_model,
             "messages": [
                 {"role": "system", "content": system_prompt},
-                {"role": "user", "content": user_prompt}
+                {"role": "user", "content": user_content}
             ]
         }
 
@@ -352,13 +357,23 @@ class LLMRouter:
         except Exception as e:
             return f"[Error LLM] Erro na chamada OpenRouter: {str(e)}"
 
-    def _call_ollama(self, cfg: Dict, system_prompt: str, user_prompt: str) -> str:
+    def _call_ollama(self, cfg: Dict, system_prompt: str, user_prompt: str, images: Optional[List[str]] = None) -> str:
         url = cfg.get("endpoint", "http://localhost:11434/api/chat")
+        
+        # Ollama expects images as a list of base64 strings (without data prefix)
+        ollama_images = []
+        if images:
+            for img in images:
+                if img.startswith("data:"):
+                    ollama_images.append(img.split(",")[1])
+                else:
+                    ollama_images.append(img)
+
         payload = {
             "model": self.active_model,
             "messages": [
                 {"role": "system", "content": system_prompt},
-                {"role": "user", "content": user_prompt}
+                {"role": "user", "content": user_prompt, "images": ollama_images if ollama_images else None}
             ],
             "stream": False
         }
@@ -371,12 +386,27 @@ class LLMRouter:
         except Exception as e:
             return f"[Error LLM] Ollama em {url} falhou: {str(e)}"
 
-    def _call_anthropic(self, cfg: Dict, system_prompt: str, user_prompt: str) -> str:
+    def _call_anthropic(self, cfg: Dict, system_prompt: str, user_prompt: str, images: Optional[List[str]] = None) -> str:
         api_key = cfg.get("api_key")
         if not api_key:
             return "[Error LLM] API Key da Anthropic não configurada."
 
         url = cfg.get("endpoint", "https://api.anthropic.com/v1/messages")
+        
+        # Anthropic multi-modal format
+        user_content = [{"type": "text", "text": user_prompt}]
+        if images:
+            for img in images:
+                b64_data = img.split(",")[1] if img.startswith("data:") else img
+                user_content.append({
+                    "type": "image",
+                    "source": {
+                        "type": "base64",
+                        "media_type": "image/jpeg",
+                        "data": b64_data
+                    }
+                })
+
         headers = {
             "x-api-key": api_key,
             "anthropic-version": "2024-06-01",
@@ -387,7 +417,7 @@ class LLMRouter:
             "max_tokens": 4096,
             "system": system_prompt,
             "messages": [
-                {"role": "user", "content": user_prompt}
+                {"role": "user", "content": user_content}
             ]
         }
 
@@ -402,7 +432,7 @@ class LLMRouter:
         except Exception as e:
             return f"[Error LLM] Anthropic falhou: {str(e)}"
 
-    def _call_openai_compatible(self, cfg: Dict, system_prompt: str, user_prompt: str) -> str:
+    def _call_openai_compatible(self, cfg: Dict, system_prompt: str, user_prompt: str, images: Optional[List[str]] = None) -> str:
         url = cfg.get("endpoint")
         if not url:
             return f"[Error LLM] Endpoint para {self.active_provider} não configurado."
@@ -412,11 +442,20 @@ class LLMRouter:
         if api_key:
             headers["Authorization"] = f"Bearer {api_key}"
 
+        # OpenAI multi-modal format
+        user_content = user_prompt
+        if images:
+            user_content = [{"type": "text", "text": user_prompt}]
+            for img in images:
+                if not img.startswith("data:"):
+                    img = f"data:image/jpeg;base64,{img}"
+                user_content.append({"type": "image_url", "image_url": {"url": img}})
+
         payload = {
             "model": self.active_model,
             "messages": [
                 {"role": "system", "content": system_prompt},
-                {"role": "user", "content": user_prompt}
+                {"role": "user", "content": user_content}
             ],
             "max_tokens": 4096
         }

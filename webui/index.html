@@ -613,11 +613,15 @@
                         </button>
                     </div>
 
+                    <!-- Image Previews Container -->
+                    <div id="imagePreviews" class="flex flex-wrap gap-2 mb-2 px-6"></div>
+
                     <!-- Main Input -->
                     <div class="bg-surface-container-lowest/85 backdrop-blur-xl rounded-xl shadow-2xl ring-1 ring-white/5 flex items-center p-2 pl-6">
                         <textarea id="userInput" class="flex-1 bg-transparent border-none focus:ring-0 text-on-surface placeholder-on-surface-variant/60 font-body py-3 resize-none custom-scrollbar max-h-48" placeholder="Pergunte algo à ARKANIS..." rows="1"></textarea>
                         <div class="flex items-center gap-2 pr-2">
-                            <button class="p-2.5 rounded-lg text-on-surface-variant hover:bg-surface-container-high transition-all">
+                            <input type="file" id="imageInput" class="hidden" accept="image/*" multiple />
+                            <button id="attachBtn" class="p-2.5 rounded-lg text-on-surface-variant hover:bg-surface-container-high transition-all">
                                 <span class="material-symbols-outlined">attach_file</span>
                             </button>
                             <button id="voiceBtn" class="p-2.5 rounded-lg text-on-surface-variant hover:bg-surface-container-high transition-all">

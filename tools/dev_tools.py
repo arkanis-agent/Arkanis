@@ -6,6 +6,7 @@ from typing import Dict, Any, List, Optional
 from tools.base_tool import BaseTool
 from tools.registry import registry
 from core.agent_bus import agent_bus
+from core.sandbox import sandbox
 
 logger = logging.getLogger("uvicorn")
 
@@ -41,19 +42,12 @@ class ShellExecTool(BaseTool):
             return "Error: Command rejected for security reasons."
             
         try:
-            # Run with timeout to prevent hang
-            result = subprocess.run(
-                cmd, shell=True, capture_output=True, text=True, timeout=30
-            )
-            output = {
-                "stdout": result.stdout,
-                "stderr": result.stderr,
-                "returncode": result.returncode
-            }
-            agent_bus.broadcast_message("system", f"[DEV_TOOL] Command executed: {cmd[:50]}...")
-            return json.dumps(output)
-        except subprocess.TimeoutExpired:
-            return "Error: Command timed out after 30s."
+            # Execute via Sandbox for isolation
+            timeout = int(kwargs.get("timeout", 30))
+            result = sandbox.run(cmd, timeout=timeout)
+            
+            agent_bus.broadcast_message("system", f"[DEV_TOOL/SANDBOX] Command executed: {cmd[:50]}...")
+            return json.dumps(result)
         except Exception as e:
             return f"Error executing command: {str(e)}"
 

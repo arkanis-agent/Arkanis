@@ -2374,3 +2374,69 @@ function dragended(event) {
     event.subject.fx = null;
     event.subject.fy = null;
 }
+
+// --- Vision Support (Images) ---
+
+let uploadedImagesArr = []; // Explicitly named to avoid confusion
+
+function handleImageSelect(files) {
+    if (!files) return;
+    Array.from(files).forEach(file => {
+        if (!file.type.startsWith('image/')) return;
+        
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const base64 = e.target.result;
+            uploadedImagesArr.push(base64);
+            renderImagePreviews();
+        };
+        reader.readAsDataURL(file);
+    });
+}
+
+function renderImagePreviews() {
+    const container = document.getElementById('imagePreviews');
+    if (!container) return;
+    container.innerHTML = uploadedImagesArr.map((src, idx) => `
+        <div class="relative w-16 h-16 rounded-lg overflow-hidden border border-white/10 group animate-in fade-in zoom-in duration-200">
+            <img src="${src}" class="w-full h-full object-cover" />
+            <button onclick="removeImage(${idx})" class="absolute top-0 right-0 p-0.5 bg-black/60 text-white hover:text-rose-400 transition-colors opacity-0 group-hover:opacity-100">
+                <span class="material-symbols-outlined text-[14px]">close</span>
+            </button>
+        </div>
+    `).join('');
+}
+
+function removeImage(idx) {
+    uploadedImagesArr.splice(idx, 1);
+    renderImagePreviews();
+}
+
+function clearImages() {
+    uploadedImagesArr = [];
+    const container = document.getElementById('imagePreviews');
+    if (container) container.innerHTML = '';
+}
+
+// Global listeners for vision
+document.addEventListener('DOMContentLoaded', () => {
+    const imgInput = document.getElementById('imageInput');
+    const attBtn = document.getElementById('attachBtn');
+    if (attBtn && imgInput) {
+        attBtn.onclick = () => imgInput.click();
+        imgInput.onchange = (e) => handleImageSelect(e.target.files);
+    }
+
+    // Paste support
+    document.addEventListener('paste', (e) => {
+        const items = (e.clipboardData || e.originalEvent.clipboardData).items;
+        for (const item of items) {
+            if (item.type.indexOf('image') !== -1) {
+                const blob = item.getAsFile();
+                handleImageSelect([blob]);
+            }
+        }
+    });
+
+    initNeuralMap();
+});

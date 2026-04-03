@@ -107,8 +107,8 @@ class ArkanisAgent:
             symbol = symbols.get(log_type, "🧠")
             arkanis_logger.info(clean_msg, symbol=symbol)
 
-    def handle_input(self, user_input: str) -> str:
-        """Process user input with strict priority routing."""
+    def handle_input(self, user_input: str, images: Optional[List[str]] = None) -> str:
+        """Process user input with strict priority routing and vision support."""
         # Clean and lower for processing
         clean_input = user_input.strip()
         lower_input = clean_input.lower()
@@ -181,7 +181,7 @@ class ArkanisAgent:
 
         # 5. MANUAL MODE (standard planning)
         self.mode = "manual"
-        return self._handle_manual_mode(clean_input)
+        return self._handle_manual_mode(clean_input, images=images)
 
     def _get_status_report(self) -> str:
         """Detailed Agent Status Panel."""
@@ -189,8 +189,8 @@ class ArkanisAgent:
         self.log(report, "system")
         return f"Status checked: {self.status.upper()}"
 
-    def _format_response_with_soul(self, user_input: str, raw_results: list, task_hint: str = None) -> str:
-        """Format tool results into a natural, SOUL-aligned response in Portuguese."""
+    def _format_response_with_soul(self, user_input: str, raw_results: list, task_hint: str = None, images: Optional[List[str]] = None) -> str:
+        """Format tool results into a natural, SOUL-aligned response in Portuguese with vision support."""
         from core.llm_client import LLMClient
         soul = self.planner.agent_identity
         
@@ -222,7 +222,7 @@ Se NÃO houver dados factuais e o usuário fez uma pergunta específica, admita 
 """
 
         llm = LLMClient()
-        response = llm.generate(system_prompt=system_prompt, user_prompt=user_prompt, task_hint=task_hint)
+        response = llm.generate(system_prompt=system_prompt, user_prompt=user_prompt, task_hint=task_hint, images=images)
         
         if response and "[Error" not in response:
             # Multi-line extraction of facts
@@ -237,8 +237,8 @@ Se NÃO houver dados factuais e o usuário fez uma pergunta específica, admita 
             return response
         return raw  # fallback to raw if formatter fails
 
-    def _handle_manual_mode(self, user_input: str) -> str:
-        """Process user input manually: Context -> Plan -> Execute -> Remember."""
+    def _handle_manual_mode(self, user_input: str, images: Optional[List[str]] = None) -> str:
+        """Process user input manually with vision support: Context -> Plan -> Execute -> Remember."""
         self.status = "running"
         self.current_action = "Preparando contexto..."
         # Check for Awakening

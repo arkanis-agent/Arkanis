@@ -78,6 +78,7 @@ agent: ArkanisAgent = None
 
 class MessageRequest(BaseModel):
     text: str
+    images: Optional[List[str]] = None
 
 class ModelSelectRequest(BaseModel):
     model_id: str
@@ -276,7 +277,8 @@ async def handle_message(request: MessageRequest):
             agent.logs = []
             
         # Run in dedicated agent executor — never blocks uvicorn polling threads
-        response = await run_agent(agent.handle_input, request.text)
+        # Note: We update handle_input to accept images in the next step
+        response = await run_agent(agent.handle_input, request.text, images=request.images)
         return {"response": response}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -592,17 +594,33 @@ async def get_dev_suggestions():
 
 @app.post("/suggestions/{sug_id}/action")
 async def handle_suggestion_action(sug_id: str, action: str):
-    """Approve or reject a suggestion."""
-    agent_instance = agent_bus.get_agent("dev_agent")
+    """Approve or reject a suggestion. If approved, applies the code changes."""
+    # Find in either dev_agent or architect_agent (they share the file)
+    agent_instance = agent_bus.get_agent("architect_agent") or agent_bus.get_agent("dev_agent")
+    
     if not agent_instance:
-        raise HTTPException(status_code=404, detail="DevAgent não está ativo.")
+        raise HTTPException(status_code=404, detail="Nenhum agente de desenvolvimento ativo.")
     
     if action not in ["approve", "reject"]:
         raise HTTPException(status_code=400, detail="Ação inválida. Use 'approve' ou 'reject'.")
     
-    # Map 'approve'/'reject' to 'approved'/'rejected' if necessary, or just use as is.
+    # 1. Update status in JSON
     final_status = "approved" if action == "approve" else "rejected"
     agent_instance.update_suggestion_status(sug_id, final_status)
+    
+    # 2. If approved, APPLY the code
+    if action == "approve":
+        suggestions = agent_instance.get_suggestions()
+        target = next((s for s in suggestions if s["id"] == sug_id), None)
+        if target and target.get("proposed_code") and target.get("file_path"):
+            from tools.registry import registry
+            tool = registry.get_tool("write_full_file")
+            if tool:
+                result = tool.execute(path=target["file_path"], content=target["proposed_code"])
+                logger.info(f"Suggestion {sug_id} applied: {result}")
+                # Optional: update status to 'applied'
+                agent_instance.update_suggestion_status(sug_id, "applied")
+    
     return {"status": "success", "suggestion_id": sug_id, "new_status": action}
 
 if __name__ == "__main__":
