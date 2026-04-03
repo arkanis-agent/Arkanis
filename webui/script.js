@@ -1077,6 +1077,9 @@ function showChat() { setActivePanel('chat'); }
 function showDevCenter() { 
     setActivePanel('devCenter'); 
     loadSuggestions(); 
+    fetchObservabilityData();
+    if (observabilityInterval) clearInterval(observabilityInterval);
+    observabilityInterval = setInterval(fetchObservabilityData, 3000);
 }
 function showHistory() { setActivePanel('history'); }
 function showProviders() {
@@ -1111,7 +1114,7 @@ function stopObservabilityPolling() {
 // Intercept setActivePanel to manage polling
 const originalSetActivePanel = setActivePanel;
 setActivePanel = function(panelId) {
-    if (panelId !== 'observability') stopObservabilityPolling();
+    if (panelId !== 'observability' && panelId !== 'devCenter') stopObservabilityPolling();
     originalSetActivePanel(panelId);
 };
 
@@ -1702,9 +1705,11 @@ function renderObservability(data) {
     const devStatusContainer = document.getElementById('devAgentStatusContainer');
     const devLiveStatus = document.getElementById('devAgentLiveStatus');
     const devPulse = document.getElementById('devAgentPulse');
+    const devControls = document.getElementById('devAgentControls');
     
     if (devAgent && devStatusContainer && devLiveStatus && devPulse) {
         devStatusContainer.classList.remove('hidden');
+        if (devControls) devControls.classList.remove('hidden');
         devLiveStatus.textContent = devAgent.current_action || 'Idle';
         devLiveStatus.title = `Detalhes: Ciclo ${devAgent.cycle} | Status: ${devAgent.status.toUpperCase()}`;
         

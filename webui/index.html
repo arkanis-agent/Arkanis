@@ -503,6 +503,16 @@
                     </div>
                     
                     <div class="flex flex-col md:flex-row items-end md:items-center gap-3">
+                        <!-- Pause / Resume Controls -->
+                        <div class="hidden items-center gap-1 bg-slate-900/50 border border-white/5 rounded-xl px-2 py-1 flex" id="devAgentControls">
+                            <button class="agent-ctrl-btn pause p-1 rounded hover:bg-amber-500/20 text-slate-500 hover:text-amber-500 transition-colors" title="Pausar DevAgent" onclick="agentPause('dev_agent')">
+                                <span class="material-symbols-outlined text-[18px]">pause</span>
+                            </button>
+                            <button class="agent-ctrl-btn resume p-1 rounded hover:bg-emerald-500/20 text-slate-500 hover:text-emerald-500 transition-colors" title="Retomar DevAgent" onclick="agentResume('dev_agent')">
+                                <span class="material-symbols-outlined text-[18px]">play_arrow</span>
+                            </button>
+                        </div>
+                        
                         <div class="bg-indigo-500/10 border border-indigo-500/30 rounded-xl px-4 py-2 flex items-center gap-3 hidden" id="devAgentStatusContainer">
                             <div class="w-2 h-2 rounded-full bg-indigo-500 animate-pulse" id="devAgentPulse"></div>
                             <div class="text-xs font-mono text-indigo-400 max-w-[250px] truncate" id="devAgentLiveStatus" title="Status atual da thread do agente.">
