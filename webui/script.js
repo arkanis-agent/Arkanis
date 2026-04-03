@@ -2772,33 +2772,54 @@ function clearAttachments() {
     renderFilePreviews();
 }
 
-// Global listeners for vision and attachments
-document.addEventListener('DOMContentLoaded', () => {
-    const imgInput = document.getElementById('imageInput');
-    const fileInput = document.getElementById('fileInput');
+// --- 10. Robust Elite UI Initialization ---
+
+function initEliteUI() {
+    console.log("🚀 [Elite UI] Executing Robust Initialization...");
+    
     const attBtn = document.getElementById('attachBtn');
     const imgBtn = document.getElementById('imageBtn');
+    const fInput = document.getElementById('fileInput');
+    const iInput = document.getElementById('imageInput');
 
-    if (attBtn && fileInput) {
-        attBtn.onclick = (e) => { e.preventDefault(); fileInput.click(); };
-        fileInput.onchange = (e) => handleFileSelect(e.target.files);
+    if (attBtn && fInput) {
+        attBtn.onclick = (e) => {
+            e.preventDefault();
+            console.trace("📎 [Elite UI] Attach button clicked");
+            fInput.click();
+        };
+        fInput.onchange = (e) => handleFileSelect(e.target.files);
     }
 
-    if (imgBtn && imgInput) {
-        imgBtn.onclick = (e) => { e.preventDefault(); imgInput.click(); };
-        imgInput.onchange = (e) => handleImageSelect(e.target.files);
+    if (imgBtn && iInput) {
+        imgBtn.onclick = (e) => {
+            e.preventDefault();
+            console.trace("🖼️ [Elite UI] Image button clicked");
+            iInput.click();
+        };
+        iInput.onchange = (e) => handleImageSelect(e.target.files);
     }
+    
+    // Neural Map Re-init if needed
+    if (typeof initNeuralMap === 'function') initNeuralMap();
 
-    // Paste support
-    document.addEventListener('paste', (e) => {
-        const items = (e.clipboardData || e.originalEvent.clipboardData).items;
-        for (const item of items) {
-            if (item.type.indexOf('image') !== -1) {
-                const blob = item.getAsFile();
-                handleImageSelect([blob]);
-            }
+    console.log("✅ [Elite UI] Bindings Secured.");
+}
+
+// Global execution
+document.addEventListener('DOMContentLoaded', initEliteUI);
+// Frequent re-check to fix any DOM replacement by other agents
+if (!window.eliteInitInterval) {
+    window.eliteInitInterval = setInterval(initEliteUI, 5000);
+}
+
+// Paste support
+document.addEventListener('paste', (e) => {
+    const items = (e.clipboardData || e.originalEvent.clipboardData).items;
+    for (const item of items) {
+        if (item.type.indexOf('image') !== -1) {
+            const blob = item.getAsFile();
+            if (typeof handleImageSelect === 'function') handleImageSelect([blob]);
         }
-    });
-
-    initNeuralMap();
+    }
 });
