@@ -76,6 +76,9 @@ const navLogs = document.getElementById('navLogs');
 const navChat = document.getElementById('navChat');
 const navHistory = document.getElementById('navHistory');
 const navObservability = document.getElementById('navObservability');
+const navDevCenter = document.getElementById('navDevCenter');
+const devCenterPanel = document.getElementById('devCenterPanel');
+const suggestionsGrid = document.getElementById('suggestionsGrid');
 
 // Global State
 let lastLogIndex = 0;
@@ -1010,6 +1013,7 @@ function setActivePanel(panelId) {
         history: { element: document.getElementById('historyPanel'), nav: navHistory, showFooter: false },
         observability: { element: document.getElementById('observabilityPanel'), nav: navObservability, showFooter: false },
         'tasks': { element: tasksPanel, nav: navTasks, showFooter: false },
+        'devCenter': { element: devCenterPanel, nav: navDevCenter, showFooter: false },
         'integrations': { element: document.getElementById('integrationsPanel'), nav: null, showFooter: false }
     };
 
@@ -1070,6 +1074,10 @@ function setActivePanel(panelId) {
 const showPanel = setActivePanel;
 
 function showChat() { setActivePanel('chat'); }
+function showDevCenter() { 
+    setActivePanel('devCenter'); 
+    loadSuggestions(); 
+}
 function showHistory() { setActivePanel('history'); }
 function showProviders() {
     setActivePanel('providers');
@@ -1500,6 +1508,13 @@ if (navLogs) {
     });
 }
 
+if (navDevCenter) {
+    navDevCenter.addEventListener('click', (e) => {
+        e.preventDefault();
+        showDevCenter();
+    });
+}
+
 if (createTaskBtn) {
     createTaskBtn.addEventListener('click', startTask);
 }
@@ -1681,6 +1696,32 @@ function renderObservability(data) {
     animateStatIfChanged('obsIdleAgents', data.stats.idle, 'idle');
     animateStatIfChanged('obsPausedAgents', data.stats.paused, 'paused');
     animateStatIfChanged('obsErrorAgents', data.stats.errors, 'errors');
+
+    // Update Dev Center specific live banner if it exists in DOM
+    const devAgent = data.agents.find(a => a.id === 'dev_agent');
+    const devStatusContainer = document.getElementById('devAgentStatusContainer');
+    const devLiveStatus = document.getElementById('devAgentLiveStatus');
+    const devPulse = document.getElementById('devAgentPulse');
+    
+    if (devAgent && devStatusContainer && devLiveStatus && devPulse) {
+        devStatusContainer.classList.remove('hidden');
+        devLiveStatus.textContent = devAgent.current_action || 'Idle';
+        devLiveStatus.title = `Detalhes: Ciclo ${devAgent.cycle} | Status: ${devAgent.status.toUpperCase()}`;
+        
+        if (devAgent.status === 'paused') {
+            devPulse.className = 'w-2 h-2 rounded-full bg-amber-500';
+            devLiveStatus.className = 'text-xs font-mono text-amber-400 max-w-[250px] truncate animate-none';
+            devStatusContainer.className = 'bg-amber-500/10 border border-amber-500/30 rounded-xl px-4 py-2 flex items-center gap-3 transition-colors';
+        } else if (devAgent.status === 'idle') {
+            devPulse.className = 'w-2 h-2 rounded-full bg-emerald-500';
+            devLiveStatus.className = 'text-xs font-mono text-emerald-400 max-w-[250px] truncate animate-none';
+            devStatusContainer.className = 'bg-emerald-500/10 border border-emerald-500/30 rounded-xl px-4 py-2 flex items-center gap-3 transition-colors';
+        } else {
+            devPulse.className = 'w-2 h-2 rounded-full bg-indigo-500 animate-pulse';
+            devLiveStatus.className = 'text-xs font-mono text-indigo-400 max-w-[250px] truncate';
+            devStatusContainer.className = 'bg-indigo-500/10 border border-indigo-500/30 rounded-xl px-4 py-2 flex items-center gap-3 transition-colors';
+        }
+    }
 
     // Render Rich Agent Cards
     const grid = document.getElementById('obsAgentsGrid');
@@ -2042,3 +2083,83 @@ pollLogs();
 fetchModels();
 loadGoals();
 loadGovernorState();
+// --- Dev Center Logic ---
+
+async function loadSuggestions() {
+    if (!suggestionsGrid) return;
+    try {
+        const response = await fetch('/suggestions');
+        const data = await response.json();
+        renderSuggestions(data.suggestions || []);
+    } catch (e) {
+        console.error('Failed to load suggestions', e);
+    }
+}
+
+function renderSuggestions(suggestions) {
+    if (!suggestionsGrid) return;
+    if (suggestions.length === 0) {
+        suggestionsGrid.innerHTML = `
+            <div class="col-span-full py-20 text-center text-slate-600 italic">
+                Nenhuma sugestão disponível no momento. O DevAgent continua analisando...
+            </div>
+        `;
+        return;
+    }
+
+    suggestionsGrid.innerHTML = suggestions.map(s => `
+        <div class="bg-slate-900 border border-white/5 rounded-2xl p-6 hover:border-purple-500/30 transition-all flex flex-col gap-4 shadow-xl">
+            <div class="flex items-start justify-between">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-purple-500/10 flex items-center justify-center">
+                        <span class="material-symbols-outlined text-purple-400 text-xl">
+                            ${s.type === 'feature' ? 'rocket_launch' : s.type === 'bug' ? 'bug_report' : 'speed'}
+                        </span>
+                    </div>
+                    <div>
+                        <h4 class="font-bold text-slate-100 text-sm">${s.title}</h4>
+                        <span class="text-[9px] font-bold uppercase py-0.5 px-2 rounded-full ${s.priority === 'high' ? 'bg-rose-500/20 text-rose-400' : 'bg-blue-500/20 text-blue-400'}">
+                            ${s.priority} priority
+                        </span>
+                    </div>
+                </div>
+                <div class="text-[10px] text-slate-500 font-mono">
+                    ID: ${s.id.substring(0,8)}
+                </div>
+            </div>
+
+            <p class="text-xs text-slate-400 leading-relaxed">${s.description}</p>
+
+            <div class="bg-black/40 rounded-xl p-4 border border-white/5 overflow-x-auto">
+                <code class="text-[10px] text-purple-300 font-mono whitespace-pre">${s.code_preview || '// No code preview available'}</code>
+            </div>
+
+            <div class="flex items-center gap-3 mt-auto">
+                <button onclick="suggestionAction('${s.id}', 'approve')" class="flex-1 bg-purple-600 hover:bg-purple-500 text-white text-[11px] font-bold py-2 rounded-lg transition-all shadow-lg shadow-purple-900/20">
+                    Aprovar Melhoria
+                </button>
+                <button onclick="suggestionAction('${s.id}', 'reject')" class="flex-1 bg-slate-800 hover:bg-slate-700 text-slate-300 text-[11px] font-bold py-2 rounded-lg transition-all border border-white/5">
+                    Ignorar
+                </button>
+            </div>
+        </div>
+    `).join('');
+}
+
+async function suggestionAction(id, action) {
+    try {
+        const response = await fetch(`/suggestions/${id}/action`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: action })
+        });
+        const data = await response.json();
+        if (data.status === 'success') {
+            showToast(action === 'approve' ? 'Melhoria aprovada! Aplicando...' : 'Sugestão ignorada.', action === 'approve' ? 'emerald' : 'slate');
+            loadSuggestions();
+        }
+    } catch (e) {
+        console.error('Failed to act on suggestion', e);
+        showToast('Erro ao processar sugestão.', 'rose');
+    }
+}

@@ -2,6 +2,7 @@ from kernel.planner import Planner
 from kernel.executor import Executor
 from core.agents.critic_agent import CriticAgent
 from core.agents.auto_heal_agent import AutoHealAgent # New: Auto-Heal System
+from core.agents.dev_agent import DevAgent # New: Dev Center
 from modules.memory.short_term import session_memory
 from rich import print as rprint
 from rich.panel import Panel
@@ -28,6 +29,12 @@ class ArkanisAgent:
         self.executor = Executor()
         self.critic = CriticAgent()
         self.sentinel = AutoHealAgent() # The Self-Maintenance Sentinel
+        self.dev_agent = DevAgent() # The Developer Agent
+        
+        # Start background autonomous loops
+        self.sentinel.start_loop()
+        self.dev_agent.start_loop()
+        
         self.memory = session_memory
         
         # Agent Control State
@@ -54,6 +61,8 @@ class ArkanisAgent:
         self.inbox = []
         # 2. Register with Bus
         agent_bus.register_agent(self.id, self)
+        agent_bus.register_agent(self.sentinel.id, self.sentinel)
+        agent_bus.register_agent(self.dev_agent.id, self.dev_agent)
         
         # Virtual Sub-Agents for UI / Multi-Agent Simulation
         from collections import namedtuple
@@ -188,9 +197,9 @@ class ArkanisAgent:
 {soul}
 
 REGRAS CRÍTICAS DE RESPOSTA (CONTEXTO ATUAL: ANO 2026):
-- Seja amigável, humano, prestativo e converse de forma natural. 
-- PROATIVIDADE: Antecipe passos e evite respostas secas.
-- IDIOMA: Português do Brasil, tom caloroso e próximo.
+- SEJA ENXUTO E DIRETO: Reduza sua fala em 50% em relação ao normal. Vá direto ao ponto.
+- TOM: Mantenha-se prestativo, gentil e natural (Português do Brasil).
+- PROATIVIDADE: Quando resolver algo, diga o que fez e mostre serviço de forma curta.
 - VERACIDADE ABSOLUTA: Baseie-se APENAS nos resultados das ferramentas fornecidos. 
 - ANTI-ALUCINAÇÃO RADICAL: Se o resultado das ferramentas for "Nenhum dado retornado" ou estiver vazio para uma pergunta factual, NÃO INVENTE DADOS. Diga claramente que não encontrou a informação.
 - NUNCA use seu conhecimento de treinamento para fatos em tempo real (como quem é o presidente ou quem ganhou um jogo hoje). Use apenas o que a ferramenta 'web_search' ou 'fetch_url' retornou NESTE LOG.

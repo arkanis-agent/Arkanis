@@ -217,6 +217,10 @@
                 <span class="material-symbols-outlined">schedule</span>
                 Agentes e Tarefas
             </a>
+            <a id="navDevCenter" class="text-slate-500 dark:text-slate-400 px-4 py-3 flex items-center gap-3 hover:bg-slate-100 dark:hover:bg-slate-800/80 transition-all rounded-xl font-inter text-sm font-medium" href="#">
+                <span class="material-symbols-outlined text-purple-400">rocket_launch</span>
+                Dev Center
+            </a>
             <a id="navProviders" class="text-slate-500 dark:text-slate-400 px-4 py-3 flex items-center gap-3 hover:bg-slate-100 dark:hover:bg-slate-800/80 transition-all rounded-xl font-inter text-sm font-medium" href="#">
                 <span class="material-symbols-outlined">api</span>
                 Providers / APIs
@@ -484,6 +488,37 @@
                                 <tr><td colspan="4" class="px-6 py-12 text-center text-slate-600 italic">Nenhum evento registrado ainda.</td></tr>
                             </tbody>
                         </table>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Dev Center Panel (Suggestions) -->
+        <section id="devCenterPanel" class="hidden flex-1 overflow-y-auto p-10 custom-scrollbar">
+            <div class="max-w-6xl mx-auto space-y-8 pb-24">
+                <div class="flex flex-col md:flex-row items-start md:items-center justify-between border-b border-white/10 pb-4 gap-4">
+                    <div>
+                        <h2 class="text-3xl font-headline font-extrabold text-on-surface">Dev Center</h2>
+                        <p class="text-on-surface-variant text-sm mt-1">Sugestões proativas do DevAgent para melhorar seu sistema.</p>
+                    </div>
+                    
+                    <div class="flex flex-col md:flex-row items-end md:items-center gap-3">
+                        <div class="bg-indigo-500/10 border border-indigo-500/30 rounded-xl px-4 py-2 flex items-center gap-3 hidden" id="devAgentStatusContainer">
+                            <div class="w-2 h-2 rounded-full bg-indigo-500 animate-pulse" id="devAgentPulse"></div>
+                            <div class="text-xs font-mono text-indigo-400 max-w-[250px] truncate" id="devAgentLiveStatus" title="Status atual da thread do agente.">
+                                Coletando status...
+                            </div>
+                        </div>
+                        <button onclick="loadSuggestions()" class="flex items-center gap-2 bg-slate-800 hover:bg-slate-700 text-slate-300 px-4 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap">
+                            <span class="material-symbols-outlined text-sm">cached</span> Atualizar
+                        </button>
+                    </div>
+                </div>
+
+                <div id="suggestionsGrid" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Suggestions will be injected here -->
+                    <div class="col-span-full py-20 text-center text-slate-600 italic">
+                        O DevAgent está analisando seu código em busca de melhorias...
                     </div>
                 </div>
             </div>

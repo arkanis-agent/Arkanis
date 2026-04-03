@@ -1,6 +1,6 @@
-import os
-import json
 import re
+import time
+import threading
 from typing import List, Dict, Any, Optional
 from core.llm_client import LLMClient
 from core.logger import logger
@@ -58,6 +58,73 @@ Use ferramentas como 'move_item' (para restaurar arquivos .broken), 'replace_fil
         self.id = "auto_heal_agent"
         self.role = "Engenheiro de Manutenção (Sentinel)"
         self.status = "idle"
+        self.mode = "AUTO"
+        
+        # Communication & Control
+        self.inbox = []
+        self.stop_requested = threading.Event()
+        self.pause_requested = threading.Event()
+        self.resume_requested = threading.Event()
+        self.resume_requested.set()
+        
+        self.current_cycle = 0
+        self.current_action = "Idle"
+        self.logs = [] # Local log buffer for observability
+        self.sentinel_thread = None
+
+    def log(self, message: str, log_type: str = "info"):
+        timestamp = time.strftime("%H:%M:%S")
+        self.logs.append({"time": timestamp, "type": log_type, "message": message})
+        if len(self.logs) > 50: self.logs.pop(0)
+
+    def start_loop(self):
+        """Starts the autonomous Sentinel background loop."""
+        if self.sentinel_thread is None or not self.sentinel_thread.is_alive():
+            self.stop_requested.clear()
+            self.sentinel_thread = threading.Thread(target=self._run_loop, daemon=True)
+            self.sentinel_thread.start()
+
+    def stop_loop(self):
+        self.stop_requested.set()
+        self.status = "idle"
+
+    def _run_loop(self):
+        self.status = "idle"
+        from core.agent_bus import agent_bus
+        
+        while not self.stop_requested.is_set():
+            # Handle Pause
+            if self.pause_requested.is_set():
+                self.status = "paused"
+                self.current_action = "Pausado (Token Saving)"
+                self.resume_requested.wait()
+                if self.stop_requested.is_set(): break
+                self.status = "idle"
+                self.pause_requested.clear()
+                self.resume_requested.clear()
+
+            # 1. Check Inbox for messages from other agents
+            if self.inbox:
+                self.status = "running"
+                msg = self.inbox.pop(0)
+                self.current_action = f"Processando mensagem de {msg['from']}..."
+                self.log(f"Mensagem recebida de {msg['from']}: {msg['content'][:50]}...", "info")
+                
+                if "DEV" in msg['from'].upper() or "vulnerabilidade" in msg['content'].lower():
+                    self.diagnose_and_fix(f"Alerta do DevAgent: {msg['content']}")
+                
+                self.status = "idle"
+
+            # 2. Periodic Proactive Health Check (every 10 minutes)
+            if self.current_cycle % 600 == 0: 
+                self.status = "running"
+                self.current_action = "Iniciando verificação de saúde proativa..."
+                self.diagnose_and_fix("Verificação proativa de saúde do sistema (proactive_check)")
+                self.status = "idle"
+            
+            self.current_cycle += 1
+            self.current_action = "Observando sistema..."
+            time.sleep(1) # Frequency: 1Hz loop for basic checks, LLM only on trigger
 
     def diagnose_and_fix(self, error_context: str) -> str:
         """
@@ -67,6 +134,7 @@ Use ferramentas como 'move_item' (para restaurar arquivos .broken), 'replace_fil
         def broadcast(msg):
             agent_bus.broadcast_message(self.id, f"[SENTINEL] {msg}")
             logger.info(msg, symbol="🩹")
+            self.log(msg, "info")
 
         broadcast("🚨 Sentinel ativado. Iniciando diagnóstico proativo...")
         self.status = "running"
@@ -114,5 +182,8 @@ Se for um erro de código em 'Arkanis_V3/tools/network_tools.py' ou similar, exp
                 broadcast(f"❌ Falha ao executar plano de reparo: {e}")
         
         broadcast(f"✅ Análise concluída: {response[:150]}...")
-        self.status = "idle"
+        
+        # After a fix, notify DevAgent to analyze the permanent solution
+        agent_bus.send_message(self.id, "dev_agent", f"Realizei um reparo emergencial em resposta a: {error_context}. Por favor, analise o código e sugira uma melhoria definitiva.")
+        
         return response
