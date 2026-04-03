@@ -31,7 +31,8 @@ def test_stt_tool_binary_check():
     
     os.remove("dummy.wav")
     
-    if not os.path.exists(os.path.join("V3", "libs", "whisper.cpp", "build", "bin", "whisper-cli")):
+    app_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    if not os.path.exists(os.path.join(app_root, "libs", "whisper.cpp", "build", "bin", "whisper-cli")):
         assert "error" in data
         assert "install_whisper.sh" in data["error"]
 

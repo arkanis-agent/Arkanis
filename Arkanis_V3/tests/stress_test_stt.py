@@ -44,7 +44,8 @@ def run_test(name, audio_path, expected_status="success"):
             return False, latency
 
 def main():
-    base_dir = "/home/diego/Área de trabalho/Arkanis_V3.1/V3/tests/audio_samples"
+    app_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    base_dir = os.path.join(app_root, "tests", "audio_samples")
     
     results = []
     
@@ -72,7 +73,7 @@ def main():
     
     # Failure Simulation: Whisper binary missing
     print("\n--- Failure Simulation: Missing Binary ---")
-    whisper_bin = "/home/diego/Área de trabalho/Arkanis_V3.1/V3/libs/whisper.cpp/build/bin/whisper-cli"
+    whisper_bin = os.path.join(app_root, "libs", "whisper.cpp", "build", "bin", "whisper-cli")
     whisper_bin_bak = whisper_bin + ".bak"
     if os.path.exists(whisper_bin):
         os.rename(whisper_bin, whisper_bin_bak)
@@ -81,7 +82,7 @@ def main():
     
     # Failure Simulation: Model missing
     print("\n--- Failure Simulation: Missing Model ---")
-    whisper_model = "/home/diego/Área de trabalho/Arkanis_V3.1/V3/libs/whisper.cpp/models/ggml-base.bin"
+    whisper_model = os.path.join(app_root, "libs", "whisper.cpp", "models", "ggml-base.bin")
     whisper_model_bak = whisper_model + ".bak"
     if os.path.exists(whisper_model):
         os.rename(whisper_model, whisper_model_bak)

@@ -278,7 +278,8 @@ async def handle_voice_message(request: Request):
     
     # 1. Save raw body to temp
     # Browsers typically send webm from MediaRecorder
-    tmp_path = os.path.join("V3", "data", f"web_voice_{uuid.uuid4().hex[:8]}.webm")
+    app_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    tmp_path = os.path.join(app_root, "data", f"web_voice_{uuid.uuid4().hex[:8]}.webm")
     os.makedirs(os.path.dirname(tmp_path), exist_ok=True)
     
     try:

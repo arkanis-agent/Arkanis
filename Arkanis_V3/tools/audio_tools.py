@@ -92,6 +92,14 @@ class SpeechToTextTool(BaseTool):
                 return {"error": f"Modelo Whisper não encontrado em {self.model_path}", "status": "failed"}
                 
             threads = os.cpu_count() or 4
+            lib_path = os.path.join(os.path.dirname(os.path.dirname(self.binary_path)), "src")
+            ggml_lib_path = os.path.join(os.path.dirname(os.path.dirname(self.binary_path)), "ggml", "src")
+            
+            # Setup environment with local library paths
+            env = os.environ.copy()
+            combined_paths = f"{lib_path}:{ggml_lib_path}"
+            env["LD_LIBRARY_PATH"] = combined_paths + (f":{env.get('LD_LIBRARY_PATH', '')}" if env.get('LD_LIBRARY_PATH') else "")
+            
             whisper_process = await asyncio.create_subprocess_exec(
                 self.binary_path, 
                 '-m', self.model_path,
@@ -100,7 +108,8 @@ class SpeechToTextTool(BaseTool):
                 '-t', str(threads),
                 '-l', 'pt', # Force Portuguese for STT stability
                 stdout=asyncio.subprocess.PIPE,
-                stderr=asyncio.subprocess.PIPE
+                stderr=asyncio.subprocess.PIPE,
+                env=env
             )
             w_stdout, w_stderr = await whisper_process.communicate()
             

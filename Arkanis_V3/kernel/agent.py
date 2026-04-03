@@ -226,6 +226,16 @@ Se fizer sentido, sugira o próximo passo ou pergunte se quer mais alguma coisa 
         # 2. Planning with Critic Gate
         self.current_action = "Planejando estratégia..."
         task_hint = strategy_engine.classify_task(user_input, len(context))
+        
+        # FAST PATH: Bypassa planejamento e auditoria para conversas simples
+        if task_hint == "conversation":
+            self.log("Conversa simples detectada. Ignorando burocracia do Auditor...", "system")
+            response = self._format_response_with_soul(user_input, ["Nenhuma ferramenta necessária. Apenas interação social."], task_hint=task_hint)
+            self.memory.add_interaction(user_input=user_input, plan=[], result=response)
+            self.status = "idle"
+            self.current_action = "Idle"
+            return response
+
         max_refinements = 3
         refine_count = 0
         final_plan = None

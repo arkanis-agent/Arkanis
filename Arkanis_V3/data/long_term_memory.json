@@ -1,1 +1,14 @@
-{}
+{
+    "preferences": [],
+    "facts": [
+        "Usuário disse \"oi\"",
+        "O usuário está interessado no clima em São Paulo",
+        "O usuário me cumprimentou com um \"oi\"",
+        "Não foi necessário usar nenhuma ferramenta para obter essa informação.",
+        "Usuário pediu para buscar informações sobre tempo e temperatura na internet",
+        "São Paulo, 24 graus Celsius",
+        "São Paulo",
+        "Usuário está interessado no Campeonato Paulista de Futebol"
+    ],
+    "recurrent_tasks": []
+}
