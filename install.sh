@@ -41,16 +41,16 @@ fi
 
 # 4. Criação do Ambiente Virtual (CORREÇÃO CRÍTICA)
 echo "📦 Criando 'casulo' isolado (Virtualenv)..."
-python3 -m venv "$V3_DIR/venv" || {
+python3 -m venv "$V3_DIR/.venv" || {
     echo "⚠️  ERRO: Seu sistema não tem python3-venv instalado."
     echo "Executando: sudo apt update && sudo apt install -y python3-venv"
     sudo apt update && sudo apt install -y python3-venv -y
-    python3 -m venv "$V3_DIR/venv"
+    python3 -m venv "$V3_DIR/.venv"
 }
 
 # Usar os binários do Venv a partir de agora
-VENV_PYTHON="$V3_DIR/venv/bin/python3"
-VENV_PIP="$V3_DIR/venv/bin/pip"
+VENV_PYTHON="$V3_DIR/.venv/bin/python3"
+VENV_PIP="$V3_DIR/.venv/bin/pip"
 
 echo "📦 Sincronizando bibliotecas do motor no ambiente isolado..."
 $VENV_PIP install --upgrade pip --quiet
