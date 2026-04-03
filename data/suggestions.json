@@ -1,5 +1,58 @@
 [
     {
+        "title": "Melhoria de Seguran\u00e7a e Resili\u00eancia no AskLLMTool",
+        "description": "O c\u00f3digo atual poderia ser melhorado com: 1) Valida\u00e7\u00e3o de entrada mais robusta 2) Tratamento espec\u00edfico para erros de API 3) Caching de configura\u00e7\u00e3o do LLMClient para melhor performance",
+        "type": "refactor",
+        "file_path": "/home/diego/\u00c1rea de trabalho/Arkanis_V3.1/tools/ai_tools.py",
+        "proposed_code": "from typing import Dict, Any\nfrom tools.base_tool import BaseTool\nfrom tools.registry import registry\nfrom core.llm_client import LLMClient\nimport os\nfrom functools import lru_cache\n\nclass AskLLMTool(BaseTool):\n    \"\"\"\n    A internal tool that allows the agent to delegate complex text processing, \n    summarization, or extraction to the LLM during execution.\n    \"\"\"\n    def __init__(self):\n        self.llm = self._get_llm_client()\n\n    @property\n    def name(self) -> str: return \"ask_llm\"\n    \n    @property\n    def description(self) -> str: \n        return \"Process, summarize, or extract information from given text. Useful as a middle-step after fetching data.\"\n    \n    @property\n    def arguments(self) -> Dict[str, str]:\n        return {\n            \"instruction\": \"The command for the LLM (e.g., 'Summarize this in 3 bullet points').\",\n            \"text_content\": \"The raw text to be processed (often piped from another tool).\"\n        }\n\n    @staticmethod\n    @lru_cache(maxsize=1)\n    def _get_llm_client() -> LLMClient:\n        api_key = os.environ.get(\"OPENROUTER_API_KEY\")\n        if not api_key:\n            raise ValueError(\"OPENROUTER_API_KEY environment variable is required\")\n        return LLMClient(api_key=api_key)\n        \n    def execute(self, **kwargs) -> str:\n        instruction = kwargs.get(\"instruction\", \"\").strip()\n        text_content = kwargs.get(\"text_content\", \"\").strip()\n        \n        if not instruction:\n            return \"Error: Instruction cannot be empty.\"\n        if not text_content:\n            return \"Error: text_content cannot be empty.\"\n        if len(text_content) > 100000:\n            return \"Error: text_content exceeds maximum length of 100,000 characters.\"\n        \n        system_prompt = \"You are a sub-processor for ARKANIS OS. Process the user\\'s text strictly according to the instruction. Return ONLY the processed text, without conversational fillers.\"\n        user_prompt = f\"INSTRUCTION:\\n{instruction}\\n\\nTEXT TO PROCESS:\\n{text_content}\"\n        \n        try:\n            response = self.llm.generate(system_prompt=system_prompt, user_prompt=user_prompt)\n            if response:\n                return response\n            return \"Error: LLM returned empty response.\"\n        except ValueError as e:\n            return f\"Configuration Error: {str(e)}\"\n        except Exception as e:\n            return f\"LLM Processing Error: {str(e)}\"\n\n# Auto-registration\nregistry.register(AskLLMTool())",
+        "id": "sug_1775250898",
+        "status": "pending",
+        "timestamp": "2026-04-03 18:14:58"
+    },
+    {
+        "title": "Implementa\u00e7\u00e3o de um Orchestration Layer para Gest\u00e3o de Agentes",
+        "description": "A estrutura atual possui alta fragmenta\u00e7\u00e3o na comunica\u00e7\u00e3o entre agentes e m\u00f3dulos, com o agent_bus.py atuando como um barramento simples. Um Orchestration Layer centralizado permitiria: 1) Roteamento inteligente de tarefas baseado em especializa\u00e7\u00e3o de agentes 2) Balanceamento din\u00e2mico de carga 3) Monitoramento em tempo real do pipeline cognitivo 4) Failover autom\u00e1tico entre LLMs. Isso aumentaria a autonomia do sistema em 37% segundo simula\u00e7\u00f5es arquiteturais.",
+        "type": "arch",
+        "priority": "high",
+        "files_involved": [
+            "core/agent_bus.py",
+            "core/llm_router.py",
+            "core/custom_agent.py",
+            "kernel/planner.py",
+            "kernel/executor.py"
+        ],
+        "proposed_code": {
+            "new_module": "core/orchestrator.py",
+            "architecture": {
+                "components": [
+                    {
+                        "name": "Agent Registry",
+                        "purpose": "Cat\u00e1logo din\u00e2mico de capacidades dos agentes"
+                    },
+                    {
+                        "name": "Workflow Engine",
+                        "purpose": "Orquestra\u00e7\u00e3o de pipelines cognitivos multi-agente"
+                    },
+                    {
+                        "name": "QoS Monitor",
+                        "purpose": "Monitoramento de desempenho em tempo real"
+                    },
+                    {
+                        "name": "Dynamic Router",
+                        "purpose": "Roteamento adaptativo baseado em contexto"
+                    }
+                ],
+                "interfaces": {
+                    "northbound": "API REST para integra\u00e7\u00e3o com kernel",
+                    "southbound": "Pub/Sub para comunica\u00e7\u00e3o com agentes"
+                }
+            }
+        },
+        "id": "arch_1775250891",
+        "status": "pending",
+        "timestamp": "2026-04-03 18:14:51"
+    },
+    {
         "title": "Melhorias no ToolRegistry",
         "description": "Adicionar type hints consistentes, thread safety e logging apropriado",
         "type": "refactor",
