@@ -16,7 +16,8 @@
         "O usuário solicitou pesquisa sobre guerra dos EUA.",
         "O usuário se chama Diego",
         "Usuário pediu para ver a tabela do Campeonato Paulista",
-        "O usuário relatou que a internet dele não está funcionando."
+        "O usuário relatou que a internet dele não está funcionando.",
+        "Módulo de rede do Arkanis V3 com problema de importação, impedindo conexão de internet do usuário."
     ],
     "recurrent_tasks": []
 }
