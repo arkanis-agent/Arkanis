@@ -18,6 +18,7 @@ import uuid
 from core.logger import logger as arkanis_logger
 from core.llm_client import LLMClient
 from core.model_strategy import strategy_engine
+from core.decision_auditor import decision_auditor # NEW: Decision Auditor
 from tools import registry
 import os
 
@@ -300,6 +301,12 @@ Se NÃO houver dados factuais e o usuário fez uma pergunta específica, admita 
             goals_str = "\n".join([f"- Goal [{g.id}]: {g.description} | Progresso: {g.progress}%" for g in active_goals])
             context += f"\n\n[OBJETIVOS GLOBAIS DO SISTEMA (GOAL MANAGER)]:\n{goals_str}"
 
+        # --- DECISION AUDITOR: Inject Autonomous Lessons ---
+        lessons = decision_auditor.get_relevant_lessons(user_input)
+        if lessons:
+            self.log("Injetando lições aprendidas pelo Auditor...", "system")
+            context += f"\n\n[LIÇÕES DO AUDITOR (AUTO-APRENDIZADO)]:\nBaseado em falhas passadas, evite as seguintes abordagens:\n{lessons}"
+
         # 2. Planning with Critic Gate
         self.current_action = "Planejando estratégia..."
         task_hint = strategy_engine.classify_task(user_input, len(context))
@@ -374,8 +381,20 @@ Se NÃO houver dados factuais e o usuário fez uma pergunta específica, admita 
             # For now, we inform the user.
             results.append(f"\n[SENTINEL / AUTO-HEAL]: {repair_report}")
         
-        # LEARNING LOOP: Feedback results to Critic
+        # LEARNING LOOP: Feedback results to Critic & Auditor
         self.critic.record_execution_result(user_input, results)
+        decision_auditor.record_lesson(user_input, results) # Autonomous Learning
+
+        # --- FEEDBACK LOOP: Autonomous Self-Correction ---
+        # If severe errors detected and we have cycles, trigger Auto-Heal or Retry
+        error_count = len([r for r in results if "[Error]" in str(r) or "falha" in str(r).lower()])
+        if error_count > 0 and task_hint != "AUTOCORRECT":
+            self.log(f"⚠️ {error_count} erros encontrados. Auto-correção em progresso...", "system")
+            # Injetamos o erro no contexto e pedimos um novo plano corrigido
+            correction_prompt = f"O plano anterior falhou. Erros:\n{results}\n\nPor favor, crie um NOVO plano que corrija esses erros."
+            # Recursive call with a hint to avoid infinite loops
+            return self.handle_input(correction_prompt, task_hint="AUTOCORRECT")
+
 
         for res in results:
             self.log(f"Resultado: {res[:100]}...", "executor")
