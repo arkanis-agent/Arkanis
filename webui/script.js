@@ -1152,46 +1152,39 @@ async function saveIntegrationsConfig() {
  * Manages all panel switching and sidebar states consistently.
  */
 function setActivePanel(panelId) {
+    console.log(`🎯 [Elite Nav] Toggling Panel: ${panelId}`);
+    
     const panels = {
-        'chat': { element: chatDisplay, nav: navChat, showFooter: true },
-        'providers': { element: providersPanel, nav: navProviders, showFooter: false },
-        'history': { element: document.getElementById('historyPanel'), nav: navHistory, showFooter: false },
-        'observability': { element: document.getElementById('observabilityPanel'), nav: navObservability, showFooter: false },
-        'tasks': { element: tasksPanel, nav: navTasks, showFooter: false },
-        'devCenter': { element: devCenterPanel, nav: navDevCenter, showFooter: false },
-        'arsenal': { element: arsenalPanel, nav: navArsenal, showFooter: false },
-        'memory': { element: memoryPanel, nav: navMemory, showFooter: false },
-        'integrations': { element: document.getElementById('integrationsPanel'), nav: null, showFooter: false },
-        'systemLogs': { element: document.getElementById('systemLogsPanel'), nav: navLogs, showFooter: false }
+        'chat': { el: chatDisplay, nav: navChat, showFooter: true },
+        'history': { el: document.getElementById('historyPanel'), nav: navHistory, showFooter: false },
+        'observability': { el: document.getElementById('observabilityPanel'), nav: navObservability, showFooter: false },
+        'tasks': { el: document.getElementById('tasksPanel'), nav: navTasks, showFooter: false },
+        'memory': { el: document.getElementById('memoryPanel'), nav: navMemory, showFooter: false },
+        'arsenal': { el: document.getElementById('arsenalPanel'), nav: navArsenal, showFooter: false },
+        'nerveFusion': { el: document.getElementById('nerveFusionPanel'), nav: navLogs, showFooter: false },
+        'devCenter': { el: document.getElementById('devCenterPanel'), nav: navDevCenter, showFooter: false },
+        'providers': { el: document.getElementById('providersPanel'), nav: navProviders, showFooter: false }
     };
 
-    // Generic reset for all sidebar items (Elite UI)
-    document.querySelectorAll('.sidebar-item').forEach(btn => {
-        btn.classList.remove('active', 'text-white');
-        btn.classList.add('text-slate-400');
-    });
-
-    // Removed log drawer hidden logic as it no longer exists
-
-    // Toggle Panels Visibility
-    Object.keys(panels).forEach(id => {
-        const p = panels[id];
-        if (id === panelId) {
-            if (p.element) p.element.classList.remove('hidden');
-            if (p.nav) {
-                p.nav.classList.add('active');
-                // Ensure text colors transition correctly for the active state
-                p.nav.classList.remove('text-slate-400', 'text-slate-500');
-                p.nav.classList.add('text-white');
-            }
-        } else {
-            if (p.element) p.element.classList.add('hidden');
-            if (p.nav) {
-                p.nav.classList.remove('active', 'text-white');
-                p.nav.classList.add(id === 'systemLogs' || id === 'devCenter' || id === 'providers' ? 'text-slate-500' : 'text-slate-400');
-            }
+    // Reset all panels and nav items
+    Object.values(panels).forEach(p => {
+        if (p.el) p.el.classList.add('hidden');
+        if (p.nav) {
+            p.nav.classList.remove('active', 'text-white', 'bg-white/10');
+            p.nav.classList.add('text-slate-400');
         }
     });
+
+    const active = panels[panelId];
+    if (active && active.el) {
+        active.el.classList.remove('hidden');
+        if (active.nav) {
+            active.nav.classList.add('active', 'text-white', 'bg-white/10');
+            active.nav.classList.remove('text-slate-400');
+        }
+    } else {
+        console.warn(`⚠️ [Elite Nav] Panel not found: ${panelId}`);
+    }
 
     // Special Case: Welcome Screen & Chat State
     if (panelId === 'chat') {
@@ -1212,11 +1205,35 @@ function setActivePanel(panelId) {
     // Toggle Footer (Input Area)
     const footer = document.querySelector('footer');
     if (footer) {
-        footer.classList.toggle('hidden', !panels[panelId].showFooter);
+        footer.classList.toggle('hidden', active && !active.showFooter);
     }
     
     // Smooth reflow hack
     window.dispatchEvent(new Event('resize'));
+}
+
+function initSidebarNav() {
+    const navItems = [
+        { id: 'navChat', panel: 'chat' },
+        { id: 'navHistory', panel: 'history' },
+        { id: 'navObservability', panel: 'observability' },
+        { id: 'navTasks', panel: 'tasks' },
+        { id: 'navMemory', panel: 'memory' },
+        { id: 'navArsenal', panel: 'arsenal' },
+        { id: 'navLogs', panel: 'nerveFusion' },
+        { id: 'navDevCenter', panel: 'devCenter' },
+        { id: 'navProviders', panel: 'providers' }
+    ];
+
+    navItems.forEach(item => {
+        const el = document.getElementById(item.id);
+        if (el) {
+            el.onclick = (e) => {
+                e.preventDefault();
+                setActivePanel(item.panel);
+            };
+        }
+    });
 }
 
 // Alias for developer comfort/compatibility
@@ -3511,6 +3528,9 @@ function initEliteUI() {
         iInput.onchange = (e) => handleImageSelect(e.target.files);
     }
     
+    // Navigation
+    initSidebarNav();
+
     // Neural Map Re-init only if container was wiped
     const mapContainer = document.getElementById('neuralMapContainer');
     if (typeof initNeuralMap === 'function' && mapContainer && mapContainer.innerHTML.trim() === '') {
