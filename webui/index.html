@@ -118,29 +118,27 @@
             box-shadow: 0 0 20px rgba(255, 255, 255, 0.1);
         }
 
-        /* Sidebar Glass Effect */
-        .glass-sidebar {
-            background: rgba(15, 23, 42, 0.6);
-            backdrop-filter: blur(24px);
-            -webkit-backdrop-filter: blur(24px);
-            border-right: 1px solid rgba(255, 255, 255, 0.03);
+        .玻璃-sidebar {
+            background: rgba(2, 6, 23, 0.98);
+            backdrop-filter: blur(40px);
+            -webkit-backdrop-filter: blur(40px);
+            border-right: 1px solid rgba(255, 255, 255, 0.05);
+            box-shadow: 10px 0 30px rgba(0, 0, 0, 0.5);
         }
 
-        .sidebar-indicator {
-            position: absolute;
-            left: 0;
-            width: 4px;
-            height: 24px;
-            border-radius: 0 4px 4px 0;
-            background: #3b82f6;
-            opacity: 0;
-            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-            transform: scaleY(0.5);
+        .nav-scrollbar-hide {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
+        .nav-scrollbar-hide::-webkit-scrollbar {
+            display: none;
         }
 
         .active .sidebar-indicator {
             opacity: 1;
             transform: scaleY(1);
+            box-shadow: 0 0 15px currentColor;
         }
 
         .nav-link:hover .icon-box {
@@ -177,7 +175,7 @@
     </style>
 </head>
 
-<body class="overflow-hidden">
+<body class="bg-[#020617] text-slate-100 overflow-hidden font-inter selection:bg-blue-500/30">
     <!-- TopNavBar -->
     <header
         class="fixed top-0 left-64 right-0 h-16 flex justify-between items-center px-8 z-50 bg-slate-950/85 backdrop-blur-xl shadow-sm dark:shadow-none">
