@@ -96,17 +96,13 @@ let activeConfigTab = 'llms'; // 'llms' or 'integrations'
 let observabilityInterval = null;
 let neuralGraph = { simulation: null, svg: null, container: null, nodes: [], links: [] };
 let isHandsFree = false;
-let mediaRecorder = null;
+let mediaRecorder = null; // High-level MediaRecorder instance for both modes
 let audioChunks = [];
+let isRecording = false;
 
 // Model picker state
 let allModelsList = [];      // all models (local + cloud + OR fetched)
 let modelPickerFilter = 'all'; // 'all' | 'free' | 'paid'
-
-// Voice Recording State
-let mediaRecorder = null;
-let audioChunks = [];
-let isRecording = false;
 
 // --- 1. Message Logic ---
 
@@ -1156,8 +1152,8 @@ function setActivePanel(panelId) {
     const panels = {
         'chat': { element: chatDisplay, nav: navChat, showFooter: true },
         'providers': { element: providersPanel, nav: navProviders, showFooter: false },
-        history: { element: document.getElementById('historyPanel'), nav: navHistory, showFooter: false },
-        observability: { element: document.getElementById('observabilityPanel'), nav: navObservability, showFooter: false },
+        'history': { element: document.getElementById('historyPanel'), nav: navHistory, showFooter: false },
+        'observability': { element: document.getElementById('observabilityPanel'), nav: navObservability, showFooter: false },
         'tasks': { element: tasksPanel, nav: navTasks, showFooter: false },
         'devCenter': { element: devCenterPanel, nav: navDevCenter, showFooter: false },
         'arsenal': { element: arsenalPanel, nav: navArsenal, showFooter: false },
@@ -1165,6 +1161,12 @@ function setActivePanel(panelId) {
         'integrations': { element: document.getElementById('integrationsPanel'), nav: null, showFooter: false },
         'systemLogs': { element: document.getElementById('systemLogsPanel'), nav: navLogs, showFooter: false }
     };
+
+    // Generic reset for all sidebar items (Elite UI)
+    document.querySelectorAll('.sidebar-item').forEach(btn => {
+        btn.classList.remove('active', 'text-white');
+        btn.classList.add('text-slate-400');
+    });
 
     // Removed log drawer hidden logic as it no longer exists
 
@@ -2080,14 +2082,30 @@ if (saveIntegrationsBtn) {
     });
 }
 
-// New unified sidebar listeners
-if (navChat) {
-    navChat.addEventListener('click', (e) => {
-        e.preventDefault();
-        showChat();
-        updateTopNav('chat');
-    });
-}
+// --- Elite UI Sidebar Navigation Listeners ---
+const sidebarLinks = [
+    { id: 'navChat', action: showChat, topNav: 'chat' },
+    { id: 'navHistory', action: showHistory, topNav: null },
+    { id: 'navObservability', action: () => setActivePanel('observability'), topNav: null },
+    { id: 'navTasks', action: () => setActivePanel('tasks'), topNav: null },
+    { id: 'navMemory', action: () => setActivePanel('memory'), topNav: null },
+    { id: 'navArsenal', action: () => setActivePanel('arsenal'), topNav: null },
+    { id: 'navLogs', action: () => setActivePanel('systemLogs'), topNav: null },
+    { id: 'navDevCenter', action: () => setActivePanel('devCenter'), topNav: null },
+    { id: 'navProviders', action: () => setActivePanel('providers'), topNav: 'integrations' }
+];
+
+sidebarLinks.forEach(link => {
+    const el = document.getElementById(link.id);
+    if (el) {
+        el.addEventListener('click', (e) => {
+            e.preventDefault();
+            link.action();
+            if (link.topNav) updateTopNav(link.topNav);
+            // Close mobile drawer if needed (not implemented yet but good for future)
+        });
+    }
+});
 
 const topNavChat = document.getElementById('topNavChat');
 const topNavIntegrations = document.getElementById('topNavIntegrations');
