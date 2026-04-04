@@ -605,7 +605,59 @@ async def get_auto_heal_timeline():
         logger.error(f"Erro ao carregar timeline: {e}")
         return {"timeline": []}
 
-# Serving the static UI (assuming it's in V3/webui/)
+# --- System Management Endpoints ---
+
+@app.post("/system/stop")
+async def stop_system():
+    """Immediately terminates the Arkanis process."""
+    logger.warning("System shutdown initiated via WebUI.")
+    # Delayed exit to allow response to return
+    def shutdown():
+        import time
+        time.sleep(1)
+        os._exit(0)
+    threading.Thread(target=shutdown).start()
+    return {"status": "stopping", "message": "Arkanis encerrando em 1 segundo..."}
+
+@app.post("/system/restart")
+async def restart_system():
+    """Restart the Arkanis process."""
+    logger.warning("System restart initiated via WebUI.")
+    def restart():
+        import time
+        import sys
+        time.sleep(1)
+        os.execv(sys.executable, ['python3'] + sys.argv)
+    threading.Thread(target=restart).start()
+    return {"status": "restarting", "message": "Arkanis reiniciando..."}
+
+@app.get("/system/doctor")
+async def system_doctor():
+    """Perform a health check on the system components."""
+    from tools.registry import registry
+    report = {
+        "status": "healthy",
+        "timestamp": time.time(),
+        "components": {
+            "kernel": "online",
+            "voice_engine": "online" if os.path.exists(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "libs", "whisper.cpp", "build", "bin", "whisper-cli")) else "offline",
+            "memory_vault": "online" if os.path.exists(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data", "long_term_memory.json")) else "degraded",
+            "tools_registered": len(registry.list_tools())
+        }
+    }
+    return report
+
+@app.get("/history/timeline")
+async def get_history_timeline():
+    """Retrieve the event history for the HUD timeline."""
+    agent_instance = agent_bus.get_agent("dev_agent") or agent_bus.get_agent("architect_agent")
+    if not agent_instance:
+        return {"timeline": []}
+         
+    all_suggestions = agent_instance.get_suggestions()
+    timeline = [s for s in all_suggestions if s.get("status") == "applied"]
+    return {"timeline": timeline}
+
 webui_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "webui")
 if os.path.exists(webui_path):
     app.mount("/", StaticFiles(directory=webui_path, html=True), name="webui")

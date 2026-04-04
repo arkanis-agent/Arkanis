@@ -95,6 +95,9 @@ let currentIntegrationsConfig = {};
 let activeConfigTab = 'llms'; // 'llms' or 'integrations'
 let observabilityInterval = null;
 let neuralGraph = { simulation: null, svg: null, container: null, nodes: [], links: [] };
+let isHandsFree = false;
+let mediaRecorder = null;
+let audioChunks = [];
 
 // Model picker state
 let allModelsList = [];      // all models (local + cloud + OR fetched)
@@ -1324,13 +1327,86 @@ async function fetchMemoryVault() {
         grid.innerHTML = html;
     } catch(e) {
         grid.innerHTML = `<div class="col-span-3 text-center py-16 bg-rose-500/10 border border-rose-500/20 rounded-2xl">
-            <span class="material-symbols-outlined text-rose-500 text-5xl mb-4">cloud_off</span>
-            <div class="text-rose-400 font-bold">Neural Vault Offline</div>
-            <div class="text-rose-500/60 text-xs mt-1">${e.message}</div>
-            <button onclick="fetchMemoryVault()" class="mt-4 px-4 py-2 bg-rose-500/20 hover:bg-rose-500/30 text-rose-400 text-xs rounded-lg transition-all border border-rose-500/30">Tentar Novamente</button>
+            <div class="relative inline-block mb-4">
+                <span class="material-symbols-outlined text-rose-500 text-6xl">cloud_off</span>
+                <span class="absolute top-0 right-0 w-3 h-3 bg-rose-500 rounded-full animate-ping"></span>
+            </div>
+            <div class="text-rose-400 font-black text-lg tracking-tight uppercase">Neural Vault Offline</div>
+            <div class="text-rose-500/60 text-xs mt-2 font-mono">${e.message}</div>
+            <button onclick="fetchMemoryVault()" class="mt-6 px-6 py-2.5 bg-rose-500/20 hover:bg-rose-500/30 text-rose-400 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all border border-rose-500/30">Re-Sync Neural Base</button>
         </div>`;
     }
 }
+
+// --- Hands-Free Voice Logic ---
+async function toggleHandsFree() {
+    const btn = document.getElementById('voiceControl');
+    const status = document.getElementById('voiceStatus');
+    const indicator = document.getElementById('voiceIndicator');
+    
+    if (isHandsFree) {
+        stopRecording();
+        isHandsFree = false;
+        btn.classList.remove('bg-amber-500/30', 'border-amber-500/50', 'animate-pulse');
+        status.classList.replace('bg-emerald-500', 'bg-slate-500');
+        indicator.classList.add('hidden');
+    } else {
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            startRecording(stream);
+            isHandsFree = true;
+            btn.classList.add('bg-amber-500/30', 'border-amber-500/50', 'animate-pulse');
+            status.classList.replace('bg-slate-500', 'bg-emerald-500');
+            indicator.classList.remove('hidden');
+        } catch (err) {
+            console.error("Mic access denied:", err);
+            alert("Acesso ao microfone negado.");
+        }
+    }
+}
+
+function startRecording(stream) {
+    mediaRecorder = new MediaRecorder(stream);
+    audioChunks = [];
+    
+    mediaRecorder.ondataavailable = (event) => {
+        audioChunks.push(event.data);
+    };
+    
+    mediaRecorder.onstop = async () => {
+        const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+        sendVoiceMessage(audioBlob);
+    };
+    
+    mediaRecorder.start();
+}
+
+function stopRecording() {
+    if (mediaRecorder && mediaRecorder.state !== "inactive") {
+        mediaRecorder.stop();
+    }
+}
+
+async function sendVoiceMessage(blob) {
+    const formData = new FormData();
+    formData.append('file', blob);
+    
+    try {
+        const res = await fetch('/voice_message', {
+            method: 'POST',
+            body: blob // The backend expects the raw body at /voice_message based on previous view
+        });
+        const data = await res.json();
+        if (data.transcription) {
+            userInput.value = data.transcription;
+            // Optionally auto-send if text is long enough
+            if (data.transcription.length > 5) sendMessage();
+        }
+    } catch (e) {
+        console.error("Voice sync failed:", e);
+    }
+}
+
 function showHistory() { setActivePanel('history'); }
 function showProviders() {
     setActivePanel('providers');
@@ -2348,68 +2424,64 @@ function renderObservability(data) {
         }
 
         const card = document.createElement('div');
-        card.className = `agent-card bg-slate-900/50 border border-white/5 rounded-2xl relative overflow-hidden`;
+        card.className = `agent-card group bg-slate-900/40 border border-white/5 rounded-3xl relative overflow-hidden transition-all hover:bg-slate-900/60 hover:border-blue-500/20 backdrop-blur-xl hover:shadow-[0_0_30px_rgba(59,130,246,0.1)]`;
         card.style.animationDelay = `${i * 80}ms`;
 
         card.innerHTML = `
-            <!-- Status glow bar at top -->
-            <div class="h-[2px] w-full ${isActive ? 'bg-gradient-to-r from-transparent via-blue-500 to-transparent animate-shimmer' : isPaused ? 'bg-gradient-to-r from-transparent via-amber-500/50 to-transparent' : 'bg-white/3'}"></div>
+            <!-- Top Status Glow -->
+            <div class="absolute top-0 left-0 right-0 h-[3px] z-10 ${isActive ? 'bg-gradient-to-r from-transparent via-blue-500 to-transparent animate-shimmer' : isPaused ? 'bg-gradient-to-r from-transparent via-amber-500/50 to-transparent' : 'bg-transparent'}"></div>
 
-            <div class="p-5 space-y-4">
-                <!-- Header: Status dot + ID + Badge + Controls -->
-                <div class="flex items-start justify-between gap-2">
-                    <div class="flex items-center gap-3 min-w-0">
-                        <div class="w-8 h-8 rounded-lg ${isActive ? 'bg-blue-500/15' : isPaused ? 'bg-amber-500/15' : 'bg-slate-800'} flex items-center justify-center flex-shrink-0 agent-status-ring ${agent.status}">
-                            <span class="material-symbols-outlined ${sc.text} text-[16px]" style="font-variation-settings: 'FILL' 1;">${sc.icon}</span>
+            <div class="p-6 space-y-5">
+                <!-- Header: Icon + ID + Status -->
+                <div class="flex items-start justify-between gap-4">
+                    <div class="flex items-center gap-4 min-w-0">
+                        <div class="w-11 h-11 rounded-2xl ${isActive ? 'bg-blue-600/10 border-blue-600/30' : isPaused ? 'bg-amber-600/10 border-amber-600/30' : 'bg-slate-800/40 border-white/5'} border-2 flex items-center justify-center flex-shrink-0 transition-colors">
+                            <span class="material-symbols-outlined ${sc.text} text-[20px]" style="font-variation-settings: 'FILL' 1;">${sc.icon}</span>
                         </div>
                         <div class="min-w-0">
-                            <h4 class="text-sm font-bold text-white truncate">${agent.id}</h4>
-                            <p class="text-[10px] ${sc.text} font-semibold">${agent.role || 'Agente Principal'}</p>
+                            <h4 class="text-sm font-black text-white/90 truncate uppercase tracking-widest">${agent.id}</h4>
+                            <p class="text-[10px] text-slate-500 font-black uppercase tracking-tighter">${agent.role || 'Neural Architecture'}</p>
                         </div>
                     </div>
-                    <div class="flex items-center gap-1.5 flex-shrink-0">
+                </div>
+
+                <!-- Action Tracker -->
+                <div class="space-y-3">
+                    <div class="flex items-center gap-2">
+                        <span class="material-symbols-outlined text-[12px] opacity-40">bolt</span>
+                        <p class="text-xs font-bold text-slate-300 truncate">${agent.current_action || 'Standby Mode'}</p>
+                    </div>
+                    
+                    <!-- Progress (simulated live sync) -->
+                    <div class="h-1 w-full bg-white/5 rounded-full overflow-hidden">
+                        <div class="h-full rounded-full ${isActive ? 'bg-blue-500 w-3/4 animate-shimmer' : isPaused ? 'bg-amber-500/30 w-1/2' : 'w-0'}" style="transition: width 0.8s ease-in-out;"></div>
+                    </div>
+                </div>
+
+                <!-- Metrics Grid -->
+                <div class="grid grid-cols-2 gap-3">
+                    <div class="p-2.5 bg-black/20 rounded-xl border border-white/5">
+                        <p class="text-[8px] font-black text-slate-600 uppercase tracking-widest mb-1">Compute State</p>
+                        <span class="text-[10px] font-bold ${sc.text} uppercase">${sc.label}</span>
+                    </div>
+                    <div class="p-2.5 bg-black/20 rounded-xl border border-white/5">
+                        <p class="text-[8px] font-black text-slate-600 uppercase tracking-widest mb-1">Process Cycle</p>
+                        <span class="text-[10px] font-bold text-slate-300 uppercase">${agent.cycle}/5</span>
+                    </div>
+                </div>
+
+                <!-- Footer: Controls + Diagnostics -->
+                <div class="flex items-center justify-between pt-4 border-t border-white/5">
+                    <div class="flex items-center gap-1.5 opacity-60 hover:opacity-100 transition-opacity">
                         ${controlsHtml}
+                        <button class="w-8 h-8 rounded-lg hover:bg-white/5 text-slate-500 hover:text-white flex items-center justify-center transition-all" onclick="showAgentFullLog('${agent.id}')" title="Audit Logs">
+                            <span class="material-symbols-outlined text-base">analytics</span>
+                        </button>
                     </div>
-                </div>
-
-                <!-- Status Badge + Mode + Cycle Row -->
-                <div class="flex items-center gap-2 flex-wrap">
-                    <span class="text-[8px] font-bold px-2 py-0.5 rounded-md ${sc.bgBadge} uppercase tracking-wide">${sc.label}</span>
-                    <span class="text-[9px] text-slate-600 font-medium">Modo: ${agent.mode}</span>
-                    <span class="text-[9px] text-slate-600 font-medium">Ciclo: ${agent.cycle}</span>
-                    ${isCustom ? '<span class="text-[8px] font-bold px-1.5 py-0.5 rounded bg-purple-500/15 text-purple-400 border border-purple-500/15">CUSTOM</span>' : ''}
-                </div>
-
-                <!-- Current Action -->
-                <div class="agent-action-text">
-                    <span class="material-symbols-outlined text-[11px] ${sc.text} mr-1 align-middle" style="font-variation-settings: 'FILL' 1;">bolt</span>
-                    ${agent.current_action || 'Idle'}
-                </div>
-
-                <!-- Progress Bar -->
-                <div class="h-[3px] w-full bg-white/5 rounded-full overflow-hidden">
-                    <div class="h-full rounded-full ${isActive ? 'bg-blue-500 w-2/3 animate-shimmer' : isPaused ? 'bg-amber-500/40 w-1/2' : 'w-0'}" style="transition: width 0.5s ease;"></div>
-                </div>
-
-                <!-- Tools Section -->
-                <div>
-                    <p class="text-[8px] font-bold text-slate-600 uppercase tracking-widest mb-1.5">Ferramentas</p>
-                    <div class="flex flex-wrap gap-1">${toolsHtml}</div>
-                </div>
-
-                <!-- Mini Activity Log -->
-                <div>
-                    <div class="flex items-center justify-between mb-1">
-                        <p class="text-[8px] font-bold text-slate-600 uppercase tracking-widest">Atividade</p>
-                        <button class="text-[8px] text-slate-600 hover:text-blue-400 transition-colors font-bold" onclick="showAgentFullLog('${agent.id}')">VER TUDO</button>
+                    <div class="flex items-center gap-2 text-[9px] font-black text-slate-600 uppercase tracking-tighter">
+                        Visto: ${agent.last_seen}
+                        <div class="w-2 h-2 rounded-full ${isActive ? 'bg-blue-500 animate-pulse' : 'bg-slate-700'}"></div>
                     </div>
-                    <div class="agent-mini-log bg-black/20 rounded-lg p-2 border border-white/3">${logsHtml}</div>
-                </div>
-
-                <!-- Footer: Last Seen -->
-                <div class="flex items-center justify-between text-[9px] text-slate-700 pt-1 border-t border-white/3">
-                    <span>Visto: ${agent.last_seen}</span>
-                    <span class="w-1.5 h-1.5 rounded-full ${isActive ? 'bg-blue-500 animate-pulse' : 'bg-slate-700'}"></span>
                 </div>
             </div>
         `;
