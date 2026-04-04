@@ -1,5 +1,44 @@
 [
     {
+        "title": "Melhoria de logs e tratamento de erros",
+        "description": "Adicionar logging estruturado para melhor rastreabilidade e tratamento de exce\u00e7\u00f5es mais granular",
+        "type": "refactor",
+        "file_path": "/home/diego/\u00c1rea de trabalho/Arkanis_V3.1/scripts/verify_intelligence.py",
+        "proposed_code": "import os\nimport sys\nimport logging\n\n# Arkanis First-Run Validation Script\n# Senior Systems Engineer Approved\n\n# Setup logging\nlogging.basicConfig(\n    level=logging.INFO,\n    format='%(asctime)s - %(levelname)s - %(message)s',\n    handlers=[\n        logging.StreamHandler(),\n        logging.FileHandler('verify_intelligence.log')\n    ]\n)\nlogger = logging.getLogger(__name__)\n\n# Add parent directory to path to enable core imports\nV3_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))\nsys.path.append(V3_DIR)\n\ndef verify():\n    try:\n        logger.info('Starting intelligence validation')\n        from core.llm_router import router\n\n        if not router or not router.active_model:\n            logger.error('AI not responding - no active model found')\n            print(\"\\n\ud83d\udd34 AI not responding\")\n            print(\"   \ud83d\udc49 Suggestion: Run 'arkanis doctor' to fix configuration issues.\\n\")\n            sys.exit(1)\n\n        logger.info('Executing smoke test')\n        print(\"\ud83d\udd0d Validating Arkanis Intelligence...\")\n\n        # Fast smoke test prompt\n        test_prompt = \"Hello Arkanis. Respond with 'READY' if you hear me.\"\n        try:\n            response = router.generate(\"System Validation.\", test_prompt)\n            logger.info(f'AI response: {response[:100]}')\n\n            if response and \"[Error LLM]\" not in response:\n                logger.info('Arkanis validation successful')\n                print(\"\\n\ud83d\udfe2 Arkanis is ready\")\n                print(f\"   AI response working correctly ({router.active_model})\\n\")\n                sys.exit(0)\n            else:\n                logger.error(f'AI response error: {response[:100]}')\n                print(\"\\n\ud83d\udd34 AI not responding\")\n                print(f\"   Error: {response[:100]}\")\n                print(\"   \ud83d\udc49 Suggestion: Run 'arkanis doctor' to fix configuration issues.\\n\")\n                sys.exit(1)\n\n        except Exception as gen_error:\n            logger.error(f'Generation error: {str(gen_error)}', exc_info=True)\n            raise\n\n    except ImportError as ie:\n        logger.error(f'Core module import error: {str(ie)}', exc_info=True)\n        print(\"\\n\ud83d\udd34 System core failure\")\n        print(f\"   Error: {str(ie)}\")\n        print(\"   \ud83d\udc49 Suggestion: Run 'arkanis doctor' to fix configuration issues.\\n\")\n        sys.exit(1)\n    except Exception as e:\n        logger.error(f'System error: {str(e)}', exc_info=True)\n        print(\"\\n\ud83d\udd34 System core failure\")\n        print(f\"   Error: {str(e)}\")\n        print(\"   \ud83d\udc49 Suggestion: Run 'arkanis doctor' to fix configuration issues.\\n\")\n        sys.exit(1)\n\nif __name__ == \"__main__\":\n    verify()\n",
+        "id": "sug_1775266353",
+        "status": "pending",
+        "timestamp": "2026-04-03 22:32:33"
+    },
+    {
+        "title": "Implementa\u00e7\u00e3o de um Sistema de Monitoramento e Auto-Otimiza\u00e7\u00e3o em Tempo Real",
+        "description": "O sistema atual carece de um mecanismo integrado para monitorar o desempenho e a efici\u00eancia de agentes e tarefas em tempo real. Isso limita a capacidade de detectar e corrigir inefici\u00eancias automaticamente. Proponho a cria\u00e7\u00e3o de um m\u00f3dulo de monitoramento avan\u00e7ado que colete m\u00e9tricas de desempenho, utilize algoritmos de aprendizado de m\u00e1quina para detectar anomalias e ajuste dinamicamente a aloca\u00e7\u00e3o de recursos para maximizar a efici\u00eancia.",
+        "type": "arch",
+        "priority": "high",
+        "files_involved": [
+            "core/task_engine.py",
+            "core/llm_router.py",
+            "core/agent_bus.py",
+            "core/cost_governor.py",
+            "tools/monitoring_tools.py",
+            "kernel/planner.py",
+            "kernel/executor.py"
+        ],
+        "proposed_code": "# Planejamento inicial inclui:\n# 1. Desenvolvimento de m\u00e9tricas de desempenho em 'task_engine.py' e 'llm_router.py'.\n# 2. Implementa\u00e7\u00e3o de algoritmos de detec\u00e7\u00e3o de anomalias em 'monitoring_tools.py'.\n# 3. Integra\u00e7\u00e3o de feedback autom\u00e1tico para ajustar a aloca\u00e7\u00e3o de recursos em 'planner.py' e 'executor.py'.\n# 4. Desenvolvimento de uma interface gr\u00e1fica ou API para visualiza\u00e7\u00e3o de m\u00e9tricas e status em tempo real.\n# 5. Testes e ajustes cont\u00ednuos para garantir a efic\u00e1cia e precis\u00e3o do sistema.",
+        "id": "arch_1775266282",
+        "status": "pending",
+        "timestamp": "2026-04-03 22:31:22"
+    },
+    {
+        "title": "Implementa\u00e7\u00e3o Inicial do M\u00f3dulo Memory",
+        "description": "O arquivo est\u00e1 vazio e precisa da estrutura b\u00e1sica para gerenciamento de mem\u00f3ria do sistema, incluindo cache e persist\u00eancia.",
+        "type": "feature",
+        "file_path": "/home/diego/\u00c1rea de trabalho/Arkanis_V3.1/modules/memory/__init__.py",
+        "proposed_code": "import json\\nfrom typing import Dict, Any\\n\\nclass MemoryManager:\\n    def __init__(self):\\n        self.cache: Dict[str, Any] = {}\\n        self.persistence_file = 'memory_state.json'\\n\\n    def set(self, key: str, value: Any, persistent: bool = False) -> None:\\n        self.cache[key] = value\\n        if persistent:\\n            self._save_to_disk()\\n\\n    def get(self, key: str, default: Any = None) -> Any:\\n        return self.cache.get(key, default)\\n\\n    def _save_to_disk(self) -> None:\\n        with open(self.persistence_file, 'w') as f:\\n            json.dump(self.cache, f)\\n\\n    def load_from_disk(self) -> None:\\n        try:\\n            with open(self.persistence_file, 'r') as f:\\n                self.cache = json.load(f)\\n        except FileNotFoundError:\\n            self.cache = {}\\n\\n# Singleton instance\\nmemory = MemoryManager()",
+        "id": "sug_1775266026",
+        "status": "pending",
+        "timestamp": "2026-04-03 22:27:06"
+    },
+    {
         "title": "Melhoria de Logging e Limpeza de Mem\u00f3ria",
         "description": "Adicionar logging estruturado ao inv\u00e9s de prints raw e implementar m\u00e9todo para limpeza de mem\u00f3ria",
         "type": "refactor",
