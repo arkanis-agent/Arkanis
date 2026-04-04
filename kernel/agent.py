@@ -49,6 +49,7 @@ class ArkanisAgent:
         self.goal = None
         self.auto_results = []
         self.logs = [] # Log buffer for WebUI
+        self.last_panic_time = 0 # Cooldown limit for Sentinel reflex
         
         # Agent Identity & Capabilities (for Control Center)
         self.role = "Agente Principal"
@@ -176,10 +177,15 @@ class ArkanisAgent:
         # 4. PANIC TRIGGER (Se o usuário relatar falha, ativar Sentinel)
         panic_keywords = ["não funciona", "ajuda", "quebrou", "corrija", "parou", "falha", "arrume", "conserta", "bug", "erro"]
         if any(kw in lower_input for kw in panic_keywords):
-            self.log("Gatilho de Pânico detectado! Ativando Sentinel para auto-diagnóstico...", "error")
-            self.current_action = "Sentinel: Diagnóstico Reativo..."
-            repair_report = self.sentinel.diagnose_and_fix(f"O usuário relatou um problema: '{clean_input}'")
-            return self._format_response_with_soul(clean_input, [f"[SENTINEL / AUTO-HEAL]: {repair_report}"], task_hint="problem_solving")
+            current_time = time.time()
+            if current_time - self.last_panic_time > 60: # 60 seconds cooldown
+                self.last_panic_time = current_time
+                self.log("Gatilho de Pânico detectado! Ativando Sentinel para auto-diagnóstico...", "error")
+                self.current_action = "Sentinel: Diagnóstico Reativo..."
+                repair_report = self.sentinel.diagnose_and_fix(f"O usuário relatou um problema: '{clean_input}'")
+                return self._format_response_with_soul(clean_input, [f"[SENTINEL / AUTO-HEAL]: {repair_report}"], task_hint="problem_solving")
+            else:
+                self.log("Gatilho de pânico ignorado (em cooldown).", "system")
 
         # 5. MANUAL MODE (standard planning)
         self.mode = "manual"

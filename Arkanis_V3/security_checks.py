@@ -1,0 +1,1 @@
+Novo módulo para verificação de integridade de arquivos

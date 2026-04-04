@@ -38,19 +38,15 @@ FORMATO DE RESPOSTA OBRIGATÓRIO (JSON):
 Você DEVE retornar SEMPRE um bloco de código JSON com a seguinte estrutura:
 ```json
 {
-  "diagnosis": "Causa raiz identificada",
+  "diagnosis": "Causa raiz identificada e status de integridade do sistema",
+  "is_critical": true, // ou false se for apenas uma otimização/alerta falso e o sistema estiver ok
   "steps": [
     {
       "tool": "check_binary",
       "args": {"binary_path": "/caminho/do/binario"},
       "description": "Verificando dependências faltantes com ldd"
-    },
-    {
-      "tool": "shell_exec",
-      "args": {"command": "ls -la libs/"},
-      "description": "Explorando estrutura de arquivos"
     }
-  ]
+  ] // Importante: Gere 'steps' APENAS SE is_critical for true. Caso contrário, deixe a lista vazia.
 }
 ```
 """
@@ -72,6 +68,7 @@ Você DEVE retornar SEMPRE um bloco de código JSON com a seguinte estrutura:
         self.resume_requested.set()
         
         self.current_cycle = 0
+        self.last_trigger_time = 0 # Prevent excessive diagnostics
         self.current_action = "Idle"
         self.logs = [] # Local log buffer for observability
         self.sentinel_thread = None
@@ -115,15 +112,20 @@ Você DEVE retornar SEMPRE um bloco de código JSON com a seguinte estrutura:
                 self.log(f"Mensagem recebida de {msg['from']}: {msg['content'][:50]}...", "info")
                 
                 if "DEV" in msg['from'].upper() or "vulnerabilidade" in msg['content'].lower():
-                    self.diagnose_and_fix(f"Alerta do DevAgent: {msg['content']}")
+                    # Check 5 minutes cooldown to prevent loop with Dev Agent
+                    if time.time() - self.last_trigger_time > 300: 
+                        self.diagnose_and_fix(f"Alerta do DevAgent: {msg['content']}")
+                    else:
+                        self.log("Alerta do DevAgent ignorado (cooldown Sentinel ativo).", "warning")
                 
                 self.status = "idle"
 
-            # 2. Periodic Proactive Health Check (every 10 minutes)
-            if self.current_cycle % 600 == 0: 
+            # 2. Periodic Proactive Health Check (every 10 minutes / 600 cycles)
+            if self.current_cycle > 0 and self.current_cycle % 600 == 0: 
                 self.status = "running"
-                self.current_action = "Iniciando verificação de saúde proativa..."
-                self.diagnose_and_fix("Verificação proativa de saúde do sistema (proactive_check)")
+                if time.time() - self.last_trigger_time > 300:
+                    self.current_action = "Iniciando verificação de saúde proativa..."
+                    self.diagnose_and_fix("Verificação proativa de saúde do sistema (proactive_check)")
                 self.status = "idle"
             
             self.current_cycle += 1
@@ -178,16 +180,30 @@ Se for um erro de código em 'Arkanis_V3/tools/network_tools.py' ou similar, exp
                     else:
                         repair_plan = [raw_data]
 
-                    broadcast(f"🛠️ Executando plano de reparo automático ({len(repair_plan)} passos)...")
-                    results = self.executor.execute_plan(repair_plan)
-                    broadcast(f"✨ Reparo concluído: {results}")
-                    response += f"\n\n[SENTINEL LOG]: Reparo executado com sucesso.\nResultados: {results}"
+                    is_critical = raw_data.get("is_critical", True) if isinstance(raw_data, dict) else True
+                    
+                    if is_critical and repair_plan:
+                        broadcast(f"🛠️ Executando plano de reparo automático ({len(repair_plan)} passos)...")
+                        try:
+                            results = self.executor.execute_plan(repair_plan)
+                            broadcast(f"✨ Reparo concluído: {results}")
+                            response += f"\n\n[SENTINEL LOG]: Reparo executado com sucesso.\nResultados: {results}"
+                        except PermissionError as pe:
+                            broadcast(f"⚠️ Erro de Permissão no Reparador: {pe}")
+                            response += f"\n\n[SENTINEL LOG]: Permissão negada durante o reparo."
+                        except Exception as exec_err:
+                            broadcast(f"⚠️ Erro na execução das ferramentas: {exec_err}")
+                    else:
+                        broadcast("✅ Nenhuma ação corretiva crítica necessária.")
+                        response += f"\n\n[SENTINEL LOG]: Sistema considerado íntegro; nenhum passo executado."
             except Exception as e:
-                broadcast(f"❌ Falha ao executar plano de reparo: {e}")
+                broadcast(f"❌ Falha ao processar o JSON do plano de reparo: {e}")
         
         broadcast(f"✅ Análise concluída: {response[:150]}...")
         
-        # After a fix, notify DevAgent to analyze the permanent solution
-        agent_bus.send_message(self.id, "dev_agent", f"Realizei um reparo emergencial em resposta a: {error_context}. Por favor, analise o código e sugira uma melhoria definitiva.")
+        # After a fix, notify DevAgent ONLY if it was critical
+        if "is_critical" in locals() and is_critical:
+            agent_bus.send_message(self.id, "dev_agent", f"Realizei um reparo emergencial em resposta a: {error_context}. Por favor, analise o código e sugira uma melhoria definitiva.")
+        self.last_trigger_time = time.time()
         
         return response

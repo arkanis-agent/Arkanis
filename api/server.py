@@ -718,8 +718,11 @@ def start_telegram():
 
 @app.on_event("startup")
 async def startup_event():
-    # Start Telegram in a daemon thread
-    threading.Thread(target=start_telegram, daemon=True).start()
+    # Start Telegram in a daemon thread ONLY if explicitly enabled to prevent conflicts with main.py --telegram
+    if os.environ.get("AUTOSTART_TELEGRAM", "false").lower() == "true":
+        threading.Thread(target=start_telegram, daemon=True).start()
+    else:
+        logger.info("Nerve: Telegram daemon thread desativado por padrão (use AUTOSTART_TELEGRAM=true para ligar no server).")
     
     # ARKANIS V4 ALPHA: Start the Visual Nervous System (Watcher)
     arkanis_watcher.start()
