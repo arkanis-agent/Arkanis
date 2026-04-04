@@ -37,8 +37,8 @@ class SystemMonitorTool(BaseTool):
         detailed = str(kwargs.get("detailed", "false")).lower() == "true"
         
         try:
-            # Basic Health
-            cpu_percent = psutil.cpu_percent(interval=None) # First call usually 0
+            # Basic Health - use a small interval so CPU usage isn't returned as 0.0 constantly
+            cpu_percent = psutil.cpu_percent(interval=0.1) 
             memory = psutil.virtual_memory()
             disk = psutil.disk_usage('/')
             net = psutil.net_io_counters()

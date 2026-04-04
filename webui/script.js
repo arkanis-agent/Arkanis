@@ -3893,10 +3893,6 @@ function initEliteUI() {
 
 // Global execution
 document.addEventListener('DOMContentLoaded', initEliteUI);
-// Frequent re-check to fix any DOM replacement by other agents
-if (!window.eliteInitInterval) {
-    window.eliteInitInterval = setInterval(initEliteUI, 5000);
-}
 
 // Paste support
 document.addEventListener('paste', (e) => {

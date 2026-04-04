@@ -179,13 +179,35 @@ class AgentBus:
             "current_action": "Gerenciando subsistemas..."
         })
         
+        # Inject baseline connections: Every registered node must have a connection to SYSTEM
+        # so the map works as a complete nervous system instead of floating islands.
+        baseline_links = []
+        existing_pairs = set()
+        
+        # Add the active dynamic connections first
+        for c in self.connections:
+            existing_pairs.add((c["source"], c["target"]))
+            existing_pairs.add((c["target"], c["source"]))
+            baseline_links.append(c)
+            
+        # Ensure 'ALL' is connected to 'SYSTEM'
+        if ("SYSTEM", "ALL") not in existing_pairs:
+            baseline_links.append({"source": "SYSTEM", "target": "ALL", "last_interaction": "Baseline", "last_interaction_ms": 0})
+            existing_pairs.add(("SYSTEM", "ALL"))
+            
+        # Ensure every agent is connected to 'SYSTEM'
+        for aid in self.agents.keys():
+            if (aid, "SYSTEM") not in existing_pairs:
+                baseline_links.append({"source": aid, "target": "SYSTEM", "last_interaction": "Baseline", "last_interaction_ms": 0})
+                existing_pairs.add((aid, "SYSTEM"))
+
         return {
             "agents": agent_data,
             "stats": stats, # REQUIRED by script.js
             "connections": self.connections,
             "graph": {
                 "nodes": graph_nodes,
-                "links": self.connections
+                "links": baseline_links
             },
             "history": self.message_history[-30:] # Last 30 for quick view
         }
