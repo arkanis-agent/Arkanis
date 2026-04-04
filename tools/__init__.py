@@ -9,22 +9,8 @@ def safe_import_tool(module_name):
         logger.error(f"Erro ao importar ferramenta [{module_name}]: {e}", symbol="⚠️")
         # Registra no logger para o Sentinel ver depois
 
-modules = [
-    "tools.standard",
-    "tools.ai_tools",
-    "tools.audio_tools",
-    "tools.browser_tools",
-    "tools.network_tools",
-    "tools.system_tools",
-    "tools.monitoring_tools",
-    "tools.dev_tools",
-    "tools.telegram_tools",
-    "tools.research_tools",
-    "tools.swarm_tool",
-    "tools.file_tools"
-]
-
-for mod in modules:
-    safe_import_tool(mod)
+# Basic tools that should be available by default for the kernel
+safe_import_tool("tools.standard")
+safe_import_tool("tools.file_tools")
 
 __all__ = ["registry"]

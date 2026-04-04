@@ -7,6 +7,7 @@ from core.config_manager import config_manager
 from core.model_strategy import strategy_engine
 from core.cost_governor import governor
 from core.logger import logger
+from core.semantic_cache import semantic_cache
 
 class LLMRouter:
     """
@@ -178,6 +179,14 @@ class LLMRouter:
             logger.warning("Cost Governor engaged: Forcing Auto-Strategy due to high-load limits.")
             _forced_auto = True
 
+        # --- SEMANTIC CACHE LOOKUP ---
+        # Don't cache if images are present (for now) or if explicitly disabled
+        if not images and task_hint != "UPGRADED":
+            cached_res = semantic_cache.lookup(system_prompt, user_prompt)
+            if cached_res:
+                logger.info("🧠 Arkanis Semantic Cache: HIT", symbol="💎")
+                return cached_res
+
         # --- AUTO-STRATEGY / FAILOVER MODE ---
         if self.auto_strategy or _forced_auto:
             _original_model = self.active_model
@@ -203,7 +212,8 @@ class LLMRouter:
                     result = self._dispatch_call(system_prompt, user_prompt)
 
                     if result and not str(result).startswith("[Error LLM]"):
-                        # Success! Restore and return.
+                        # Success! Cache, restore and return.
+                        semantic_cache.store(system_prompt, user_prompt, result)
                         self.active_model = _original_model
                         self.active_provider = _original_provider
                         return result
@@ -255,6 +265,7 @@ class LLMRouter:
                 self.active_tier = _original_tier
                 
                 if res and not str(res).startswith("[Error LLM]"):
+                    # Generate will store it if successful
                     return res
                 logger.warning("⚠️ Elite call failed. Falling back to original model...")
             except Exception as e:
@@ -282,6 +293,7 @@ class LLMRouter:
             logger.info(f"Retrying with re-discovered model: {self.active_model} ({self.active_provider})", symbol="🔄")
             retry_result = self._dispatch_call(system_prompt, user_prompt)
             if retry_result and not str(retry_result).startswith("[Error LLM]"):
+                semantic_cache.store(system_prompt, user_prompt, retry_result)
                 logger.response(success=True, duration=time.time() - start_time)
                 return retry_result
                 
@@ -293,6 +305,7 @@ class LLMRouter:
             return final_retry
 
         if result and not str(result).startswith("[Error LLM]"):
+            semantic_cache.store(system_prompt, user_prompt, result)
             logger.response(success=True, duration=duration)
         else:
             logger.response(success=False)
