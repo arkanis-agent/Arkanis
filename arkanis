@@ -1,55 +1,81 @@
 #!/bin/bash
-# Arkanis Elite CLI Menu
+# Arkanis Elite CLI Menu - Multi-Interface Controller
 
 PYTHON_CMD="python3"
 if [ -d ".venv" ]; then
     PYTHON_CMD="./.venv/bin/python3"
 fi
 
-PID_FILE="logs/arkanis.pid"
-LOG_FILE="logs/web_server.log"
+PID_FILE_WEB="logs/arkanis_web.pid"
+PID_FILE_TG="logs/arkanis_tg.pid"
+LOG_FILE_WEB="logs/web_server.log"
+LOG_FILE_TG="logs/telegram_bot.log"
 
 mkdir -p logs
 
-function check_status {
-    if [ -f "$PID_FILE" ]; then
-        PID=$(cat "$PID_FILE")
-        if ps -p $PID > /dev/null; then
-            return 0
-        fi
+function check_status_web {
+    if [ -f "$PID_FILE_WEB" ]; then
+        PID=$(cat "$PID_FILE_WEB")
+        if ps -p $PID > /dev/null; then return 0; fi
     fi
-    # fallback to searching by name
-    if pgrep -f "main.py --web" > /dev/null; then
-        return 0
+    if pgrep -f "main.py --web" > /dev/null; then return 0; fi
+    return 1
+}
+
+function check_status_tg {
+    if [ -f "$PID_FILE_TG" ]; then
+        PID=$(cat "$PID_FILE_TG")
+        if ps -p $PID > /dev/null; then return 0; fi
     fi
+    if pgrep -f "main.py --telegram" > /dev/null; then return 0; fi
     return 1
 }
 
 function stop_arkanis {
     echo "[*] Encerrando processos do Arkanis..."
-    if [ -f "$PID_FILE" ]; then
-        PID=$(cat "$PID_FILE")
-        kill -15 $PID 2>/dev/null || true
-        rm -f "$PID_FILE"
+    # Kill Web
+    if [ -f "$PID_FILE_WEB" ]; then
+        kill -15 $(cat "$PID_FILE_WEB") 2>/dev/null || true
+        rm -f "$PID_FILE_WEB"
     fi
     pkill -f "main.py --web" 2>/dev/null || true
-    # Garante que a porta 8000 seja liberada no ubuntu limitando a fuser
     fuser -k 8000/tcp 2>/dev/null || true
-    echo "[✓] Processos encerrados com sucesso e porta 8000 liberada."
+
+    # Kill Telegram
+    if [ -f "$PID_FILE_TG" ]; then
+        kill -15 $(cat "$PID_FILE_TG") 2>/dev/null || true
+        rm -f "$PID_FILE_TG"
+    fi
+    pkill -f "main.py --telegram" 2>/dev/null || true
+    
+    echo "[✓] Todos os serviços foram encerrados."
 }
 
 function start_arkanis {
-    if check_status; then
-        echo "[!] Arkanis já está rodando. Use './arkanis restart' ou acesse http://localhost:8000"
-        exit 1
+    # 1. Start Web UI
+    if check_status_web; then
+        echo "[!] Web UI já está rodando."
+    else
+        echo "[*] Inicializando Arkanis Web UI..."
+        nohup "$PYTHON_CMD" main.py --web > "$LOG_FILE_WEB" 2>&1 &
+        echo $! > "$PID_FILE_WEB"
+        echo "[✓] Web UI online! PID: $(cat $PID_FILE_WEB)"
+        echo "[➡] Acesse: http://localhost:8000"
     fi
-    echo "[*] Inicializando Arkanis V3.1 em modo daemon..."
-    # Quote $PYTHON_CMD to handle spaces in virtualenv path
-    nohup "$PYTHON_CMD" main.py --web > "$LOG_FILE" 2>&1 &
-    PID=$!
-    echo $PID > "$PID_FILE"
-    echo "[✓] Sistema online! PID: $PID"
-    echo "[➡] Acesse: http://localhost:8000"
+
+    # 2. Start Telegram (Optional if token exists)
+    if grep -q "TELEGRAM_BOT_TOKEN=." .env 2>/dev/null; then
+        if check_status_tg; then
+            echo "[!] Telegram Bot já está rodando."
+        else
+            echo "[*] Inicializando Telegram Polling..."
+            nohup "$PYTHON_CMD" main.py --telegram > "$LOG_FILE_TG" 2>&1 &
+            echo $! > "$PID_FILE_TG"
+            echo "[✓] Telegram Bot online! PID: $(cat $PID_FILE_TG)"
+        fi
+    else
+        echo "[i] TELEGRAM_BOT_TOKEN não encontrado. Ignorando interface Telegram."
+    fi
 }
 
 function doctor {
@@ -60,8 +86,8 @@ function doctor {
     
     # Check Python version
     echo -n "[1] Dependências e Python: "
-    if command -v $PYTHON_CMD &> /dev/null; then
-        PYVER=$($PYTHON_CMD --version)
+    if command -v "$PYTHON_CMD" &> /dev/null; then
+        PYVER=$("$PYTHON_CMD" --version)
         echo "OK ($PYVER)"
     else
         echo "ERRO (Python3 não encontrado)"
@@ -71,21 +97,24 @@ function doctor {
     echo -n "[2] Secrets e .env: "
     if [ -f ".env" ]; then
         echo "OK (Arquivo existe)"
+        if grep -q "TELEGRAM_BOT_TOKEN=." .env; then echo "    - Telegram Token: Configurado"; else echo "    - Telegram Token: AUSENTE"; fi
+        if grep -q "OPENROUTER_API_KEY=." .env; then echo "    - LLM API Key: Configurado"; else echo "    - LLM API Key: AUSENTE"; fi
     else
-        echo "ALERTA (.env não encontrado. Agente pode falhar. Rode bash install.sh)"
+        echo "ALERTA (.env não encontrado. Rode bash install.sh)"
     fi
     
     # Check if port 8000 is open/occupied
     echo -n "[3] Porta 8000: "
     if lsof -Pi :8000 -sTCP:LISTEN -t >/dev/null ; then
-        if check_status; then
-            echo "OCUPADA (Pelo Arkanis - Tudo certo!)"
-        else
-            echo "OCUPADA (Alerta! Outra aplicação está usando a porta)"
-        fi
+        echo "OCUPADA (Tudo certo se for o Arkanis)"
     else
-        echo "LIVRE (Pronto para o Start)"
+        echo "LIVRE (Aguardando start)"
     fi
+
+    # Check Connectivity
+    echo -n "[4] Status dos Serviços: "
+    if check_status_web; then echo -n "WEB: ON | "; else echo -n "WEB: OFF | "; fi
+    if check_status_tg; then echo "TG: ON"; else echo "TG: OFF"; fi
     
     echo ""
 }
@@ -106,11 +135,7 @@ case "$1" in
         doctor
         ;;
     status)
-        if check_status; then
-            echo "[✓] Arkanis está ONLINE (Acesse: http://localhost:8000)."
-        else
-            echo "[x] Arkanis está OFFLINE."
-        fi
+        doctor
         ;;
     *)
         echo "Uso: ./arkanis {start|stop|restart|doctor|status}"
