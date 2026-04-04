@@ -571,7 +571,7 @@ async function pollStatus() {
         if (data.auto_strategy && currentModelName) {
             const prefix = data.active_tier ? `(AUTO - ${data.active_tier})` : '(AUTO)';
             if (!currentModelName.textContent.startsWith(prefix)) {
-                 const modelId = data.active_model.split('/').pop() || data.active_model;
+                 const modelId = data.active_model ? (data.active_model.split('/').pop() || data.active_model) : "Buscando...";
                  currentModelName.textContent = `${prefix} ${modelId.toUpperCase()}`;
             }
         }
@@ -2726,7 +2726,7 @@ function renderAutoHealTimeline(timeline) {
             <div class="text-[11px] text-white font-bold">${item.title}</div>
             <div class="text-[10px] text-slate-400 mt-1 line-clamp-2 italic">${item.description}</div>
             <div class="mt-2 flex items-center gap-2">
-                <span class="px-2 py-0.5 rounded bg-blue-500/10 text-blue-400 text-[8px] font-bold uppercase tracking-tighter">Fix: ${item.file_path.split('/').pop()}</span>
+                <span class="px-2 py-0.5 rounded bg-blue-500/10 text-blue-400 text-[8px] font-bold uppercase tracking-tighter">Fix: ${item.file_path ? item.file_path.split('/').pop() : 'Arkanis Core'}</span>
             </div>
         `;
         container.firstChild.appendChild(div);

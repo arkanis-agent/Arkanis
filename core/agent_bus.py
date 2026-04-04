@@ -104,15 +104,19 @@ class AgentBus:
         now_ts = time.time_ns() // 1_000_000 
         now_str = datetime.now().strftime("%H:%M:%S")
         
+        # Normalize system-level IDs to ensure graph compatibility
+        f_aid = from_aid.upper() if from_aid.lower() in ["system", "all"] else from_aid
+        t_aid = to_aid.upper() if to_aid.lower() in ["system", "all"] else to_aid
+        
         conn = {
-            "source": from_aid, 
-            "target": to_aid, 
+            "source": f_aid, 
+            "target": t_aid, 
             "last_interaction": now_str,
             "last_interaction_ms": now_ts
         }
         
         for c in self.connections:
-            if c["source"] == from_aid and c["target"] == to_aid:
+            if c["source"] == f_aid and c["target"] == t_aid:
                 c["last_interaction"] = now_str
                 c["last_interaction_ms"] = now_ts
                 return
@@ -165,6 +169,14 @@ class AgentBus:
             "role": "Agent Bus Multiplexer",
             "status": "running",
             "current_action": "Roteando conexões..."
+        })
+        
+        # Inject the "SYSTEM" node for root-level events and registration message compatibility
+        graph_nodes.append({
+            "id": "SYSTEM",
+            "role": "Arkanis Kernel",
+            "status": "active",
+            "current_action": "Gerenciando subsistemas..."
         })
         
         return {
