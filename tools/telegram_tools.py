@@ -51,4 +51,4 @@ class TelegramMessageTool(BaseTool):
             logger.error(f"Failed to send telegram notification: {e}")
             return json.dumps({"error": f"Falha de rede ao enviar para a API do Telegram: {e}"})
 
-registry.register_tool(TelegramMessageTool())
+registry.register(TelegramMessageTool())
