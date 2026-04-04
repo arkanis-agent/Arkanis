@@ -3,6 +3,9 @@
 .env.bak
 *.bak
 
+# Personal Identity Files
+IDENTITY.md
+
 # Python
 __pycache__/
 *.pyc
