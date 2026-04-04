@@ -68,5 +68,47 @@ class IntelligenceResearcher(BaseTool):
         except Exception as e:
             return f"Erro na pesquisa: {str(e)}"
 
+class QuickWebSearch(BaseTool):
+    """
+    ARKANIS V3.1 - Quick Answer Search (DuckDuckGo Search)
+    Instantly searches the web for factual questions or references and returns text snippets.
+    """
+    
+    @property
+    def name(self) -> str:
+        return "quick_web_search"
+
+    @property
+    def description(self) -> str:
+        return "Faz uma pesquisa rápida e invisível na internet para encontrar fatos, notícias do dia a dia, ou responder dúvidas específicas em tempo real."
+
+    @property
+    def arguments(self) -> Dict[str, str]:
+        return {
+            "query": "O texto da sua pesquisa (ex: 'Quem é Sexta Feira do Tony Stark?')."
+        }
+
+    def execute(self, **kwargs) -> str:
+        query = kwargs.get("query")
+        if not query:
+            return "Erro: 'query' é obrigatório."
+            
+        try:
+            from duckduckgo_search import DDGS
+            results = DDGS().text(query, max_results=5)
+            
+            if not results:
+                return f"Nenhum resultado direto encontrado para '{query}'. Considere ser mais abrangente ou usar o deep_researcher."
+                
+            out = f"Resultados rápidos para '{query}':\n\n"
+            for i, r in enumerate(results, 1):
+                out += f"[{i}] {r.get('title')}\n{r.get('body')}\n(Fonte: {r.get('href')})\n\n"
+                
+            return out.strip()
+            
+        except Exception as e:
+            return f"Erro ao acessar mecanismo de busca: {str(e)}"
+
 # Auto-registration
 registry.register(IntelligenceResearcher())
+registry.register(QuickWebSearch())
