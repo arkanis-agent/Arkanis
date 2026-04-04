@@ -81,6 +81,16 @@ class TelegramInterface:
         chat_id = message["chat"]["id"]
         user_name = message["from"].get("first_name", "User")
         user_text = message.get("text")
+        
+        # Auto-bind admin ID for proactive notifications if empty
+        if not os.environ.get("TELEGRAM_ADMIN_ID"):
+            os.environ["TELEGRAM_ADMIN_ID"] = str(chat_id)
+            try:
+                with open(".env", "a") as f:
+                    f.write(f"\nTELEGRAM_ADMIN_ID={chat_id}\n")
+                self.console.print(f"[bold cyan]TELEGRAM_ADMIN_ID vinculado automaticamente ao usuário {user_name} ({chat_id})[/bold cyan]")
+            except Exception as e:
+                pass
 
         # Handle Voice/Audio messages
         if "voice" in message or "audio" in message:

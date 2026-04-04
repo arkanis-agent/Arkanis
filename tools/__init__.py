@@ -17,7 +17,8 @@ modules = [
     "tools.network_tools",
     "tools.system_tools",
     "tools.monitoring_tools",
-    "tools.dev_tools"
+    "tools.dev_tools",
+    "tools.telegram_tools"
 ]
 
 for mod in modules:
