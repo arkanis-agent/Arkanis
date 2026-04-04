@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import List, Optional, Dict
 from kernel.planner import Planner
 from kernel.executor import Executor
 from core.agents.critic_agent import CriticAgent

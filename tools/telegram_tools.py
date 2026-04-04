@@ -6,24 +6,25 @@ from tools.registry import registry
 from core.logger import logger
 
 class TelegramMessageTool(BaseTool):
-    name = "send_telegram_notification"
-    description = (
-        "Envia uma mensagem de texto ao usuário no Telegram. "
-        "Use isso quando você estiver trabalhando em background/continuous tasks e "
-        "precisar notificar o usuário ativamente sobre novas descobertas ou erros críticos. "
-        "Só envie mensagens no Telegram se a tarefa atual ou as rotinas definirem que é o objetivo, "
-        "ou se for uma novidade muito urgente ou se o usuário pediu especificamente."
-    )
-    parameters = {
-        "type": "object",
-        "properties": {
-            "message": {
-                "type": "string",
-                "description": "Texto em português para enviar na notificação do Telegram (suporta emojis)."
-            }
-        },
-        "required": ["message"]
-    }
+    @property
+    def name(self) -> str:
+        return "send_telegram_notification"
+
+    @property
+    def description(self) -> str:
+        return (
+            "Envia uma mensagem de texto ao usuário no Telegram. "
+            "Use isso quando você estiver trabalhando em background/continuous tasks e "
+            "precisar notificar o usuário ativamente sobre novas descobertas ou erros críticos. "
+            "Só envie mensagens no Telegram se a tarefa atual ou as rotinas definirem que é o objetivo, "
+            "ou se for uma novidade muito urgente ou se o usuário pediu especificamente."
+        )
+
+    @property
+    def arguments(self) -> dict:
+        return {
+            "message": "Texto em português para enviar na notificação do Telegram (suporta emojis)."
+        }
 
     def execute(self, **kwargs) -> str:
         message = kwargs.get("message")
