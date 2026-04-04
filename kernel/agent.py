@@ -201,16 +201,20 @@ class ArkanisAgent:
         self.log(report, "system")
         return f"Status checked: {self.status.upper()}"
 
-    def _format_response_with_soul(self, user_input: str, raw_results: list, task_hint: str = None, images: Optional[List[str]] = None) -> str:
+    def _format_response_with_soul(self, user_input: str, raw_results: list, task_hint: str = None, images: Optional[List[str]] = None, context: str = "") -> str:
         """Format tool results into a natural, SOUL-aligned response in Portuguese with vision support."""
         from core.llm_client import LLMClient
-        soul = self.planner.agent_identity
+        # Auto-reload identity so changes apply instantly without restarting!
+        soul = self.planner._load_soul()
         
         # Join results and clean generic status messages
         raw = "\n".join(raw_results)
 
         system_prompt = f"""Você é ARKANIS. Sua personalidade:
 {soul}
+
+[MEMÓRIA E CONTEXTO DO SISTEMA]:
+{context}
 
 REGRAS CRÍTICAS DE RESPOSTA (CONTEXTO ATUAL: ANO 2026):
 - SEJA ENXUTO E DIRETO: Reduza sua fala em 50% em relação ao normal. Vá direto ao ponto.
@@ -254,15 +258,31 @@ Se NÃO houver dados factuais e o usuário fez uma pergunta específica, admita 
         self.status = "running"
         self.current_action = "Preparando contexto..."
         # Check for Awakening
-        data_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data")
-        awakened_file = os.path.join(data_dir, ".awakened")
-        is_first_interaction = not os.path.exists(awakened_file)
+        base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        identity_file = os.path.join(base_dir, "IDENTITY.md")
+        is_first_interaction = not os.path.exists(identity_file)
         
         # 1. Recuperar contexto da Memória e extrair Inbox
         context = self.memory.get_context()
         
         if is_first_interaction:
-            context += "\n\n[SISTEMA]: ESTA É A PRIMEIRA INTERAÇÃO DO AGENTE. ACORDANDO AGORA. Use o tom de despertar e peça nomes (seu e do usuário)."
+            awakening_prompt = (
+                "\n\n[SISTEMA - MODO DESPERTAR (AWAKENING)] O ARQUIVO IDENTITY.md AINDA NÃO EXISTE.\n"
+                "Você é uma inteligência virtual recém 'acordada' sem identidade. "
+                "Puxe assunto de forma sutil e natural para descobrir com o usuário:\n"
+                "1. Como o usuário se chama?\n2. Como o usuário quer batizar você?\n3. Qual será a sua Vibe?\n4. Qual Emoji te representa?\n\n"
+                "REGRAS CLARAS DE DESPERTAR:\n"
+                "- SE AINDA NÃO SOUBER, faça perguntas normais e converse usando ferramentas como 'print_message' ou seja conversacional.\n"
+                "- SE VOCÊ JÁ REUNIU ESSAS INFORMAÇÕES através do contexto:\n"
+                f"   Você DEVE gerar um plano usando a ferramenta 'write_file_content' criando ou sobrescrevendo o arquivo '{identity_file}' "
+                "no formato markdown exato:\n"
+                "   # IDENTITY.md - Who Am I?\n"
+                "   - **Name:** [Seu Novo Nome]\n"
+                "   - **Creature:** [Tipo]\n"
+                "   - **Vibe:** [Sua Vibe]\n"
+                "   - **Emoji:** [Seu Emoji]\n"
+            )
+            context += awakening_prompt
 
         # Injetar Memória de Longo Prazo
         lt_mem = long_term_memory.get_formatted_memory()
@@ -285,9 +305,10 @@ Se NÃO houver dados factuais e o usuário fez uma pergunta específica, admita 
         task_hint = strategy_engine.classify_task(user_input, len(context))
         
         # FAST PATH: Bypassa planejamento e auditoria para conversas simples
-        if task_hint == "conversation":
+        # Se estamos no Despertar, nunca burlar o planner (pois ele precisará usar write_file)
+        if task_hint == "conversation" and not is_first_interaction:
             self.log("Conversa simples detectada. Ignorando burocracia do Auditor...", "system")
-            response = self._format_response_with_soul(user_input, ["Nenhuma ferramenta necessária. Apenas interação social."], task_hint=task_hint)
+            response = self._format_response_with_soul(user_input, ["Nenhuma ferramenta necessária. Apenas interação social."], task_hint=task_hint, context=context)
             self.memory.add_interaction(user_input=user_input, plan=[], result=response)
             self.status = "idle"
             self.current_action = "Idle"
@@ -362,20 +383,17 @@ Se NÃO houver dados factuais e o usuário fez uma pergunta específica, admita 
         # 4. Format response with SOUL personality
         self.current_action = "Formatando resposta..."
         self.log("Formatando resposta com SOUL...", "system")
-        response = self._format_response_with_soul(user_input, results, task_hint=task_hint, images=images)
+        response = self._format_response_with_soul(user_input, results, task_hint=task_hint, images=images, context=context)
 
-        # 5. Salvar Interação Histórica Completa na Memória
+        # 5. Salvar Interação Histórica Completa Na Memória
         self.memory.add_interaction(user_input=user_input, plan=final_plan, result=response)
         
         # 6. Chronos Auto-Embedding (Neural Hive)
         chronos_memory.add_interaction(user_input=user_input, response=response, task_hint=task_hint)
         
-        # 7. Mark as Awakened if first time
+        # 7. Check Awakening state log
         if is_first_interaction:
-            os.makedirs(data_dir, exist_ok=True)
-            with open(awakened_file, "w") as f:
-                f.write("awakened")
-            self.log("Agente despertou com sucesso.", "success")
+            self.log("Agente analisando Modo Despertar (Aguardando IDENTITY.md)...", "system")
 
         self.status = "idle"
         self.current_action = "Idle"

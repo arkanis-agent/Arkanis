@@ -86,24 +86,32 @@ FORMATO EXIGIDO:
         self.agent_identity = self._load_soul()
 
     def _load_soul(self) -> str:
-        """Loads the identity from IDENTITY.md or SOUL.md if they exist."""
+        """Loads and combines the personality from SOUL.md and IDENTITY.md."""
         base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
         identity_path = os.path.join(base_dir, "IDENTITY.md")
         soul_path = os.path.join(base_dir, "SOUL.md")
         
-        target_path = identity_path if os.path.exists(identity_path) else soul_path
+        combined_soul = []
         
-        if os.path.exists(target_path):
+        if os.path.exists(soul_path):
             try:
-                with open(target_path, "r", encoding="utf-8") as f:
-                    identity = f.read().strip()
-                rprint(f"[bold magenta][SOUL] Identity loaded from {os.path.basename(target_path)}[/bold magenta]")
-                # Prepare against unintentional { } in markdown files that brake format()
-                identity = identity.replace("{", "{{").replace("}", "}}")
-                return identity
-            except Exception as e:
-                rprint(f"[bold red][SOUL] Failed to load identity: {str(e)}[/bold red]")
-                
+                with open(soul_path, "r", encoding="utf-8") as f:
+                    combined_soul.append(f.read().strip())
+            except Exception: pass
+            
+        if os.path.exists(identity_path):
+            try:
+                with open(identity_path, "r", encoding="utf-8") as f:
+                    combined_soul.append(f.read().strip())
+                rprint(f"[bold magenta][SOUL] Custom Identity loaded from IDENTITY.md[/bold magenta]")
+            except Exception: pass
+            
+        if combined_soul:
+            identity = "\n\n---\n\n".join(combined_soul)
+            # Prepare against unintentional { } in markdown files that break format()
+            identity = identity.replace("{", "{{").replace("}", "}}")
+            return identity
+            
         return "Aja como um assistente amigável, natural e leal. Evite ser robótico ou formal demais. Trate o usuário como um parceiro."
 
     def _get_tool_descriptions(self) -> str:
