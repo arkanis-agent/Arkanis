@@ -1,7 +1,6 @@
 {
     "preferences": [],
     "facts": [
-        "Usuário pediu para buscar informações sobre tempo e temperatura na internet",
         "São Paulo, 24 graus Celsius",
         "São Paulo",
         "Usuário está interessado no Campeonato Paulista de Futebol",
@@ -20,7 +19,8 @@
         "usuário solicitou análise de imagem/texto que retornou erro de parsing",
         "O botão de anexar imagem está com problema.",
         "Usuário é o Diego",
-        "1) **Nenhum resultado encontrado** - *Sistema* | *Data não disponível*  \n   - Não foram localizadas notícias recentes ou atualizadas para a busca solicitada.  \n   - *Impacto:* Informação indisponível no momento.  \n\n2) **Dados obsoletos não devem ser usados** - *Sistema* | *Data não disponível*  \n   - Alertas sobre a utilização de informações desatualizadas.  \n   - *Impacto:* Evita disseminação de informações incorretas.  \n\n3) **Fatos recentes não confirmados** - *Sistema* | *Data não disponível*  \n   - Busca não retornou resultados válidos para consultas sobre atualidades.  \n   - *Impacto:* Necessidade de fontes atualizadas ou revisão da pesquisa."
+        "1) **Nenhum resultado encontrado** - *Sistema* | *Data não disponível*  \n   - Não foram localizadas notícias recentes ou atualizadas para a busca solicitada.  \n   - *Impacto:* Informação indisponível no momento.  \n\n2) **Dados obsoletos não devem ser usados** - *Sistema* | *Data não disponível*  \n   - Alertas sobre a utilização de informações desatualizadas.  \n   - *Impacto:* Evita disseminação de informações incorretas.  \n\n3) **Fatos recentes não confirmados** - *Sistema* | *Data não disponível*  \n   - Busca não retornou resultados válidos para consultas sobre atualidades.  \n   - *Impacto:* Necessidade de fontes atualizadas ou revisão da pesquisa.",
+        "O nome do usuário é Diego"
     ],
     "recurrent_tasks": []
 }

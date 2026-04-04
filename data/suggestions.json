@@ -1,5 +1,176 @@
 [
     {
+        "title": "Implementa\u00e7\u00e3o de Boundary Manager para Contextos Espec\u00edficos",
+        "description": "Atualmente, a distribui\u00e7\u00e3o de tarefas e o roteamento de LLMs ocorrem de forma centralizada atrav\u00e9s do llm_router.py. Isso pode levar a subotimiza\u00e7\u00e3o quando tarefas possuem contextos espec\u00edficos que exigem modelos especializados. Um Boundary Manager modular separaria o roteamento por dom\u00ednios, aumentando a precis\u00e3o e efici\u00eancia.",
+        "type": "arch",
+        "priority": "high",
+        "files_involved": [
+            "core/llm_router.py",
+            "core/task_engine.py",
+            "core/custom_agent.py",
+            "core/agent_bus.py"
+        ],
+        "proposed_code": "# Novo arquivo core/boundary_manager.py\nclass BoundaryManager:\n    def __init__(self):\n        self.domain_routers = {'technical': LLMTechnicalRouter(),\n                             'creative': LLMCreativeRouter(),\n                             'analytical': LLMAnalyticalRouter()}\n\n    def route_task(self, task):\n        domain = self.identify_task_domain(task)\n        return self.domain_routers[domain].route(task)\n\n# Refatora\u00e7\u00e3o no task_engine.py\ndef execute_task(self, task):\n    boundary_manager = BoundaryManager()\n    routed_task = boundary_manager.route_task(task)\n    # Restante da execu\u00e7\u00e3o...",
+        "id": "arch_1775263560",
+        "status": "pending",
+        "timestamp": "2026-04-03 21:46:00"
+    },
+    {
+        "title": "Inicializa\u00e7\u00e3o Padr\u00e3o de M\u00f3dulos",
+        "description": "O arquivo __init__.py est\u00e1 vazio, perdendo a oportunidade de definir exports expl\u00edcitos e documenta\u00e7\u00e3o do pacote. Uma boa pr\u00e1tica \u00e9 incluir pelo menos a docstring do m\u00f3dulo e poss\u00edveis imports principais.",
+        "type": "refactor",
+        "file_path": "/home/diego/\u00c1rea de trabalho/Arkanis_V3.1/modules/__init__.py",
+        "proposed_code": "\"\"\"\nArkanis OS - Core Modules Package\n\nEste pacote cont\u00e9m os m\u00f3dulos essenciais do sistema operacional Arkanis V3.\n\"\"\"\n\n__version__ = '3.1.0'\n__all__ = []  # Lista expl\u00edcita de m\u00f3dulos export\u00e1veis\n",
+        "id": "sug_1775263556",
+        "status": "pending",
+        "timestamp": "2026-04-03 21:45:56"
+    },
+    {
+        "title": "Melhoria de Robustez nos Testes de \u00c1udio",
+        "description": "Adicionar tratamento de erros mais robusto nos testes e melhorar a limpeza de recursos tempor\u00e1rios",
+        "type": "refactor",
+        "file_path": "/home/diego/\u00c1rea de trabalho/Arkanis_V3.1/tests/test_audio.py",
+        "proposed_code": "import os\nimport sys\nimport json\nimport tempfile\nimport unittest\n\n# Add V3 to path\nsys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))\n\nfrom tools.audio_tools import SpeechToTextTool\n\nclass TestAudioTools(unittest.TestCase):\n    @classmethod\n    def setUpClass(cls):\n        cls.temp_dir = tempfile.TemporaryDirectory()\n        cls.dummy_file = os.path.join(cls.temp_dir.name, \"dummy.wav\")\n        with open(cls.dummy_file, \"w\") as f:\n            f.write(\"dummy\")\n    \n    @classmethod\n    def tearDownClass(cls):\n        cls.temp_dir.cleanup()\n    \n    def test_stt_tool_instance(self):\n        tool = SpeechToTextTool()\n        self.assertEqual(tool.name, \"speech_to_text\")\n        self.assertTrue(\"temp_input\" in tool.arguments or \"audio_path\" in tool.arguments)\n\n    def test_stt_tool_execution_no_file(self):\n        tool = SpeechToTextTool()\n        result = tool.execute(audio_path=\"non_existent_file.wav\")\n        data = json.loads(result)\n        self.assertIn(\"error\", data)\n        # Support both English and Portuguese error messages\n        err = data[\"error\"].lower()\n        self.assertTrue(\"not found\" in err or \"n\u00e3o encontrado\" in err)\n\n    def test_stt_tool_binary_check(self):\n        tool = SpeechToTextTool()\n        result = tool.execute(temp_input=self.dummy_file)\n        data = json.loads(result)\n        \n        app_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))\n        whisper_path = os.path.join(app_root, \"libs\", \"whisper.cpp\", \"build\", \"bin\", \"whisper-cli\")\n        \n        if not os.path.exists(whisper_path):\n            self.assertIn(\"error\", data)\n            err = data[\"error\"].lower()\n            self.assertTrue(\"install_whisper.sh\" in err or \"whisper\" in err)\n\nif __name__ == \"__main__\":\n    print(\"Running STT Tool Tests...\")\n    unittest.main()",
+        "id": "sug_1775263402",
+        "status": "pending",
+        "timestamp": "2026-04-03 21:43:22"
+    },
+    {
+        "title": "Melhoria de Seguran\u00e7a e Performance no ShortTermMemory",
+        "description": "Adicionando valida\u00e7\u00e3o de tipos e tamanho m\u00e1ximo para evitar inje\u00e7\u00e3o de dados maliciosos e consumo excessivo de mem\u00f3ria. Tamb\u00e9m melhorando a formata\u00e7\u00e3o do contexto para ser mais eficiente em tokens.",
+        "type": "refactor",
+        "file_path": "/home/diego/\u00c1rea de trabalho/Arkanis_V3.1/modules/memory/short_term.py",
+        "proposed_code": "from typing import List, Dict, Any\nimport json\n\nclass ShortTermMemory:\n    \"\"\"\n    Manages session-level context for the Arkanis agent.\n    Keeps track of structural interactions: Input, Plan, and Result.\n    \"\"\"\n    MAX_LIMIT = 50  # Hard limit for security\n    \n    def __init__(self, limit: int = 10):\n        self.limit = min(limit, self.MAX_LIMIT)\n        self.interactions: List[Dict[str, Any]] = []\n\n    def add_interaction(self, user_input: str, plan: List[Dict[str, Any]], result: str):\n        \"\"\"Adds a complete interaction to history with input validation.\"\"\"\n        if not isinstance(user_input, str) or not isinstance(result, str):\n            raise ValueError(\"Input and result must be strings\")\n            \n        if not isinstance(plan, list) or not all(isinstance(step, dict) for step in plan):\n            raise ValueError(\"Plan must be a list of dictionaries\")\n            \n        self.interactions.append({\n            \"user_input\": user_input[:500],  # Truncate to prevent abuse\n            \"plan\": plan[:20],  # Limit steps\n            \"result\": result[:1000]  # Truncate result\n        })\n        \n        if len(self.interactions) > self.limit:\n            self.interactions.pop(0)\n\n    def get_context(self) -> str:\n        \"\"\"Returns optimized context string with token efficiency.\"\"\"\n        if not self.interactions:\n            return \"Nenhum hist\u00f3rico recente.\"\n            \n        context_lines = [\"\\n[Hist\u00f3rico Resumido]\"]\n        \n        # Only keep last 3 interactions for context to save tokens\n        for interaction in self.interactions[-3:]:\n            tools_used = \", \".join(set(\n                step.get('tool', 'unknown') \n                for step in interaction['plan']\n            ))\n            \n            context_lines.extend([\n                f\"- Usu\u00e1rio: {interaction['user_input'][:100]}...\",\n                f\"Ferramentas: {tools_used}\",\n                f\"Resultado: {interaction['result'][:150]}...\\n\"\n            ])\n        \n        return \"\\n\".join(context_lines).strip()\n\n    def clear(self):\n        \"\"\"Clears the history.\"\"\"\n        self.interactions = []\n\n# Global instance with safe defaults\nsession_memory = ShortTermMemory(limit=10)",
+        "id": "sug_1775263291",
+        "status": "pending",
+        "timestamp": "2026-04-03 21:41:31"
+    },
+    {
+        "title": "Implementa\u00e7\u00e3o de um Orchestration Layer Centralizado",
+        "description": "Atualmente, a coordena\u00e7\u00e3o entre componentes cr\u00edticos (task_engine, goal_planner, agent_bus) ocorre de forma distribu\u00edda, o que pode levar a estados inconsistentes e decis\u00f5es sub\u00f3timas. Um Orchestrator centralizado aumentaria a precis\u00e3o na tomada de decis\u00f5es estrat\u00e9gicas e permitiria maior autonomia atrav\u00e9s de um plano de execu\u00e7\u00e3o unificado.",
+        "type": "arch",
+        "priority": "high",
+        "files_involved": [
+            "core/task_engine.py",
+            "core/goal_planner.py",
+            "core/agent_bus.py",
+            "kernel/planner.py",
+            "kernel/executor.py"
+        ],
+        "proposed_code": {
+            "architecture": {
+                "new_module": "core/orchestrator.py",
+                "responsibilities": [
+                    "Unifica\u00e7\u00e3o do ciclo de vida de tarefas",
+                    "Balanceamento din\u00e2mico de recursos",
+                    "Monitoramento de estado global",
+                    "Resolu\u00e7\u00e3o de conflitos entre agentes",
+                    "Prioriza\u00e7\u00e3o estrat\u00e9gica de objetivos"
+                ],
+                "integration": {
+                    "hooks": [
+                        "Interceptar todas as chamadas ao task_engine",
+                        "Substituir comunica\u00e7\u00e3o direta entre goal_planner e executor",
+                        "Fornecer API unificada para agentes customizados"
+                    ],
+                    "benefits": [
+                        "Vis\u00e3o hol\u00edstica do sistema",
+                        "Decis\u00f5es baseadas em contexto completo",
+                        "Possibilidade de replanejamento din\u00e2mico",
+                        "Melhor rastreabilidade"
+                    ]
+                }
+            }
+        },
+        "id": "arch_1775263270",
+        "status": "pending",
+        "timestamp": "2026-04-03 21:41:10"
+    },
+    {
+        "title": "Adi\u00e7\u00e3o de Inicializa\u00e7\u00e3o B\u00e1sica do Sistema",
+        "description": "O arquivo __init__.py est\u00e1 vazio, perdendo a oportunidade de definir metadados e inicializa\u00e7\u00e3o b\u00e1sica do sistema. Sugiro adicionar informa\u00e7\u00f5es essenciais como vers\u00e3o, autor e uma fun\u00e7\u00e3o de inicializa\u00e7\u00e3o padr\u00e3o.",
+        "type": "feature",
+        "file_path": "/home/diego/\u00c1rea de trabalho/Arkanis_V3.1/__init__.py",
+        "proposed_code": "\"\"\"\nSistema Operacional Arkanis V3 - Core Module\n\nM\u00f3dulo principal do sistema operacional Arkanis V3.\n\"\"\"\n\n__version__ = '3.1.0'\n__author__ = 'Diego (Arkanis Dev Team)'\n__license__ = 'Proprietary'\n\ndef system_init():\n    \"\"\"\n    Inicializa os componentes b\u00e1sicos do sistema\n    \"\"\"\n    print(f'Arkanis OS v{__version__} - Inicializando...')\n    # TODO: Adicionar l\u00f3gica de inicializa\u00e7\u00e3o\n\nif __name__ == '__main__':\n    system_init()",
+        "id": "sug_1775263248",
+        "status": "pending",
+        "timestamp": "2026-04-03 21:40:48"
+    },
+    {
+        "title": "Melhoria de Robustez no Teste de Falha",
+        "description": "O c\u00f3digo atual pode falhar silenciosamente em cen\u00e1rios emergenciais. Sugiro adicionar checagens extras de permiss\u00f5es e tratamento de exce\u00e7\u00f5es para garantir que o teste funcione corretamente.",
+        "type": "refactor",
+        "file_path": "/home/diego/\u00c1rea de trabalho/Arkanis_V3.1/tests/simulate_failure.py",
+        "proposed_code": "import os\nimport time\nimport shutil\n\n# Arkanis Root\nROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))\nNETWORK_TOOLS = os.path.join(ROOT, \"tools\", \"network_tools.py\")\nNETWORK_TOOLS_BACKUP = NETWORK_TOOLS + \".broken\"\n\ndef simulate():\n    print(\"\ud83d\udd25 [CAOS] Iniciando simula\u00e7\u00e3o de falha catastr\u00f3fica...\")\n    \n    try:\n        # Checa permiss\u00f5es antes de operar\n        if not os.access(ROOT, os.W_OK):\n            raise PermissionError(f\"Sem permiss\u00e3o de escrita em: {ROOT}\")\n        \n        if os.path.exists(NETWORK_TOOLS):\n            print(f\"\ud83e\udde8 Removendo acesso ao m\u00f3dulo: {NETWORK_TOOLS}\")\n            shutil.move(NETWORK_TOOLS, NETWORK_TOOLS_BACKUP)\n            print(\"\u2705 M\u00f3dulo renomeado para .broken\")\n        else:\n            print(\"\u26a0\ufe0f M\u00f3dulo j\u00e1 est\u00e1 quebrado ou n\u00e3o encontrado.\")\n    except Exception as e:\n        print(f\"\u203c\ufe0f Falha na simula\u00e7\u00e3o: {str(e)}\")\n        return\n\n    print(\"\\n\ud83d\udc49 Agora, pe\u00e7a ao Arkanis: 'Minha internet n\u00e3o funciona, o que aconteceu?'\")\n    print(\"O Sentinel deve detectar o arquivo .broken e restaur\u00e1-lo.\")\n\nif __name__ == \"__main__\":\n    simulate()\n",
+        "id": "sug_1775263082",
+        "status": "pending",
+        "timestamp": "2026-04-03 21:38:02"
+    },
+    {
+        "title": "Inicializa\u00e7\u00e3o de Pacote de M\u00f3dulos",
+        "description": "Adicionar documenta\u00e7\u00e3o b\u00e1sica e imports essenciais no arquivo __init__.py para melhor organiza\u00e7\u00e3o e clareza do pacote de m\u00f3dulos.",
+        "type": "feature",
+        "file_path": "/home/diego/\u00c1rea de trabalho/Arkanis_V3.1/modules/__init__.py",
+        "proposed_code": "\"\"\"\nArkanis Operating System - Version 3.1\nModules Package\n\nThis package contains all core modules for the Arkanis OS.\n\"\"\"\n\nfrom . import core\nfrom . import utils\nfrom . import security\n\n__all__ = ['core', 'utils', 'security']",
+        "id": "sug_1775262969",
+        "status": "pending",
+        "timestamp": "2026-04-03 21:36:09"
+    },
+    {
+        "title": "Implementa\u00e7\u00e3o de Sistema de Orchestrator Centralizado",
+        "description": "Atualmente, a orquestra\u00e7\u00e3o de tarefas e agentes parece ser distribu\u00edda entre m\u00faltiplos m\u00f3dulos (task_engine.py, agent_bus.py, planner.py, executor.py). Isso pode levar a inconsist\u00eancias e dificuldades na coordena\u00e7\u00e3o de fluxos complexos. Um Orchestrator centralizado serviria como c\u00e9rebro unificado para:(1) Gerenciar ciclos de vida de agentes (2) Monitorar depend\u00eancias entre tarefas (3) Garantir acordos de n\u00edvel de servi\u00e7o(SLA) (4) Coordenar escalabilidade din\u00e2mica",
+        "type": "arch",
+        "priority": "high",
+        "files_involved": [
+            "core/task_engine.py",
+            "core/agent_bus.py",
+            "kernel/planner.py",
+            "kernel/executor.py",
+            "core/__init__.py"
+        ],
+        "proposed_code": "# Novo m\u00f3dulo core/orchestrator.py\n\nfrom typing import Dict, Any\nfrom concurrent.futures import ThreadPoolExecutor\nfrom .agent_bus import AgentBus\nfrom .task_engine import TaskEngine\nfrom kernel.planner import Planner\n\nclass Orchestrator:\n    def __init__(self):\n        self.agent_bus = AgentBus()\n        self.task_engine = TaskEngine()\n        self.planner = Planner()\n        self.executor = ThreadPoolExecutor(max_workers=10)\n        self.active_tasks: Dict[str, Any] = {}\n\n    def start_task_cycle(self, goal: str):\n        plan = self.planner.generate_plan(goal)\n        for task in plan['tasks']:\n            future = self.executor.submit(self._execute_task, task)\n            self.active_tasks[task['id']] = future\n\n    def _execute_task(self, task: Dict[str, Any]):\n        agent = self.agent_bus.request_agent(task['agent_type'])\n        return self.task_engine.execute(agent, task)\n\n    def monitor_system(self):\n        return {\n            'active_tasks': len(self.active_tasks),\n            'agent_usage': self.agent_bus.get_usage_stats()\n        }\n\n# Necess\u00e1ria integra\u00e7\u00e3o com os m\u00f3dulos existentes",
+        "id": "arch_1775262945",
+        "status": "pending",
+        "timestamp": "2026-04-03 21:35:45"
+    },
+    {
+        "title": "Implementa\u00e7\u00e3o de Service Layer para Gest\u00e3o de Ferramentas",
+        "description": "Atualmente as ferramentas est\u00e3o dispersas em m\u00f3dulos sem uma camada de servi\u00e7o unificada, causando acoplamento direto entre agentes e implementa\u00e7\u00f5es espec\u00edficas. Uma arquitetura baseada em servi\u00e7os aumentaria a modularidade e permitiria hot-swapping de ferramentas durante runtime.",
+        "type": "arch",
+        "priority": "high",
+        "files_involved": [
+            "core/task_engine.py",
+            "tools/registry.py",
+            "tools/base_tool.py",
+            "kernel/planner.py",
+            "kernel/executor.py"
+        ],
+        "proposed_code": "# Estrutura Proposta:\n# 1. Criar service_layer/ com ToolManagerService (singleton)\n# 2. Registrar todas as ferramentas via decorator (@tool_service.register)\n# 3. Modificar o Executor para consumir ferramentas atrav\u00e9s do servi\u00e7o\n\nclass ToolManagerService:\n    def __init__(self):\n        self._tools = {}\n        self._active_tool_versions = {}\n\n    def register(self, tool_class):\n        \"\"\"Decorator para registro autom\u00e1tico\"\"\"\n        self._tools[tool_class.name] = tool_class\n        return tool_class\n\n    def get_tool(self, name, version=None):\n        \"\"\"Obt\u00e9m inst\u00e2ncia configurada da ferramenta\"\"\"\n        # Implementar l\u00f3gica de versionamento e fallback\n        return self._tools[name]()\n\n    def hot_swap(self, new_tool_impl):\n        \"\"\"Permite substitui\u00e7\u00e3o din\u00e2mica de implementa\u00e7\u00f5es\"\"\"\n        self._tools[new_tool_impl.name] = new_tool_impl",
+        "id": "arch_1775262940",
+        "status": "pending",
+        "timestamp": "2026-04-03 21:35:40"
+    },
+    {
+        "title": "Melhoria na Manipula\u00e7\u00e3o de Vari\u00e1veis de Ambiente",
+        "description": "A implementa\u00e7\u00e3o atual do carregamento do arquivo .env pode falhar em casos onde o arquivo cont\u00e9m espa\u00e7os em branco ou linhas mal formatadas. Sugiro utilizar uma abordagem mais robusta que valida o formato e ignora linhas inv\u00e1lidas.",
+        "type": "refactor",
+        "file_path": "/home/diego/\u00c1rea de trabalho/Arkanis_V3.1/main.py",
+        "proposed_code": "# Simple built-in .env loader to avoid external dependencies\nenv_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), \".env\")\nif os.path.exists(env_path):\n    with open(env_path, \"r\") as f:\n        for line in f:\n            line = line.strip()\n            if line and not line.startswith(\"#\"):\n                try:\n                    key, val = line.split(\"=\", 1)\n                    key = key.strip()\n                    val = val.strip()\n                    if key and val:\n                        os.environ[key] = val\n                except ValueError:\n                    print(f\"[Warning] Invalid .env line format: {line}\")\n",
+        "id": "sug_1775262938",
+        "status": "pending",
+        "timestamp": "2026-04-03 21:35:38"
+    },
+    {
+        "title": "Melhoria de Seguran\u00e7a e Tratamento de Erros",
+        "description": "O c\u00f3digo atual n\u00e3o tem tratamento adequado para casos onde o arquivo de entrada n\u00e3o existe ou quando a API retorna erros. Tamb\u00e9m falta valida\u00e7\u00e3o dos argumentos de voz.",
+        "type": "security",
+        "file_path": "/home/diego/\u00c1rea de trabalho/Arkanis_V3.1/libs/whisper.cpp/examples/talk-llama/eleven-labs.py",
+        "proposed_code": "import sys\\nimport argparse\\nimport textwrap\\n\\nparser = argparse.ArgumentParser(add_help=False,\\n    formatter_class=argparse.RawTextHelpFormatter)\\nparser.add_argument(\\\"-q\\\", \\\"--quick\\\", action=\\\"store_true\\\",\\n    help=\\\"skip checking the required library\\\")\\n\\nmodes = parser.add_argument_group(\\\"action\\\")\\nmodes.add_argument(\\\"inputfile\\\", metavar=\\\"TEXTFILE\\\",\\n    nargs='?', type=argparse.FileType(), default=sys.stdin,\\n    help=\\\"read the text file (default: stdin)\\\")\\nmodes.add_argument(\\\"-l\\\", \\\"--list\\\", action=\\\"store_true\\\",\\n    help=\\\"show the list of voices and exit\\\")\\nmodes.add_argument(\\\"-h\\\", \\\"--help\\\", action=\\\"help\\\",\\n    help=\\\"show this help and exit\\\")\\n\\nselopts = parser.add_argument_group(\\\"voice selection\\\")\\nselmodes = selopts.add_mutually_exclusive_group()\\nselmodes.add_argument(\\\"-n\\\", \\\"--name\\\",\\n    default=\\\"Arnold\\\",\\n    help=\\\"get a voice object by name (default: Arnold)\\\")\\nselmodes.add_argument(\\\"-v\\\", \\\"--voice\\\", type=int, metavar=\\\"NUMBER\\\",\\n    help=\\\"get a voice object by number (see --list)\\\")\\nselopts.add_argument(\\\"-f\\\", \\\"--filter\\\", action=\\\"append\\\", metavar=\\\"KEY=VAL\\\",\\n    default=[\\\"use case=narration\\\"],\\n    help=textwrap.dedent('''\\\\\\n        filter voices by labels (default: \\\"use case=narration\\\")\\n        this option can be used multiple times\\n        filtering will be disabled if the first -f has no \\\"=\\\" (e.g. -f \\\"any\\\")\\n        '''))\\n\\noutmodes = parser.add_argument_group(\\\"output\\\")\\noutgroup = outmodes.add_mutually_exclusive_group()\\noutgroup.add_argument(\\\"-s\\\", \\\"--save\\\", metavar=\\\"FILE\\\",\\n    default=\\\"audio.mp3\\\",\\n    help=\\\"save the TTS to a file (default: audio.mp3)\\\")\\noutgroup.add_argument(\\\"-p\\\", \\\"--play\\\", action=\\\"store_true\\\",\\n    help=\\\"play the TTS with ffplay\\\")\\n\\nargs = parser.parse_args()\\n\\ntry:\\n    if not args.quick:\\n        import importlib.util\\n        if importlib.util.find_spec(\\\"elevenlabs\\\") is None:\\n            print(\\\"elevenlabs library is not installed, you can install it to your enviroment using 'pip install elevenlabs'\\\")\\n            sys.exit(1)\\n\\n    from elevenlabs import voices, generate, play, save\\n\\n    if args.filter and \\\"=\\\" in args.filter[0]:\\n        voicelist = voices()\\n        for f in args.filter:\\n            try:\\n                label, value = f.split(\\\"=\\\")\\n                voicelist = filter(lambda x: x.labels.get(label) == value, voicelist)\\n            except ValueError:\\n                print(f\\\"Invalid filter format: {f}. Expected KEY=VAL\\\", file=sys.stderr)\\n                sys.exit(1)\\n        voicelist = list(voicelist)\\n    else:\\n        voicelist = list(voices())\\n\\n    if args.list:\\n        for i, v in enumerate(voicelist):\\n            print(str(i) + \\\": \\\" + v.name + \\\" \\\" + str(v.labels))\\n        sys.exit(0)\\n\\n    if args.voice:\\n        try:\\n            voice = voicelist[args.voice % len(voicelist)]\\n        except IndexError:\\n            print(f\\\"Invalid voice index: {args.voice}. Max available: {len(voicelist)-1}\\\", file=sys.stderr)\\n            sys.exit(1)\\n    else:\\n        voice = args.name\\n\\n    try:\\n        input_text = args.inputfile.read()\\n        if not input_text:\\n            print(\\\"Input file is empty\\\", file=sys.stderr)\\n            sys.exit(1)\\n            \\n        audio = generate(\\n            text=str(input_text),\\n            voice=voice\\n        )\\n        \\n        if args.play:\\n            play(audio)\\n        else:\\n            save(audio, args.save)\\n    except Exception as e:\\n        print(f\\\"Error during TTS generation: {str(e)}\\\", file=sys.stderr)\\n        sys.exit(1)\\n\\nexcept KeyboardInterrupt:\\n    print(\\\"\\nOperation cancelled by user\\\", file=sys.stderr)\\n    sys.exit(1)\\nexcept Exception as e:\\n    print(f\\\"Unexpected error: {str(e)}\\\", file=sys.stderr)\\n    sys.exit(1)",
+        "id": "sug_1775262763",
+        "status": "pending",
+        "timestamp": "2026-04-03 21:32:43"
+    },
+    {
         "title": "Inicializa\u00e7\u00e3o B\u00e1sica do M\u00f3dulo",
         "description": "O arquivo de inicializa\u00e7\u00e3o do m\u00f3dulo est\u00e1 vazio. Sugiro adicionar uma estrutura b\u00e1sica de inicializa\u00e7\u00e3o para melhor organiza\u00e7\u00e3o e documenta\u00e7\u00e3o do m\u00f3dulo.",
         "type": "feature",
