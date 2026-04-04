@@ -26,6 +26,7 @@ from core.llm_router import router
 from core.config_manager import config_manager
 from core.task_engine import task_engine
 from core.agent_bus import agent_bus
+from core.watcher import watcher as arkanis_watcher
 from core.goal_manager import goal_manager
 from core.goal_planner import goal_planner
 from core.cost_governor import governor
