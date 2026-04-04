@@ -716,6 +716,9 @@ def start_telegram():
 async def startup_event():
     # Start Telegram in a daemon thread
     threading.Thread(target=start_telegram, daemon=True).start()
+    
+    # ARKANIS V4 ALPHA: Start the Visual Nervous System (Watcher)
+    arkanis_watcher.start()
 
 @app.get("/suggestions")
 async def get_dev_suggestions():

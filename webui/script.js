@@ -1154,6 +1154,10 @@ async function saveIntegrationsConfig() {
 function setActivePanel(panelId) {
     console.log(`🎯 [Elite Nav] Toggling Panel: ${panelId}`);
     
+    // Add transitioning class for Hyper-OS cinematic reveal
+    document.body.classList.add('panel-transitioning');
+    setTimeout(() => document.body.classList.remove('panel-transitioning'), 400);
+
     const panels = {
         'chat': { el: chatDisplay, nav: navChat, showFooter: true },
         'history': { el: document.getElementById('historyPanel'), nav: navHistory, showFooter: false },
@@ -1182,6 +1186,10 @@ function setActivePanel(panelId) {
             active.nav.classList.add('active', 'text-white', 'bg-white/10');
             active.nav.classList.remove('text-slate-400');
         }
+        // Apply reveal animation
+        active.el.style.animation = 'none';
+        active.el.offsetHeight; // trigger reflow
+        active.el.style.animation = 'fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1)';
     } else {
         console.warn(`⚠️ [Elite Nav] Panel not found: ${panelId}`);
     }
@@ -1211,6 +1219,35 @@ function setActivePanel(panelId) {
     // Smooth reflow hack
     window.dispatchEvent(new Event('resize'));
 }
+
+// ============================================================
+// HYPER-OS: FOCUS MODE CONTROLLER
+// ============================================================
+function toggleFocusMode() {
+    const isFocus = document.body.classList.toggle('focus-mode');
+    const btn = document.getElementById('focusToggleBtn');
+    if (btn) {
+        const icon = btn.querySelector('.material-symbols-outlined');
+        const text = btn.querySelector('span:not(.material-symbols-outlined)');
+        if (icon) icon.textContent = isFocus ? 'visibility' : 'visibility_off';
+        if (text) text.textContent = isFocus ? 'ELITE' : 'FOCUS';
+    }
+    
+    // Notify the system
+    console.log(`👁️ [Hyper-OS] Focus Mode: ${isFocus ? 'ON' : 'OFF'}`);
+    if (typeof addSystemLog === 'function') {
+        addSystemLog(`Modo Foco ${isFocus ? 'Ativado' : 'Desativado'}`, isFocus ? 'system' : 'info');
+    }
+}
+
+// Global Keyboard Shortcuts
+document.addEventListener('keydown', (e) => {
+    // Alt + F to Toggle Focus
+    if (e.altKey && e.key.toLowerCase() === 'f') {
+        e.preventDefault();
+        toggleFocusMode();
+    }
+});
 
 
 function initSidebarNav() {
@@ -3765,6 +3802,15 @@ function initEliteUI() {
             iInput.click();
         };
         iInput.onchange = (e) => handleImageSelect(e.target.files);
+    }
+    
+    // ARKANIS V4 ALPHA: Focus Mode Toggle
+    const focusBtn = document.getElementById('focusToggleBtn');
+    if (focusBtn) {
+        focusBtn.onclick = (e) => {
+            e.preventDefault();
+            toggleFocusMode();
+        };
     }
     
     // Navigation

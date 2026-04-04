@@ -1,3 +1,15 @@
+/* ============================================================
+   ARKANIS V4 ALPHA — HYPER-OS DESIGN SYSTEM
+   ============================================================ */
+
+:root {
+    --glass-bg: rgba(15, 23, 42, 0.7);
+    --glass-border: rgba(255, 255, 255, 0.08);
+    --glass-blur: 24px;
+    --accent-glow: 0 0 30px rgba(59, 130, 246, 0.4);
+    --hyper-speed: 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
 /* Arkanis V3.1 - Extra UI Logic and Animations */
 
 /* Custom Scrollbar for the dark theme */
@@ -83,6 +95,62 @@
 .no-scrollbar {
     -ms-overflow-style: none;
     scrollbar-width: none;
+}
+
+/* ============================================================
+   HYPER-OS GLASS CORE
+   ============================================================ */
+
+.hyper-glass {
+    background: var(--glass-bg);
+    backdrop-filter: blur(var(--glass-blur));
+    -webkit-backdrop-filter: blur(var(--glass-blur));
+    border: 1px solid var(--glass-border);
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+}
+
+.hyper-glass:hover {
+    border-color: rgba(59, 130, 246, 0.3);
+    box-shadow: var(--accent-glow);
+}
+
+/* Focus Mode Layout */
+body.focus-mode #sidebar {
+    width: 0;
+    opacity: 0;
+    pointer-events: none;
+    overflow: hidden;
+}
+
+body.focus-mode #mainContent {
+    margin-left: 0;
+}
+
+body.focus-mode .hide-in-focus {
+    display: none !important;
+}
+
+/* Holographic Glows */
+.holo-glow {
+    position: relative;
+    overflow: hidden;
+}
+
+.holo-glow::after {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: conic-gradient(from 0deg, transparent, rgba(59, 130, 246, 0.1), transparent 40%);
+    animation: rotate 10s linear infinite;
+    pointer-events: none;
+}
+
+@keyframes rotate {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
 }
 
 /* Providers Panel Extra Styles */
