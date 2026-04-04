@@ -284,20 +284,24 @@ async function sendVoiceMessage(blob) {
     }
 }
 
-function addUserMessage(text) {
+function addUserMessage(text, timestamp = null) {
     const area = document.getElementById('messageArea');
     if (!area) return;
+    const timeStr = timestamp || new Date().toLocaleString('pt-BR', {day: '2-digit', month: '2-digit', hour: '2-digit', minute:'2-digit'});
     const wrap = document.createElement('div');
     wrap.className = 'flex justify-end mb-6';
-    wrap.innerHTML = `<div class="bubble-glass bubble-user text-white px-6 py-4 rounded-3xl rounded-br-none max-w-[85%] text-[15px] font-body leading-relaxed">${text}</div>`;
+    wrap.innerHTML = `<div class="bubble-glass bubble-user text-white px-6 py-4 rounded-3xl rounded-br-none max-w-[85%] text-[15px] font-body leading-relaxed">
+        <div>${text}</div>
+        <div class="text-[9px] text-white/50 text-right mt-1">${timeStr}</div>
+    </div>`;
     area.appendChild(wrap);
     scrollDown();
 }
 
-function addUserMessageWithAttachments(text, images = [], files = []) {
+function addUserMessageWithAttachments(text, images = [], files = [], timestamp = null) {
     const area = document.getElementById('messageArea');
     if (!area) return;
-    
+    const timeStr = timestamp || new Date().toLocaleString('pt-BR', {day: '2-digit', month: '2-digit', hour: '2-digit', minute:'2-digit'});
     const wrap = document.createElement('div');
     wrap.className = 'flex justify-end mb-8 animate-in slide-in-from-right-4 duration-500';
 
@@ -329,6 +333,7 @@ function addUserMessageWithAttachments(text, images = [], files = []) {
             <div class="bubble-glass bubble-user text-white px-6 py-4 rounded-3xl rounded-br-none text-[15px] font-body leading-relaxed shadow-2xl relative">
                 ${attachmentsHtml}
                 ${text ? `<div>${text.replace(/\n/g, '<br>')}</div>` : ''}
+                <div class="text-[9px] text-white/50 text-right mt-1">${timeStr}</div>
                 <div class="absolute -bottom-6 right-2 text-[9px] text-slate-500 font-bold uppercase tracking-[0.2em] opacity-40">Enviado</div>
             </div>
         </div>`;
@@ -337,9 +342,10 @@ function addUserMessageWithAttachments(text, images = [], files = []) {
     scrollDown();
 }
 
-function addBotMessage(text, id = null) {
+function addBotMessage(text, id = null, timestamp = null) {
     const area = document.getElementById('messageArea');
     if (!area) return;
+    const timeStr = timestamp || new Date().toLocaleString('pt-BR', {day: '2-digit', month: '2-digit', hour: '2-digit', minute:'2-digit'});
     const wrap = document.createElement('div');
     wrap.className = 'flex justify-start items-start gap-4 mb-8';
     if (id) wrap.id = id;
@@ -350,7 +356,7 @@ function addBotMessage(text, id = null) {
         <div class="w-10 h-10 rounded-xl bg-slate-900 flex-shrink-0 flex items-center justify-center border border-white/10 shadow-lg p-1">
             <img src="assets/mascot.png" class="w-full h-full object-contain" alt="A">
         </div>
-        <div class="bubble-glass bubble-bot text-slate-200 px-8 py-6 rounded-3xl rounded-bl-none max-w-[88%] shadow-2xl">
+        <div class="bubble-glass bubble-bot text-slate-200 px-8 py-6 rounded-3xl rounded-bl-none max-w-[88%] shadow-2xl relative">
             <div id="${contentId}" class="space-y-4 font-body leading-relaxed text-[15px]">${text}</div>
             <div class="pt-5 flex gap-4 opacity-30 hover:opacity-100 transition-opacity">
                 <button class="flex items-center gap-1.5 text-[10px] uppercase font-bold tracking-[0.2em] hover:text-blue-400 transition-colors" onclick="copyToClipboard('${contentId}')">
@@ -360,6 +366,7 @@ function addBotMessage(text, id = null) {
                     <span class="material-symbols-outlined text-sm">refresh</span> Regenerar
                 </button>
             </div>
+            <div class="absolute -bottom-6 left-2 text-[9px] text-slate-500 font-bold uppercase tracking-[0.2em] opacity-40">${timeStr}</div>
         </div>
     `;
     area.appendChild(wrap);
@@ -474,12 +481,49 @@ async function runTicker() {
 }
 
 function addLogToDrawer(log) {
+    const feed = document.getElementById('sysLogFeed');
+    if (!feed) return;
+    
+    // Auto limit to prevent memory bloat
+    if (feed.children.length > 500) {
+        feed.removeChild(feed.firstChild);
+    }
+
+    const tClass = log.type === 'error' ? 'text-rose-400 font-bold bg-rose-500/5' : 
+                   (log.type === 'planner' || log.type === 'system' ? 'text-blue-300' : 
+                   (log.type === 'critic' ? 'text-purple-300' : 'text-emerald-300'));
+
     const entry = document.createElement('div');
-    entry.className = `log-entry log-${log.type}`;
-    entry.innerHTML = `<span class="opacity-30 mr-2">[${log.time}]</span> <span class="uppercase font-bold mr-2">${log.type}:</span> ${log.message}`;
-    logDrawerContent.appendChild(entry);
-    if (!isDrawerOpen) logDrawerContent.scrollTop = logDrawerContent.scrollHeight;
+    entry.className = `log-line log-slide-in flex gap-3 ${tClass}`;
+    entry.innerHTML = `
+        <span class="opacity-40 whitespace-nowrap Shrink-0">[${log.time || new Date().toLocaleTimeString()}]</span> 
+        <span class="uppercase tracking-widest font-black opacity-80 shrink-0 w-20">${log.type}:</span> 
+        <span class="flex-1 break-words">${log.message}</span>
+    `;
+
+    feed.appendChild(entry);
+    
+    // Auto-scroll
+    feed.scrollTop = feed.scrollHeight;
+    
+    // Update counters if visible
+    const totCount = document.getElementById('sysLogTotalCount');
+    if (totCount) totCount.textContent = feed.children.length;
+    if (log.type === 'error') {
+        const errCount = document.getElementById('sysLogErrCount');
+        if (errCount) errCount.textContent = (parseInt(errCount.textContent) || 0) + 1;
+    }
 }
+
+// Ensure clear terminal globally works
+window.clearSystemLogs = function() {
+    const feed = document.getElementById('sysLogFeed');
+    if (feed) feed.innerHTML = '';
+    const totCount = document.getElementById('sysLogTotalCount');
+    if (totCount) totCount.textContent = '0';
+    const errCount = document.getElementById('sysLogErrCount');
+    if (errCount) errCount.textContent = '0';
+};
 
 // --- 3. Status Polling ---
 
@@ -1109,15 +1153,11 @@ function setActivePanel(panelId) {
         observability: { element: document.getElementById('observabilityPanel'), nav: navObservability, showFooter: false },
         'tasks': { element: tasksPanel, nav: navTasks, showFooter: false },
         'devCenter': { element: devCenterPanel, nav: navDevCenter, showFooter: false },
-        'integrations': { element: document.getElementById('integrationsPanel'), nav: null, showFooter: false }
+        'integrations': { element: document.getElementById('integrationsPanel'), nav: null, showFooter: false },
+        'systemLogs': { element: document.getElementById('systemLogsPanel'), nav: navLogs, showFooter: false }
     };
 
-    // Close log drawer when switching to deep configuration
-    if (panelId !== 'chat' && isDrawerOpen) {
-        logDrawer.classList.add('hidden');
-        logDrawer.classList.add('translate-y-full');
-        isDrawerOpen = false;
-    }
+    // Removed log drawer hidden logic as it no longer exists
 
     // Toggle Panels Visibility
     Object.keys(panels).forEach(id => {
@@ -1169,6 +1209,7 @@ function setActivePanel(panelId) {
 const showPanel = setActivePanel;
 
 function showChat() { setActivePanel('chat'); }
+function showSystemLogs() { setActivePanel('systemLogs'); }
 function showDevCenter() { 
     setActivePanel('devCenter'); 
     loadSuggestions(); 
@@ -1273,56 +1314,87 @@ function renderBusLogs(messages) {
     busLogsContainer.scrollTop = busLogsContainer.scrollHeight;
 }
 
+window.applyBlueprint = function(type) {
+    const desc = document.getElementById('newTaskDesc');
+    const interval = document.getElementById('newTaskInterval');
+    const condition = document.getElementById('newTaskCondition');
+    
+    if (type === 'web_monitor') {
+        desc.value = "Abra uma aba de navegador, vá no Google, pesquise as últimas notícias de Inteligência Artificial e coloque um summary no log. Use o terminal para logar as descobertas.";
+        interval.value = "600";
+        condition.value = "Finalizar se houver erro absurdo no site";
+    } else if (type === 'system_audit') {
+        desc.value = "Audite o código do sistema e as interações recentes para sugerir melhorias de arquitetura, coloque a resposta no sistema de sugestões.";
+        interval.value = "1800";
+        condition.value = "Nunca parar";
+    } else if (type === 'custom') {
+        desc.value = "";
+        interval.value = "300";
+        condition.value = "";
+    }
+};
+
 function renderTasks(tasks) {
     if (!tasksListContainer) return;
     tasksListContainer.innerHTML = '';
     
     if (tasks.length === 0) {
-        tasksListContainer.innerHTML = '<div class="text-sm text-slate-500 italic">Nenhuma tarefa ativa no momento.</div>';
+        tasksListContainer.innerHTML = '<div class="text-[10px] text-slate-500 italic p-4 bg-[#02050A] border border-white/5 rounded-xl col-span-full text-center">Engine is idle. No routines are currently executing.</div>';
         return;
     }
     
     tasks.forEach(task => {
         const card = document.createElement('div');
-        card.className = 'bg-slate-800/40 rounded-xl border border-white/5 p-4 relative';
+        card.className = 'group flex flex-col relative bg-[#02050A] rounded-2xl border border-white/5 hover:border-blue-500/30 transition-all p-5 shadow-lg overflow-hidden';
         
-        let statusColor = 'bg-blue-500/20 text-blue-400';
-        if (task.status === 'running') statusColor = 'bg-green-500/20 text-green-400';
-        if (task.status === 'stopped') statusColor = 'bg-slate-500/20 text-slate-400';
+        let statusColor = 'text-blue-400 bg-blue-500/10 border-blue-500/20';
+        let statusIcon = 'memory';
+        let statusPulse = '';
+        
+        if (task.status === 'running') {
+            statusColor = 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30';
+            statusIcon = 'autorenew';
+            statusPulse = '<span class="absolute -top-1 -right-1 w-3 h-3 bg-emerald-500 rounded-full animate-ping opacity-75"></span><span class="absolute -top-1 -right-1 w-3 h-3 bg-emerald-400 rounded-full"></span>';
+            card.classList.add('shadow-[0_0_15px_rgba(16,185,129,0.1)]');
+        } else if (task.status === 'stopped') {
+            statusColor = 'text-slate-400 bg-slate-500/10 border-slate-500/20';
+            statusIcon = 'stop_circle';
+        }
         
         let logsHtml = '';
         if (task.recent_logs && task.recent_logs.length > 0) {
-            logsHtml = '<div class="mt-3 bg-black/30 rounded p-2 text-[10px] font-mono text-slate-400 space-y-1">';
+            logsHtml = '<div class="mt-4 bg-[#050B14] rounded-lg p-3 border border-white/5 shadow-inner">';
+            logsHtml += '<div class="text-[8px] uppercase tracking-widest text-slate-500 mb-2 font-bold select-none flex items-center justify-between"><span>Live Process Output</span><span>' + task.run_count + ' ITER</span></div>';
+            logsHtml += '<div class="text-[10px] font-mono text-slate-400 space-y-1 h-16 overflow-y-auto custom-scrollbar pr-2">';
             task.recent_logs.forEach(l => {
-                logsHtml += `<div><span class="text-blue-400">[${l.time}]</span> ${l.message}</div>`;
+                logsHtml += `<div><span class="text-blue-500 opacity-60 mr-1">[${l.time}]</span> <span class="text-blue-200/80">${l.message}</span></div>`;
             });
-            logsHtml += '</div>';
+            logsHtml += '</div></div>';
         }
 
         card.innerHTML = `
-            <div class="flex items-start justify-between">
+            <div class="absolute inset-0 bg-gradient-to-b from-white/[0.02] to-transparent pointer-events-none"></div>
+            ${statusPulse}
+            
+            <div class="flex items-start justify-between relative z-10">
                 <div class="flex-1 pr-4">
-                    <h4 class="font-bold text-slate-200 text-sm flex items-center gap-2">
+                    <h4 class="font-bold text-white text-xs leading-tight mb-2 tracking-wide font-headline">
                         ${task.description}
-                        ${task.auto_generated ? '<span class="px-1.5 py-0.5 rounded-sm bg-purple-500/20 text-purple-400 text-[9px] uppercase tracking-wider font-bold border border-purple-500/30">Auto-Generated</span>' : ''}
                     </h4>
-                    <div class="text-[10px] text-slate-500 mt-1 flex flex-wrap items-center gap-2">
-                        <span class="uppercase tracking-widest font-bold border border-white/10 px-1 rounded-sm">${task.type}</span>
-                        <span>Interval: ${task.interval}s</span>
-                        ${task.condition ? `<span>Cond: ${task.condition}</span>` : ''}
-                        ${task.goal_id ? `<span class="text-primary border-primary/20 border px-1 rounded-sm">Goal: ${task.goal_id}</span>` : ''}
+                    <div class="flex flex-wrap items-center gap-2 mb-3">
+                        <span class="px-1.5 py-0.5 rounded text-[8px] uppercase tracking-widest font-black ${statusColor} border flex items-center gap-1"><span class="material-symbols-outlined text-[10px]">${statusIcon}</span> ${task.status}</span>
+                        ${task.auto_generated ? '<span class="px-1.5 py-0.5 rounded text-[8px] uppercase tracking-widest font-bold bg-purple-500/10 text-purple-400 border border-purple-500/20">Auto</span>' : ''}
+                        <span class="px-1.5 py-0.5 rounded text-[8px] uppercase tracking-widest font-bold bg-slate-500/10 text-slate-400 border border-slate-500/20">${task.interval}s Cooldown</span>
                     </div>
                 </div>
-                <div class="flex items-center gap-3">
-                    <span class="text-[10px] font-bold uppercase py-0.5 px-2 rounded-full ${statusColor}">${task.status} (${task.agent_status})</span>
-                    ${task.status !== 'stopped' ? `<button onclick="stopTask('${task.id}')" class="text-red-400 hover:text-red-300 p-1"><span class="material-symbols-outlined text-sm">stop_circle</span></button>` : ''}
+                <div class="flex items-center">
+                    ${task.status !== 'stopped' ? `<button onclick="stopTask('${task.id}')" class="w-8 h-8 flex items-center justify-center rounded-lg bg-rose-500/10 text-rose-400 border border-rose-500/20 hover:bg-rose-500 hover:text-white transition-all shadow-md group-hover:scale-105" title="Kill Task"><span class="material-symbols-outlined text-sm">power_settings_new</span></button>` : ''}
                 </div>
             </div>
             
-            <div class="mt-3 grid grid-cols-2 gap-4 text-[11px] text-slate-400">
-                <div>Última execução: <span class="text-slate-200">${task.last_run || 'Pendente'}</span></div>
-                <div>Próxima execução: <span class="text-slate-200">${task.next_run || 'Pendente'}</span></div>
-                <div>Contagem: <span class="text-slate-200">${task.run_count}</span></div>
+            <div class="grid grid-cols-2 gap-2 text-[9px] uppercase tracking-wider text-slate-500 font-bold border-t border-white/5 pt-3 mt-auto relative z-10">
+                <div>LAST: <span class="text-slate-300 font-mono">${task.last_run ? task.last_run.split(' ')[1] : 'PENDING'}</span></div>
+                <div class="text-right">NEXT: <span class="text-slate-300 font-mono">${task.next_run ? task.next_run.split(' ')[1] : 'PENDING'}</span></div>
             </div>
             ${logsHtml}
         `;
@@ -1374,8 +1446,7 @@ function renderGoals(goals) {
     goalsListContainer.innerHTML = '';
     
     if (newTaskGoalId) {
-        // Keep the first option
-        newTaskGoalId.innerHTML = '<option value="">Nenhum Objetivo</option>';
+        newTaskGoalId.innerHTML = '<option value="">Sem vínculo matricial superior</option>';
         goals.forEach(g => {
             if (g.status !== 'completed') {
                 const opt = document.createElement('option');
@@ -1387,36 +1458,54 @@ function renderGoals(goals) {
     }
 
     if (goals.length === 0) {
-        goalsListContainer.innerHTML = '<div class="text-sm text-slate-500 italic">Nenhum objetivo global cadastrado.</div>';
+        goalsListContainer.innerHTML = '<div class="text-[10px] text-slate-500 italic p-4 bg-[#02050A] border border-white/5 rounded-xl col-span-full">No active global goals.</div>';
         return;
     }
 
     goals.forEach(goal => {
         const card = document.createElement('div');
-        card.className = 'bg-slate-800/40 rounded-xl border border-white/5 p-4';
+        card.className = 'group relative overflow-hidden bg-gradient-to-b from-slate-900/60 to-[#02050A] rounded-2xl border border-white/5 hover:border-blue-500/20 transition-all p-5 shadow-lg';
         
-        let statusColor = 'text-green-400';
-        if (goal.status === 'paused') statusColor = 'text-yellow-400';
-        if (goal.status === 'completed') statusColor = 'text-blue-400';
+        let statusColor = 'text-emerald-400';
+        let statusBg = 'bg-emerald-500';
+        let icon = 'flag_circle';
+        
+        if (goal.status === 'paused') {
+            statusColor = 'text-amber-400';
+            statusBg = 'bg-amber-500';
+            icon = 'pause_circle';
+        }
+        if (goal.status === 'completed') {
+            statusColor = 'text-blue-400';
+            statusBg = 'bg-blue-500';
+            icon = 'check_circle';
+        }
 
         card.innerHTML = `
-            <div class="flex items-start justify-between">
-                <div class="flex-1">
-                    <h4 class="font-bold text-slate-200 text-sm">${goal.description}</h4>
-                    <div class="text-[10px] text-slate-500 flex items-center gap-2 mt-1">
-                        <span>ID: ${goal.id}</span>
-                        <span>• Status: <b class="${statusColor} uppercase">${goal.status}</b></span>
-                        <span>• Prioridade: <b class="uppercase">${goal.priority}</b></span>
+            <div class="absolute inset-0 bg-[#050B14] opacity-50 z-0"></div>
+            
+            <div class="flex items-start justify-between relative z-10 mb-4">
+                <div class="flex-1 pr-6">
+                    <div class="flex items-center gap-2 mb-1">
+                        <span class="material-symbols-outlined text-sm ${statusColor}">${icon}</span>
+                        <h4 class="font-bold text-white text-sm tracking-wide">${goal.description}</h4>
+                    </div>
+                    <div class="text-[9px] uppercase tracking-widest font-bold text-slate-500 flex items-center gap-3">
+                        <span class="flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-slate-600"></span> ID: ${goal.id.substring(0,6)}</span>
+                        <span class="flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full ${statusBg}"></span> ${goal.status}</span>
+                        <span class="text-purple-400 border border-purple-500/30 px-1 rounded">LVL: ${goal.priority}</span>
                     </div>
                 </div>
-                <div class="ml-4 w-32 flex flex-col items-end">
-                    <div class="w-full bg-slate-700 rounded-full h-1.5 mb-1 relative overflow-hidden">
-                        <div class="bg-primary h-1.5 rounded-full" style="width: ${goal.progress}%"></div>
-                    </div>
-                    <span class="text-[10px] font-bold text-slate-300">${goal.progress}% Progresso</span>
+                ${goal.status !== 'completed' ? `<button onclick="updateGoalStatus('${goal.id}', 'completed')" class="opacity-0 group-hover:opacity-100 transition-opacity bg-blue-600/10 text-blue-400 hover:bg-blue-600 border border-blue-600/30 hover:text-white px-2 py-1 rounded-lg text-[9px] font-bold tracking-widest uppercase">Seal</button>` : ''}
+            </div>
+            
+            <div class="relative z-10 bg-black/40 p-3 rounded-xl border border-white/5">
+                <div class="flex justify-between text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">
+                    <span>Progression Matrix</span>
+                    <span class="text-white">${goal.progress}%</span>
                 </div>
-                <div class="flex ml-4 gap-2">
-                    ${goal.status !== 'completed' ? `<button onclick="updateGoalStatus('${goal.id}', 'completed')" class="text-[10px] text-blue-400 bg-blue-400/10 px-2 py-1 rounded hover:bg-blue-400/20">Finalizar</button>` : ''}
+                <div class="w-full bg-slate-800 rounded-full h-1.5 overflow-hidden">
+                    <div class="h-full bg-gradient-to-r from-blue-600 to-cyan-400 shadow-[0_0_10px_rgba(56,189,248,0.5)] transition-all duration-1000" style="width: ${goal.progress}%"></div>
                 </div>
             </div>
         `;
@@ -1605,13 +1694,8 @@ if (navTasks) {
 if (navLogs) {
     navLogs.addEventListener('click', (e) => {
         e.preventDefault();
-        // First make sure chat is visible
-        showChat();
-        // Then toggle the drawer
-        const opening = logDrawer.classList.contains('hidden');
-        logDrawer.classList.toggle('hidden', !opening);
-        logDrawer.classList.toggle('translate-y-full', !opening);
-        isDrawerOpen = opening;
+        showSystemLogs();
+        updateTopNav('logs');
     });
 }
 
@@ -1724,18 +1808,7 @@ userInput.addEventListener('keypress', (e) => {
     }
 });
 
-logToggleBtn.addEventListener('click', () => {
-    logDrawer.classList.toggle('hidden');
-    // Ensure it shows up above the footer
-    logDrawer.classList.toggle('translate-y-full');
-    isDrawerOpen = !logDrawer.classList.contains('hidden');
-});
-
-closeLogDrawer.addEventListener('click', () => {
-    logDrawer.classList.add('hidden');
-    logDrawer.classList.add('translate-y-full');
-    isDrawerOpen = false;
-});
+// Legacy log drawer toggle and close buttons removed
 
 // Collapsible Panels (Agentes & Tarefas)
 if (governorToggleBtn) {
@@ -2298,7 +2371,68 @@ setInterval(() => {
         loadGoals(); // Auto refresh goals 
         loadGovernorState(); // Auto refresh governor
     }
+    const sysLogsPan = document.getElementById('systemLogsPanel');
+    if (sysLogsPan && !sysLogsPan.classList.contains('hidden')) {
+        loadAuditInsights();
+    }
 }, 3000);
+
+// Audit System Handlers
+async function loadAuditInsights() {
+    const container = document.getElementById('sysLogCriticalEvents');
+    if (!container) return;
+    try {
+        const response = await fetch('/suggestions');
+        const data = await response.json();
+        const suggestions = data.suggestions || [];
+        const applied = suggestions.filter(s => s.status !== 'pending').slice(0, 50);
+        
+        if (applied.length === 0) {
+            container.innerHTML = `<div class="p-3 rounded-lg bg-black/40 border border-white/5"><div class="text-[10px] text-slate-500 italic">Nenhum evento auditável aprovado/rejeitado.</div></div>`;
+            return;
+        }
+
+        container.innerHTML = applied.map(s => `
+            <div class="p-3 rounded-xl bg-slate-900/40 border border-white/10 hover:border-emerald-500/30 transition-all group backdrop-blur-md">
+                <div class="flex justify-between items-start mb-1">
+                    <span class="text-[10px] font-bold text-white tracking-wide">${s.title}</span>
+                    <span class="text-[8px] font-bold px-1.5 py-0.5 rounded ${s.status === 'applied' ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'bg-slate-500/20 text-slate-400 border border-slate-500/30'} uppercase">${s.status}</span>
+                </div>
+                <p class="text-[9px] text-slate-400 opacity-80 line-clamp-2">${s.description}</p>
+            </div>
+        `).join('');
+    } catch (e) {
+        // Silent fail for polling
+    }
+}
+
+document.addEventListener('click', (e) => {
+    if (e.target.closest('.sys-log-filter')) {
+        const btn = e.target.closest('.sys-log-filter');
+        const filter = btn.dataset.filter;
+        
+        document.querySelectorAll('.sys-log-filter').forEach(b => {
+             b.classList.remove('bg-blue-600', 'text-white', 'shadow-md', 'shadow-blue-500/20');
+             b.classList.add('text-slate-400', 'bg-transparent');
+        });
+        
+        btn.classList.remove('text-slate-400', 'bg-transparent');
+        btn.classList.add('bg-blue-600', 'text-white', 'shadow-md', 'shadow-blue-500/20');
+        
+        const feed = document.getElementById('sysLogFeed');
+        if (feed) {
+            Array.from(feed.children).forEach(line => {
+                if (filter === 'all') {
+                    line.style.display = 'flex';
+                } else if (filter === 'error') {
+                    line.style.display = line.classList.contains('log-error') ? 'flex' : 'none';
+                } else if (filter === 'system') {
+                    line.style.display = (line.classList.contains('log-system') || line.classList.contains('log-planner')) ? 'flex' : 'none';
+                }
+            });
+        }
+    }
+});
 
 // --- History Logic ---
 async function loadChatHistory() {
@@ -2530,7 +2664,14 @@ function initNeuralMap() {
         .force("charge", d3.forceManyBody().strength(-400))
         .force("center", d3.forceCenter(width / 2, height / 2))
         .force("x", d3.forceX(width / 2).strength(0.1))
-        .force("y", d3.forceY(height / 2).strength(0.1));
+        .force("y", d3.forceY(height / 2).strength(0.1))
+        .alphaTarget(0.02); // Keep nodes slightly moving (not fully static)
+
+    // Start demo bubble animation (only once per page load)
+    if (!window._neuralDemoStarted) {
+        window._neuralDemoStarted = true;
+        setTimeout(startNeuralMapDemo, 2000);
+    }
 }
 
 function updateNeuralMap(graphData) {
@@ -2554,14 +2695,13 @@ function updateNeuralMap(graphData) {
         return d;
     });
 
-    // 2. Update Links: Re-map source/target to node objects OR IDs
-    neuralGraph.links = newLinks.map(l => {
-        return {
-            source: l.source,
-            target: l.target,
-            last_interaction: l.last_interaction
-        };
-    });
+    // 2. Update Links
+    neuralGraph.links = newLinks.map(l => ({
+        source: l.source,
+        target: l.target,
+        last_interaction: l.last_interaction,
+        last_interaction_ms: l.last_interaction_ms
+    }));
 
     const link = neuralGraph.container.selectAll(".link")
         .data(neuralGraph.links, d => `${d.source}-${d.target}`)
@@ -2572,24 +2712,30 @@ function updateNeuralMap(graphData) {
         .attr("stroke-width", 2)
         .attr("marker-end", "url(#arrowhead)");
 
-    const node = neuralGraph.container.selectAll(".node")
-        .data(neuralGraph.nodes, d => d.id)
-        .join("g")
+    // 3. NODE UPDATE — D3 enter/update/exit pattern (no html('') wipe)
+    const nodeUpdate = neuralGraph.container.selectAll(".node")
+        .data(neuralGraph.nodes, d => d.id);
+
+    // EXIT: remove nodes that no longer exist
+    nodeUpdate.exit().remove();
+
+    // ENTER: create new node groups only for truly new nodes
+    const nodeEnter = nodeUpdate.enter()
+        .append("g")
         .attr("class", "node")
         .call(d3.drag()
             .on("start", dragstarted)
             .on("drag", dragged)
             .on("end", dragended));
 
-    node.html(""); // Rebuild icon and label
-    
-    node.append("circle")
+    nodeEnter.append("circle")
         .attr("r", 15)
         .attr("fill", d => d.id === 'ALL' ? '#8b5cf6' : (d.status === 'running' ? '#3b82f6' : '#1e293b'))
         .attr("stroke", d => d.status === 'running' ? '#60a5fa' : '#334155')
-        .attr("stroke-width", 2);
+        .attr("stroke-width", 2)
+        .attr("class", "node-circle");
 
-    node.append("text")
+    nodeEnter.append("text")
         .attr("dy", "0.35em")
         .attr("text-anchor", "middle")
         .attr("font-family", "Material Symbols Outlined")
@@ -2597,7 +2743,7 @@ function updateNeuralMap(graphData) {
         .attr("fill", "#fff")
         .text(d => d.id === 'ALL' ? 'hub' : 'smart_toy');
 
-    node.append("text")
+    nodeEnter.append("text")
         .attr("dy", "30px")
         .attr("text-anchor", "middle")
         .attr("font-size", "10px")
@@ -2605,8 +2751,13 @@ function updateNeuralMap(graphData) {
         .attr("fill", "#94a3b8")
         .text(d => d.id);
 
-    // Update Pulse for active links (based on timestamp closeness if needed)
-    // For now, we trust newLinks array order or activity
+    // UPDATE: refresh colors only, no structural rebuild
+    const nodeMerged = nodeEnter.merge(nodeUpdate);
+    nodeMerged.select("circle")
+        .attr("fill", d => d.id === 'ALL' ? '#8b5cf6' : (d.status === 'running' ? '#3b82f6' : '#1e293b'))
+        .attr("stroke", d => d.status === 'running' ? '#60a5fa' : '#334155');
+
+    // 4. Pulse active links
     newLinks.forEach(l => {
         const isFresh = (Date.now() - l.last_interaction_ms) < 4000;
         if (isFresh) {
@@ -2614,16 +2765,33 @@ function updateNeuralMap(graphData) {
         }
 
         const line = neuralGraph.container.selectAll(".link")
-            .filter(d => (d.source === l.source && d.target === l.target) || 
+            .filter(d => (d.source === l.source && d.target === l.target) ||
                          (d.source.id === l.source && d.target.id === l.target));
         
         line.transition().duration(200).attr("stroke", "#60a5fa").attr("stroke-width", 4)
             .transition().duration(1000).attr("stroke", "#374151").attr("stroke-width", 2);
     });
 
+    // 5. Only restart simulation physics if truly new nodes were added
+    const existingIds = new Set(nodeMap.keys());
+    const hasNewNodes = newNodes.some(n => !existingIds.has(n.id));
+
     neuralGraph.simulation.nodes(neuralGraph.nodes);
     neuralGraph.simulation.force("link").links(neuralGraph.links);
-    neuralGraph.simulation.alpha(0.3).restart();
+
+    if (hasNewNodes) {
+        // New topology → warm restart to settle new nodes
+        neuralGraph.simulation.alpha(0.6).restart();
+    } else {
+        // Just sync positions in one silent tick — no physics bounce
+        neuralGraph.simulation.tick();
+        link
+            .attr("x1", d => d.source.x)
+            .attr("y1", d => d.source.y)
+            .attr("x2", d => d.target.x)
+            .attr("y2", d => d.target.y);
+        nodeMerged.attr("transform", d => `translate(${d.x},${d.y})`);
+    }
 
     neuralGraph.simulation.on("tick", () => {
         link
@@ -2631,9 +2799,7 @@ function updateNeuralMap(graphData) {
             .attr("y1", d => d.source.y)
             .attr("x2", d => d.target.x)
             .attr("y2", d => d.target.y);
-
-        node
-            .attr("transform", d => `translate(${d.x},${d.y})`);
+        nodeMerged.attr("transform", d => `translate(${d.x},${d.y})`);
     });
 }
 
@@ -2643,32 +2809,78 @@ function triggerThoughtTrace(linkData) {
     if (traceTracking.has(key)) return;
     traceTracking.add(key);
 
-    // Find the actual nodes in current graph to get coords
     const sourceNode = neuralGraph.nodes.find(n => n.id === linkData.source);
     const targetNode = neuralGraph.nodes.find(n => n.id === linkData.target);
     if (!sourceNode || !targetNode) return;
 
-    // Pulse effect: create a flying particle
-    const particle = neuralGraph.container.append("circle")
-        .attr("r", 4)
+    // Get the current zoom transform applied to the container
+    const containerEl = neuralGraph.svg.select("g").node();
+    const transform = containerEl ? d3.zoomTransform(neuralGraph.svg.node()) : d3.zoomIdentity;
+
+    // Convert simulation coords → screen coords using current zoom transform
+    const sx = transform.applyX(sourceNode.x);
+    const sy = transform.applyY(sourceNode.y);
+    const tx = transform.applyX(targetNode.x);
+    const ty = transform.applyY(targetNode.y);
+
+    // Append particle directly to SVG root (not to zoomed container) so coords match
+    const particle = neuralGraph.svg.append("circle")
+        .attr("r", 5)
         .attr("fill", "#60a5fa")
-        .attr("cx", sourceNode.x)
-        .attr("cy", sourceNode.y)
-        .attr("filter", "drop-shadow(0 0 4px #3b82f6)");
+        .attr("cx", sx)
+        .attr("cy", sy)
+        .style("filter", "drop-shadow(0 0 6px #3b82f6)")
+        .style("pointer-events", "none");
+
+    // Glow ring
+    const ring = neuralGraph.svg.append("circle")
+        .attr("r", 8)
+        .attr("fill", "none")
+        .attr("stroke", "#60a5fa")
+        .attr("stroke-width", 1.5)
+        .attr("stroke-opacity", 0.5)
+        .attr("cx", sx)
+        .attr("cy", sy)
+        .style("pointer-events", "none");
 
     particle.transition()
-        .duration(1200)
+        .duration(1000)
         .ease(d3.easeCubicInOut)
-        .attr("cx", targetNode.x)
-        .attr("cy", targetNode.y)
+        .attr("cx", tx)
+        .attr("cy", ty)
         .on("end", () => particle.remove());
 
-    // Cleanup tracking set periodically
+    ring.transition()
+        .duration(1000)
+        .ease(d3.easeCubicInOut)
+        .attr("cx", tx)
+        .attr("cy", ty)
+        .style("stroke-opacity", 0)
+        .on("end", () => ring.remove());
+
+    // Cleanup tracking set
     if (traceTracking.size > 100) {
-        const oldest = Array.from(traceTracking)[0];
-        traceTracking.delete(oldest);
+        traceTracking.delete(Array.from(traceTracking)[0]);
     }
 }
+
+// Demo: spawn a bubble between nodes periodically so it always looks alive
+function startNeuralMapDemo() {
+    setInterval(() => {
+        if (neuralGraph.nodes.length < 2) return;
+        const links = neuralGraph.links;
+        if (links.length === 0) return;
+        const randomLink = links[Math.floor(Math.random() * links.length)];
+        const src = typeof randomLink.source === 'object' ? randomLink.source.id : randomLink.source;
+        const tgt = typeof randomLink.target === 'object' ? randomLink.target.id : randomLink.target;
+        triggerThoughtTrace({
+            source: src,
+            target: tgt,
+            last_interaction_ms: Date.now()
+        });
+    }, 2000);
+}
+
 
 function dragstarted(event) {
     if (!event.active) neuralGraph.simulation.alphaTarget(0.3).restart();
@@ -2682,7 +2894,7 @@ function dragged(event) {
 }
 
 function dragended(event) {
-    if (!event.active) neuralGraph.simulation.alphaTarget(0);
+    if (!event.active) neuralGraph.simulation.alphaTarget(0.02);
     event.subject.fx = null;
     event.subject.fy = null;
 }
@@ -2800,8 +3012,11 @@ function initEliteUI() {
         iInput.onchange = (e) => handleImageSelect(e.target.files);
     }
     
-    // Neural Map Re-init if needed
-    if (typeof initNeuralMap === 'function') initNeuralMap();
+    // Neural Map Re-init only if container was wiped
+    const mapContainer = document.getElementById('neuralMapContainer');
+    if (typeof initNeuralMap === 'function' && mapContainer && mapContainer.innerHTML.trim() === '') {
+        initNeuralMap();
+    }
 
     console.log("✅ [Elite UI] Bindings Secured.");
 }

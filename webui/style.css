@@ -446,4 +446,36 @@ input:checked ~ .peer-checked\:bg-primary {
 /* Scroll Snap for Chat */
 #chatDisplay {
     scroll-behavior: smooth;
+    overflow-y: scroll !important; /* Force scrollbar visibility to prevent layout shifts */
+}
+
+/* Neural Map Nodes Pulsing Effect */
+.node-circle {
+    transform-origin: center;
+    animation: node-pulse 2s infinite ease-in-out;
+}
+
+@keyframes node-pulse {
+    0%, 100% { 
+        filter: drop-shadow(0 0 4px rgba(59, 130, 246, 0.3)); 
+        transform: scale(1);
+    }
+    50% { 
+        filter: drop-shadow(0 0 12px rgba(59, 130, 246, 0.8)); 
+        transform: scale(1.05); /* Slight expansion creates the pulse */
+    }
+}
+
+/* System Log Dashboard Animations */
+.log-slide-in {
+    animation: logSlideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    transform: translateY(10px);
+    opacity: 0;
+}
+
+@keyframes logSlideIn {
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
 }

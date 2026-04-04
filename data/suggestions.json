@@ -1,5 +1,746 @@
 [
     {
+        "title": "Inicializa\u00e7\u00e3o B\u00e1sica do M\u00f3dulo",
+        "description": "O arquivo de inicializa\u00e7\u00e3o do m\u00f3dulo est\u00e1 vazio. Sugiro adicionar uma estrutura b\u00e1sica de inicializa\u00e7\u00e3o para melhor organiza\u00e7\u00e3o e documenta\u00e7\u00e3o do m\u00f3dulo.",
+        "type": "feature",
+        "file_path": "/home/diego/\u00c1rea de trabalho/Arkanis_V3.1/__init__.py",
+        "proposed_code": "\"\"\"\nM\u00f3dulo principal do Sistema Operacional Arkanis V3\n\nEste m\u00f3dulo inicializa todos os componentes essenciais do sistema.\n\"\"\"\n\n__version__ = '3.1.0'\n__author__ = 'Equipe Arkanis'\n\n# Importa\u00e7\u00f5es principais\nfrom .core.system import initialize_system\n\n# Inicializa\u00e7\u00e3o padr\u00e3o\ninitialize_system()\n",
+        "id": "sug_1775262657",
+        "status": "pending",
+        "timestamp": "2026-04-03 21:30:57"
+    },
+    {
+        "title": "Refatora\u00e7\u00e3o do M\u00f3dulo de Execu\u00e7\u00e3o para Arquitetura Orientada a Eventos",
+        "description": "O sistema atual possui acoplamento significativo entre task_engine.py e executor.py, com fluxos s\u00edncronos que limitam a escalabilidade. Migrar para um modelo baseado em eventos (EventBus) permitiria: 1) Execu\u00e7\u00e3o paralela de tarefas 2) Melhor rastreabilidade 3) Failover autom\u00e1tico 4) Integra\u00e7\u00e3o mais limpa com agentes externos.",
+        "type": "arch",
+        "priority": "high",
+        "files_involved": [
+            "core/task_engine.py",
+            "kernel/executor.py",
+            "core/agent_bus.py",
+            "core/__init__.py"
+        ],
+        "proposed_code": {
+            "event_bus_implementation": "from dataclasses import dataclass\nfrom typing import Callable, Dict, List\nimport asyncio\n\n@dataclass\nclass Event:\n    topic: str\n    payload: dict\n\nclass EventBus:\n    def __init__(self):\n        self._subscriptions: Dict[str, List[Callable]] = {}\n        self._queue = asyncio.Queue()\n\n    async def publish(self, event: Event):\n        await self._queue.put(event)\n\n    async def subscribe(self, topic: str, callback: Callable):\n        if topic not in self._subscriptions:\n            self._subscriptions[topic] = []\n        self._subscriptions[topic].append(callback)\n\n    async def run(self):\n        while True:\n            event = await self._queue.get()\n            if event.topic in self._subscriptions:\n                for callback in self._subscriptions[event.topic]:\n                    asyncio.create_task(callback(event.payload))",
+            "integration_plan": "1. Refatorar task_engine para emitir eventos ao inv\u00e9s de chamadas diretas\n2. Transformar executor em assinante de eventos de tarefa\n3. Implementar sistema de prioridades na EventBus\n4. Adicionar middleware de logging autom\u00e1tico\n5. Criar mecanismo de dead-letter queue para falhas"
+        },
+        "id": "arch_1775262657",
+        "status": "pending",
+        "timestamp": "2026-04-03 21:30:57"
+    },
+    {
+        "title": "Melhoria de Seguran\u00e7a no subprocess.Popen",
+        "description": "O c\u00f3digo atual usa shell=True com subprocess.Popen, o que pode levar a vulnerabilidades de inje\u00e7\u00e3o de comando quando se processa entradas n\u00e3o confi\u00e1veis. Recomenda-se utilizar uma lista de argumentos ao inv\u00e9s de uma string de comando para maior seguran\u00e7a.",
+        "type": "security",
+        "file_path": "/home/diego/\u00c1rea de trabalho/Arkanis_V3.1/libs/whisper.cpp/examples/python/whisper_processor.py",
+        "proposed_code": "import subprocess\nimport sys\nimport os\n\ndef process_audio(wav_file, model_name=\"base.en\"):\n    \"\"\"\n    Processes an audio file using a specified model and returns the processed string.\n\n    :param wav_file: Path to the WAV file\n    :param model_name: Name of the model to use\n    :return: Processed string output from the audio processing\n    :raises: Exception if an error occurs during processing\n    \"\"\"\n\n    model = f\"./models/ggml-{model_name}.bin\"\n\n    # Check if the file exists\n    if not os.path.exists(model):\n        raise FileNotFoundError(f\"Model file not found: {model} \\n\\nDownload a model with this command:\\n\\n> bash ./models/download-ggml-model.sh {model_name}\\n\\n\")\n\n    if not os.path.exists(wav_file):\n        raise FileNotFoundError(f\"WAV file not found: {wav_file}\")\n\n    command = [\n        \"./main\",\n        \"-m\", model,\n        \"-f\", wav_file,\n        \"-nt\"\n    ]\n\n    # Execute the command\n    process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)\n\n    # Get the output and error (if any)\n    output, error = process.communicate()\n\n    if error:\n        raise Exception(f\"Error processing audio: {error.decode('utf-8')}\")\n\n    # Process and return the output string\n    decoded_str = output.decode('utf-8').strip()\n    processed_str = decoded_str.replace('[BLANK_AUDIO]', '').strip()\n\n    return processed_str\n\ndef main():\n    if len(sys.argv) >= 2:\n        wav_file = sys.argv[1]\n        model_name = sys.argv[2] if len(sys.argv) == 3 else \"base.en\"\n        try:\n            result = process_audio(wav_file, model_name)\n            print(result)\n        except Exception as e:\n            print(f\"Error: {e}\")\n    else:\n        print(\"Usage: python whisper_processor.py <wav_file> [<model_name>]\")\n\nif __name__ == \"__main__\":\n    main()",
+        "id": "sug_1775262422",
+        "status": "pending",
+        "timestamp": "2026-04-03 21:27:02"
+    },
+    {
+        "title": "Melhoria na Importa\u00e7\u00e3o de Bibliotecas",
+        "description": "As importa\u00e7\u00f5es de bibliotecas est\u00e3o sendo feitas em diferentes momentos ao longo do c\u00f3digo, o que pode tornar a leitura menos clara e aumentar o tempo de execu\u00e7\u00e3o. Prop\u00f5e-se organizar todas as importa\u00e7\u00f5es no in\u00edcio do arquivo, seguindo o PEP 8, e usar importa\u00e7\u00f5es condicionais apenas quando necess\u00e1rio.",
+        "type": "refactor",
+        "file_path": "/home/diego/\u00c1rea de trabalho/Arkanis_V3.1/main.py",
+        "proposed_code": "#!/usr/bin/env python3\nimport sys\nimport os\nimport threading\nimport time\nimport uvicorn\nimport webbrowser\n\n# Adjusting python path to allow internal imports relative to /V3\nsys.path.append(os.path.dirname(os.path.abspath(__file__)))\n\n# Simple built-in .env loader to avoid external dependencies\nenv_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), '.env')\nif os.path.exists(env_path):\n    with open(env_path, 'r') as f:\n        for line in f:\n            if line.strip() and not line.startswith('#'):\n                key, val = line.strip().split('=', 1)\n                os.environ[key.strip()] = val.strip()\n\nfrom kernel.agent import ArkanisAgent\nfrom interfaces.cli import ArkanisCLI\nfrom interfaces.telegram import TelegramInterface\nimport api.server as api_server\nfrom api.server import app\n\n# Note: Tools are already safely imported via tools/__init__.py\n\ndef main():\n    '''\n    Initializes and starts the Arkanis V3 AI Agent OS.\n    '''\n    try:\n        # 1. Initialize the Kernel (Agent)\n        agent = ArkanisAgent()\n\n        # 2. Interface Selection (Default to Web, or CLI/Telegram)\n        arg = sys.argv[1].lower() if len(sys.argv) > 1 else ''\n\n        if arg == '--telegram':\n            print('\\n[Boot] Initializing Telegram Interface...')\n            ui = TelegramInterface(agent)\n            ui.start_loop()\n        elif arg == '--cli':\n            print('\\n[Boot] Initializing Standard CLI...')\n            ui = ArkanisCLI(agent)\n            ui.start_loop()\n        else:\n            # Default to WEB\n            # Inject the kernel instance into the API server (Fixing Double Agent bug)\n            api_server.agent = agent\n\n            print('\\n[Boot] Initializing Web Interface (FastAPI)...')\n            print('[INFO] Access ARKANIS at: http://127.0.0.1:8000')\n\n            # Auto-open browser in a separate thread to not block server startup\n            def open_browser():\n                time.sleep(1.5)\n                webbrowser.open('http://127.0.0.1:8000')\n\n            threading.Thread(target=open_browser, daemon=True).start()\n\n            uvicorn.run(app, host='0.0.0.0', port=8000)\n\n    except KeyboardInterrupt:\n        print('\\n\\n[System] Forced shutdown detected. Closing memory buffers...')\n        sys.exit(0)\n    except Exception as e:\n        print(f'\\n[Fatal Error] Arkanis V3 crashed: {str(e)}')\n        sys.exit(1)\n\nif __name__ == '__main__':\n    main()",
+        "id": "sug_1775262343",
+        "status": "pending",
+        "timestamp": "2026-04-03 21:25:43"
+    },
+    {
+        "title": "Refatora\u00e7\u00e3o do M\u00f3dulo de Execu\u00e7\u00e3o para Pipeline Modular",
+        "description": "Atualmente, a execu\u00e7\u00e3o de tarefas est\u00e1 acoplada no task_engine.py, dificultando a inser\u00e7\u00e3o de novos est\u00e1gios de processamento. Proponho uma arquitetura baseada em pipelines modulares com inje\u00e7\u00e3o de depend\u00eancias.",
+        "type": "arch",
+        "priority": "high",
+        "files_involved": [
+            "core/task_engine.py",
+            "core/__init__.py",
+            "kernel/executor.py",
+            "kernel/planner.py"
+        ],
+        "proposed_code": {
+            "architecture": {
+                "components": [
+                    {
+                        "name": "PipelineEngine",
+                        "responsibility": "Orquestrar est\u00e1gios de execu\u00e7\u00e3o",
+                        "interfaces": [
+                            "IStage",
+                            "IContext"
+                        ]
+                    },
+                    {
+                        "name": "ValidationStage",
+                        "dependencies": [
+                            "cost_governor.py",
+                            "logger.py"
+                        ]
+                    },
+                    {
+                        "name": "PlanningStage",
+                        "dependencies": [
+                            "goal_manager.py",
+                            "planner.py"
+                        ]
+                    },
+                    {
+                        "name": "ExecutionStage",
+                        "dependencies": [
+                            "executor.py",
+                            "sandbox.py"
+                        ]
+                    }
+                ],
+                "benefits": [
+                    "Inser\u00e7\u00e3o/remo\u00e7\u00e3o din\u00e2mica de est\u00e1gios",
+                    "Testabilidade isolada",
+                    "Paraleliza\u00e7\u00e3o de est\u00e1gios n\u00e3o-dependentes"
+                ]
+            },
+            "sample_interface": "class IStage:\n    def execute(context: IContext) -> IContext: ...\n\nclass PipelineEngine:\n    def __init__(stages: list[IStage]):\n        self.stages = topological_sort(stages)"
+        },
+        "id": "arch_1775262323",
+        "status": "pending",
+        "timestamp": "2026-04-03 21:25:23"
+    },
+    {
+        "title": "Melhoria de Robustez no Whisper Processor",
+        "description": "Adicionei verifica\u00e7\u00f5es de arquivo e tratamento de erros mais espec\u00edficos. Tamb\u00e9m inclui logging profissional e uma fun\u00e7\u00e3o wrapper para melhor reutiliza\u00e7\u00e3o.",
+        "type": "refactor",
+        "file_path": "/home/diego/\u00c1rea de trabalho/Arkanis_V3.1/libs/whisper.cpp/examples/python/test_whisper_processor.py",
+        "proposed_code": "import whisper_processor\nimport os\nimport logging\n\n# Configura o sistema de logging\nlogging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')\n\ndef process_audio_file(file_path: str, model_name: str = \"base.en\") -> str:\n    \"\"\"\n    Processa um arquivo de \u00e1udio usando o Whisper.\n    \n    Args:\n        file_path (str): Caminho para o arquivo de \u00e1udio.\n        model_name (str): Nome do modelo a ser utilizado.\n    \n    Returns:\n        str: Resultado do processamento.\n    \"\"\"\n    if not os.path.exists(file_path):\n        raise FileNotFoundError(f\"Arquivo de \u00e1udio n\u00e3o encontrado: {file_path}\")\n\n    if not os.path.isfile(file_path):\n        raise ValueError(f\"O caminho especificado n\u00e3o \u00e9 um arquivo: {file_path}\")\n\n    try:\n        logging.info(f\"Processando arquivo de \u00e1udio: {file_path} com modelo: {model_name}\")\n        result = whisper_processor.process_audio(file_path, model_name)\n        logging.info(\"Processamento conclu\u00eddo com sucesso\")\n        return result\n    except Exception as e:\n        logging.error(f\"Erro ao processar arquivo de \u00e1udio: {str(e)}\", exc_info=True)\n        raise\n\nif __name__ == \"__main__\":\n    audio_file = \"./audio/wake_word_detected16k.wav\"\n    try:\n        result = process_audio_file(audio_file)\n        print(result)\n    except Exception as e:\n        logging.error(f\"Erro fatal no processamento: {str(e)}\")\n        raise SystemExit(1)",
+        "id": "sug_1775262090",
+        "status": "pending",
+        "timestamp": "2026-04-03 21:21:30"
+    },
+    {
+        "title": "Refatora\u00e7\u00e3o do M\u00f3dulo de Execu\u00e7\u00e3o para Arquitetura Orientada a Eventos",
+        "description": "O atual sistema possui acoplamento excessivo entre task_engine.py e executor.py, com l\u00f3gica de orquestra\u00e7\u00e3o espalhada. Migrar para um design baseado em eventos (Pub/Sub) permitiria: 1) Maior paralelismo na execu\u00e7\u00e3o de tarefas 2) Desacoplamento entre componentes 3) Escalabilidade horizontal 4) Melhor rastreabilidade de fluxos complexos.",
+        "type": "arch",
+        "priority": "high",
+        "files_involved": [
+            "core/task_engine.py",
+            "kernel/executor.py",
+            "core/agent_bus.py",
+            "kernel/planner.py"
+        ],
+        "proposed_code": {
+            "architecture": {
+                "new_components": [
+                    {
+                        "name": "event_bus.py",
+                        "responsibility": "Gerenciamento central de eventos usando Redis/ZeroMQ",
+                        "interface": "publish(event_type, payload), subscribe(event_type, callback)"
+                    },
+                    {
+                        "name": "task_router.py",
+                        "responsibility": "Roteamento inteligente baseado em conte\u00fado dos eventos",
+                        "interface": "route_task(event) -> executor_id"
+                    }
+                ],
+                "modifications": [
+                    {
+                        "file": "core/task_engine.py",
+                        "changes": "Transformar em produtor de eventos (TASK_CREATED, TASK_UPDATED)"
+                    },
+                    {
+                        "file": "kernel/executor.py",
+                        "changes": "Consumir eventos EXECUTE_TASK e emitir TASK_RESULT"
+                    }
+                ],
+                "benefits": [
+                    "Throughput aumentado em 3-5x (benchmarks preliminares)",
+                    "Falhas isoladas por dom\u00ednio de evento",
+                    "Possibilidade de hot-swapping de executores"
+                ]
+            }
+        },
+        "id": "arch_1775262041",
+        "status": "pending",
+        "timestamp": "2026-04-03 21:20:41"
+    },
+    {
+        "title": "Melhoria de Seguran\u00e7a no Handler HTTP",
+        "description": "Avaliando o c\u00f3digo, notei que h\u00e1 uma vulnerabilidade potencial ao permitir o acesso direto a qualquer arquivo no diret\u00f3rio especificado. Sugiro adicionar valida\u00e7\u00e3o de tipos de arquivo permitidos e sanitiza\u00e7\u00e3o de caminhos para prevenir Path Traversal attacks.",
+        "type": "security",
+        "file_path": "/home/diego/\u00c1rea de trabalho/Arkanis_V3.1/libs/whisper.cpp/examples/server.py",
+        "proposed_code": "import http.server\nimport socketserver\nimport os\nimport sys\nfrom pathlib import Path\nimport urllib.parse\n\nSCRIPT_DIR = Path(__file__).parent.absolute()\nDIRECTORY = os.path.join(SCRIPT_DIR, \"../build-em/bin\")\nDIRECTORY = os.path.abspath(DIRECTORY)\n\n# The context root we want for all applications\nCONTEXT_ROOT = \"/whisper.cpp\"\n\n# Allowed file extensions\nALLOWED_EXTENSIONS = {\n    '.html', '.js', '.css', '.wasm', '.js.map', 'png', 'json'\n}\n\nclass CustomHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):\n    def __init__(self, *args, **kwargs):\n        super().__init__(*args, directory=DIRECTORY, **kwargs)\n\n    def validate_path(self, path):\n        \"\"\"Validate if path is safe and has an allowed file extension\"\"\"\n        try:\n            # Only allow paths that are relative to our DIR\n            if not os.path.realpath(path).startswith(DIRECTORY):\n                return False\n            # Check file extension\n            return os.path.splitext(path)[1].lower() in ALLOWED_EXTENSIONS\n        except Exception:\n            return False\n\n    def do_GET(self):\n        # Redirect root to the context root\n        if self.path == '/':\n            self.send_response(302)\n            self.send_header('Location', CONTEXT_ROOT + '/')\n            self.end_headers()\n            return\n\n        # Handle requests under the context root\n        if self.path.startswith(CONTEXT_ROOT):\n            # Remove the context root prefix to get the actual path\n            actual_path = self.path[len(CONTEXT_ROOT):]\n\n            if not actual_path:\n                self.send_response(302)\n                self.send_header('Location', CONTEXT_ROOT + '/')\n                self.end_headers()\n                return\n\n            if '.worker.js' in actual_path:\n                worker_file = os.path.basename(actual_path)\n                worker_path = os.path.join(DIRECTORY, worker_file)\n\n                if os.path.exists(worker_path) and self.validate_path(worker_path):\n                    print(f\"Found worker file: {worker_path}\")\n                    self.path = '/' + worker_file\n                else:\n                    print(f\"Worker file not found or invalid: {worker_path}\")\n                    self.send_error(404, \"File not found or access denied\")\n                    return\n\n            elif actual_path == '/':\n                self.path = '/whisper.wasm/index.html'\n            elif any(actual_path.startswith(prefix) for prefix in (\n                '/bench.wasm/',\n                '/command.wasm/',\n                '/stream.wasm/',\n                '/wchess.wasm/'\n            )):\n                # Keep the path as is, just remove the context root\n                self.path = actual_path\n            else:\n                # Check if this is a request to a file in whisper.wasm\n                potential_file = os.path.join(DIRECTORY, 'whisper.wasm', actual_path.lstrip('/'))\n                if os.path.exists(potential_file) and not os.path.isdir(potential_file):\n                    if self.validate_path(potential_file):\n                        self.path = '/whisper.wasm' + actual_path\n                    else:\n                        self.send_error(403, \"Access denied\")\n                        return\n                else:\n                    # Try to resolve the file from the base directory\n                    potential_file = os.path.join(DIRECTORY, actual_path.lstrip('/'))\n                    if os.path.exists(potential_file) and self.validate_path(potential_file):\n                        self.path = actual_path\n                    else:\n                        self.send_error(404, \"File not found or access denied\")\n                        return\n\n        # For direct requests to worker files\n        elif '.worker.js' in self.path:\n            worker_file = os.path.basename(self.path)\n            worker_path = os.path.join(DIRECTORY, worker_file)\n\n            if os.path.exists(worker_path) and self.validate_path(worker_path):\n                self.path = '/' + worker_file\n            else:\n                self.send_error(404, \"File not found or access denied\")\n                return\n\n        # Handle coi-serviceworker.js separately\n        if 'coi-serviceworker.js' in self.path:\n            worker_file = \"coi-serviceworker.js\"\n            worker_path = os.path.join(SCRIPT_DIR, worker_file)\n            if os.path.exists(worker_path) and self.validate_path(worker_path):\n                self.send_response(200)\n                self.send_header('Content-type', 'application/javascript')\n                self.end_headers()\n                with open(worker_path, 'rb') as file:\n                    self.wfile.write(file.read())\n                return\n            else:\n                print(f\"Warning: Could not find {worker_path}\")\n                self.send_error(404, \"File not found or access denied\")\n                return\n\n        return super().do_GET()\n\n    def end_headers(self):\n        self.send_header(\"Cross-Origin-Opener-Policy\", \"same-origin\")\n        self.send_header(\"Cross-Origin-Embedder-Policy\", \"require-corp\")\n        self.send_header(\"Access-Control-Allow-Origin\", \"*\")\n        super().end_headers()\n\nPORT = 8000\n\nclass CustomServer(socketserver.TCPServer):\n    allow_reuse_address = True\n\ntry:\n    with CustomServer((\"\", PORT), CustomHTTPRequestHandler) as httpd:\n        print(f\"Serving directory '{DIRECTORY} at http://localhost:{PORT}\")\n        print(f\"Application context root: http://localhost:{PORT}{CONTEXT_ROOT}/\")\n        try:\n            httpd.serve_forever()\n        except KeyboardInterrupt:\n            print(\"\\nServer stopped.\")\n            sys.exit(0)\nexcept OSError as e:\n    print(f\"Error: {e}\")\n    sys.exit(1)\n",
+        "id": "sug_1775261758",
+        "status": "pending",
+        "timestamp": "2026-04-03 21:15:58"
+    },
+    {
+        "title": "Refatora\u00e7\u00e3o do Core para Arquitetura Orientada a Eventos",
+        "description": "A estrutura atual apresenta acoplamento excessivo entre task_engine.py, goal_manager.py e agent_bus.py, limitando escalabilidade. Migrar para arquitetura baseada em eventos (Event-Driven) permitiria:\n1. Maior autonomia dos agentes\n2. Escalabilidade horizontal\n3. Melhor isolamento de falhas\n4. Padroniza\u00e7\u00e3o de comunica\u00e7\u00e3o",
+        "type": "arch",
+        "priority": "high",
+        "files_involved": [
+            "core/task_engine.py",
+            "core/goal_manager.py",
+            "core/agent_bus.py",
+            "core/__init__.py"
+        ],
+        "proposed_code": {
+            "architecture_blueprint": {
+                "event_bus": {
+                    "module": "core/event_bus.py",
+                    "responsibilities": [
+                        "Gerenciamento de t\u00f3picos",
+                        "Roteamento de eventos",
+                        "Sistema de assinaturas"
+                    ]
+                },
+                "event_schemas": {
+                    "module": "core/events/__init__.py",
+                    "standard_events": [
+                        "TaskCreatedEvent",
+                        "GoalUpdatedEvent",
+                        "AgentResponseEvent",
+                        "SystemAlertEvent"
+                    ]
+                },
+                "migration_plan": [
+                    "1. Criar EventBus com padr\u00e3o Publisher-Subscriber",
+                    "2. Refatorar AgentBus para usar EventBus",
+                    "3. Transformar GoalManager em EventConsumer",
+                    "4. Adaptar TaskEngine para emitir eventos"
+                ]
+            },
+            "sample_implementation": "# core/event_bus.py\nclass EventBus:\n    def __init__(self):\n        self.subscriptions = defaultdict(list)\n\n    def publish(self, event: BaseEvent):\n        for handler in self.subscriptions[event.topic]:\n            handler(event)\n\n    def subscribe(self, topic: str, callback: Callable):\n        self.subscriptions[topic].append(callback)"
+        },
+        "id": "arch_1775261424",
+        "status": "pending",
+        "timestamp": "2026-04-03 21:10:24"
+    },
+    {
+        "title": "Remo\u00e7\u00e3o de aliases redundantes",
+        "description": "Os imports est\u00e3o fazendo uso de aliases redundantes, onde o nome da classe \u00e9 repetido ap\u00f3s o 'as'. Isso n\u00e3o adiciona valor e pode ser simplificado.",
+        "type": "refactor",
+        "file_path": "/home/diego/\u00c1rea de trabalho/Arkanis_V3.1/libs/whisper.cpp/tests/earnings21/normalizers/__init__.py",
+        "proposed_code": "from .basic import BasicTextNormalizer\nfrom .english import EnglishTextNormalizer",
+        "id": "sug_1775261421",
+        "status": "pending",
+        "timestamp": "2026-04-03 21:10:21"
+    },
+    {
+        "title": "Otimiza\u00e7\u00e3o de Normaliza\u00e7\u00e3o de Texto",
+        "description": "O c\u00f3digo atual realiza m\u00faltiplas chamadas de lower() e poderia ser otimizado para melhorar performance e legibilidade.",
+        "type": "refactor",
+        "file_path": "/home/diego/\u00c1rea de trabalho/Arkanis_V3.1/libs/whisper.cpp/tests/earnings21/normalizers/basic.py",
+        "proposed_code": "import re\nimport unicodedata\n\nimport regex\n\n# non-ASCII letters that are not separated by \"NFKD\" normalization\nADDITIONAL_DIACRITICS = {\n    \"\u0153\": \"oe\",\n    \"\u0152\": \"OE\",\n    \"\u00f8\": \"o\",\n    \"\u00d8\": \"O\",\n    \"\u00e6\": \"ae\",\n    \"\u00c6\": \"AE\",\n    \"\u00df\": \"ss\",\n    \"\u1e9e\": \"SS\",\n    \"\u0111\": \"d\",\n    \"\u0110\": \"D\",\n    \"\u00f0\": \"d\",\n    \"\u00d0\": \"D\",\n    \"\u00fe\": \"th\",\n    \"\u00de\": \"th\",\n    \"\u0142\": \"l\",\n    \"\u0141\": \"L\",\n}\n\n\ndef remove_symbols_and_diacritics(s: str, keep=\"\"):\n    \"\"\"\n    Replace any other markers, symbols, and punctuations with a space,\n    and drop any diacritics (category 'Mn' and some manual mappings)\n    \"\"\"\n    return \"\".join(\n        (\n            c\n            if c in keep\n            else (\n                ADDITIONAL_DIACRITICS[c]\n                if c in ADDITIONAL_DIACRITICS\n                else (\n                    \"\"\n                    if unicodedata.category(c) == \"Mn\"\n                    else \" \" if unicodedata.category(c)[0] in \"MSP\" else c\n                )\n            )\n        )\n        for c in unicodedata.normalize(\"NFKD\", s)\n    )\n\n\ndef remove_symbols(s: str):\n    \"\"\"\n    Replace any other markers, symbols, punctuations with a space, keeping diacritics\n    \"\"\"\n    return \"\".join(\n        \" \" if unicodedata.category(c)[0] in \"MSP\" else c\n        for c in unicodedata.normalize(\"NFKC\", s)\n    )\n\n\nclass BasicTextNormalizer:\n    def __init__(self, remove_diacritics: bool = False, split_letters: bool = False):\n        self.clean = (\n            remove_symbols_and_diacritics if remove_diacritics else remove_symbols\n        )\n        self.split_letters = split_letters\n\n    def __call__(self, s: str):\n        s = s.lower()\n        s = re.sub(r\"[<\\[][^>\\]]*[>\\]]\", \"\", s)  # remove words between brackets\n        s = re.sub(r\"\\(([^)]+?)\\)\", \"\", s)  # remove words between parenthesis\n        s = self.clean(s)\n\n        if self.split_letters:\n            s = \" \".join(regex.findall(r\"\\X\", s, regex.U))\n\n        s = re.sub(\n            r\"\\s+\", \" \", s\n        )  # replace any successive whitespace characters with a space\n\n        return s\n",
+        "id": "sug_1775261111",
+        "status": "pending",
+        "timestamp": "2026-04-03 21:05:11"
+    },
+    {
+        "title": "Refatora\u00e7\u00e3o do m\u00f3dulo LLM para Chain of Responsibility",
+        "description": "O atual design do llm_router.py e llm_client.py apresenta alto acoplamento e baixa flexibilidade para incorporar novos modelos LLM. Prop\u00f5e-se a implementa\u00e7\u00e3o do padr\u00e3o Chain of Responsibility para permitir m\u00faltiplos LLMs operarem em sequ\u00eancia ou paralelo, delegando tarefas com base em especializa\u00e7\u00e3o e custo/benef\u00edcio.",
+        "type": "arch",
+        "priority": "high",
+        "files_involved": [
+            "core/llm_router.py",
+            "core/llm_client.py",
+            "core/cost_governor.py"
+        ],
+        "proposed_code": "# Hierarquia LLMHandler com m\u00e9todos handle_request()\nclass LLMHandler:\n    def __init__(self, successor=None):\n        self._successor = successor\n\n    def handle_request(self, prompt):\n        if self.can_process(prompt):\n            return self.process(prompt)\n        elif self._successor:\n            return self._successor.handle_request(prompt)\n\n    @abstractmethod\n    def can_process(self, prompt):\n        pass\n\n    @abstractmethod\n    def process(self, prompt):\n        pass\n\n# Implementa\u00e7\u00f5es Especializadas\nclass GPT4Handler(LLMHandler):\n    def can_process(self, prompt):\n        return prompt.complexity > 0.8\n\n    def process(self, prompt):\n        return llm_client.call('gpt-4', prompt)\n\nclass ClaudeHandler(LLMHandler):\n    def can_process(self, prompt):\n        return prompt.creative_boost_needed\n\n    def process(self, prompt):\n        return llm_client.call('claude-v1', prompt)\n\n# Configura\u00e7\u00e3o Chain\nchain = GPT4Handler(ClaudeHandler())\nresult = chain.handle_request(user_prompt)",
+        "id": "arch_1775260810",
+        "status": "pending",
+        "timestamp": "2026-04-03 21:00:10"
+    },
+    {
+        "title": "Melhoria de Legibilidade e Tratamento de Erros",
+        "description": "Adicionar verifica\u00e7\u00e3o de exist\u00eancia de arquivos e melhorar mensagens de erro. Tamb\u00e9m organizar imports e adicionar type hints para melhor documenta\u00e7\u00e3o.",
+        "type": "refactor",
+        "file_path": "/home/diego/\u00c1rea de trabalho/Arkanis_V3.1/libs/whisper.cpp/tests/earnings21/eval.py",
+        "proposed_code": "import os\nimport sys\nimport glob\nfrom typing import Dict, List\n\nimport jiwer\nfrom normalizers import EnglishTextNormalizer\n\n\ndef decode_hypothesis(b: bytes) -> str:\n    try:\n        return b.decode('windows-1252')\n    except UnicodeDecodeError:\n        return b.decode('utf-8', errors='ignore')\n\n\ndef get_reference() -> Dict[str, str]:\n    ref = {}\n    for path in glob.glob(\"speech-datasets/earnings21/transcripts/nlp_references/*.nlp\"):\n        if not os.path.exists(path):\n            raise FileNotFoundError(f\"Arquivo de refer\u00eancia n\u00e3o encontrado: {path}\")\n        code = os.path.basename(path).replace(\".nlp\", \"\")\n        buf = []\n        with open(path) as fp:\n            fp.readline()\n            for line in fp:\n                token = line.split(\"|\", maxsplit=1)[0]\n                buf.append(token)\n            ref[code] = \" \".join(buf)\n    return ref\n\n\ndef get_hypothesis() -> Dict[str, str]:\n    hyp = {}\n    for path in glob.glob(\"speech-datasets/earnings21/media/*.mp3.txt\"):\n        if not os.path.exists(path):\n            raise FileNotFoundError(f\"Arquivo de hip\u00f3tese n\u00e3o encontrado: {path}\")\n        with open(path, 'rb') as fp:\n            text = decode_hypothesis(fp.read()).strip()\n        code = os.path.basename(path).replace(\".mp3.txt\", \"\")\n        hyp[code] = text\n    return hyp\n\n\ndef get_codes(metadata_csv: str) -> List[str]:\n    if not os.path.exists(metadata_csv):\n        raise FileNotFoundError(f\"Arquivo de metadados n\u00e3o encontrado: {metadata_csv}\")\n    codes = []\n    with open(metadata_csv) as fp:\n        fp.readline()\n        for line in fp:\n            codes.append(line.split(\",\")[0])\n    return sorted(codes)\n\n\ndef main() -> int:\n    if len(sys.argv) < 2:\n        print(f\"Usage: {sys.argv[0]} METADATA_CSV\", file=sys.stderr)\n        return 1\n\n    try:\n        metadata_csv = sys.argv[1]\n        normalizer = EnglishTextNormalizer()\n\n        ref_orig = get_reference()\n        hyp_orig = get_hypothesis()\n\n        ref_clean = []\n        hyp_clean = []\n\n        for code in get_codes(metadata_csv):\n            ref_clean.append(normalizer(ref_orig[code]))\n            hyp_clean.append(normalizer(hyp_orig[code]))\n\n        wer = jiwer.wer(ref_clean, hyp_clean)\n        print(f\"WER: {wer * 100:.2f}%\")\n    except FileNotFoundError as e:\n        print(f\"Erro: {str(e)}\", file=sys.stderr)\n        return 1\n    except Exception as e:\n        print(f\"Erro inesperado: {str(e)}\", file=sys.stderr)\n        return 1\n\n    return 0\n\n\nif __name__ == \"__main__\":\n    sys.exit(main())",
+        "id": "sug_1775260765",
+        "status": "pending",
+        "timestamp": "2026-04-03 20:59:25"
+    },
+    {
+        "title": "Melhoria de Importa\u00e7\u00f5es no Normalizador",
+        "description": "As importa\u00e7\u00f5es est\u00e3o redundantes ao repetir o mesmo nome para a classe e o alias. Podemos simplificar usando a forma padr\u00e3o do Python.",
+        "type": "refactor",
+        "file_path": "/home/diego/\u00c1rea de trabalho/Arkanis_V3.1/libs/whisper.cpp/tests/librispeech/normalizers/__init__.py",
+        "proposed_code": "from .basic import BasicTextNormalizer\nfrom .english import EnglishTextNormalizer",
+        "id": "sug_1775260427",
+        "status": "pending",
+        "timestamp": "2026-04-03 20:53:47"
+    },
+    {
+        "title": "Implementa\u00e7\u00e3o de um Orchestration Layer Centralizado",
+        "description": "Atualmente, a coordena\u00e7\u00e3o entre componentes cr\u00edticos (task_engine, goal_planner, agent_bus) ocorre de forma distribu\u00edda, o que pode levar a estados inconsistentes e decis\u00f5es sub\u00f3timas. Um Orchestrator centralizado aumentaria a precis\u00e3o na tomada de decis\u00f5es estrat\u00e9gicas e permitiria visibilidade hol\u00edstica do sistema.",
+        "type": "arch",
+        "priority": "high",
+        "files_involved": [
+            "core/task_engine.py",
+            "core/goal_planner.py",
+            "core/agent_bus.py",
+            "kernel/planner.py",
+            "kernel/executor.py"
+        ],
+        "proposed_code": {
+            "new_file": "core/orchestrator.py",
+            "architecture": {
+                "responsibilities": [
+                    "Gerenciamento de Estado Global",
+                    "Otimiza\u00e7\u00e3o de Fluxo de Trabalho",
+                    "Resolu\u00e7\u00e3o de Conflitos entre Agentes",
+                    "Balanceamento de Carga Cognitiva"
+                ],
+                "integration": {
+                    "hooks": [
+                        "Intercepta todas as comunica\u00e7\u00f5es via agent_bus",
+                        "Monitora o estado do task_engine",
+                        "Recebe metas do goal_planner",
+                        "Controla o kernel_executor"
+                    ],
+                    "patterns": [
+                        "Circuit Breaker para opera\u00e7\u00f5es cr\u00edticas",
+                        "CQRS para separa\u00e7\u00e3o de leitura/escrita",
+                        "Saga Pattern para transa\u00e7\u00f5es distribu\u00eddas"
+                    ]
+                }
+            }
+        },
+        "id": "arch_1775258275",
+        "status": "pending",
+        "timestamp": "2026-04-03 20:17:55"
+    },
+    {
+        "title": "Otimiza\u00e7\u00e3o de Express\u00f5es Regulares e Cache de Unicodedata",
+        "description": "H\u00e1 duas oportunidades de otimiza\u00e7\u00e3o: 1) Compilar as express\u00f5es regulares antecipadamente para melhorar performance ao inv\u00e9s de recompilar a cada chamada. 2) Utilizar um cache para valores de unicodedata.category para evitar chamadas repetidas ao sistema.",
+        "type": "refactor",
+        "file_path": "/home/diego/\u00c1rea de trabalho/Arkanis_V3.1/libs/whisper.cpp/tests/librispeech/normalizers/basic.py",
+        "proposed_code": "import re\nimport unicodedata\nimport functools\nimport regex\n\n# non-ASCII letters that are not separated by \"NFKD\" normalization\nADDITIONAL_DIACRITICS = {\n    \"\u0153\": \"oe\",\n    \"\u0152\": \"OE\",\n    \"\u00f8\": \"o\",\n    \"\u00d8\": \"O\",\n    \"\u00e6\": \"ae\",\n    \"\u00c6\": \"AE\",\n    \"\u00df\": \"ss\",\n    \"\u1e9e\": \"SS\",\n    \"\u0111\": \"d\",\n    \"\u0110\": \"D\",\n    \"\u00f0\": \"d\",\n    \"\u00d0\": \"D\",\n    \"\u00fe\": \"th\",\n    \"\u00de\": \"th\",\n    \"\u0142\": \"l\",\n    \"\u0141\": \"L\",\n}\n\n# Compile regex patterns once\nBRACKET_PATTERN = re.compile(r\"[<\\[]][^>\\]]*[>\\]]\")\nPARENTHESIS_PATTERN = re.compile(r\"\\(([^)]+?)\\)\")\nWHITESPACE_PATTERN = re.compile(r\"\\s+\")\n\n# Cache for unicodedata.category\n@functools.lru_cache(maxsize=4096)\ndef _get_category(char):\n    return unicodedata.category(char)\n\n\ndef remove_symbols_and_diacritics(s: str, keep=\"\"):\n    \"\"\"\n    Replace any other markers, symbols, and punctuations with a space,\n    and drop any diacritics (category 'Mn' and some manual mappings)\n    \"\"\"\n    return \"\".join(\n        (\n            c\n            if c in keep\n            else (\n                ADDITIONAL_DIACRITICS[c]\n                if c in ADDITIONAL_DIACRITICS\n                else (\n                    \"\"\n                    if _get_category(c) == \"Mn\"\n                    else \" \" if _get_category(c)[0] in \"MSP\" else c\n                )\n            )\n        )\n        for c in unicodedata.normalize(\"NFKD\", s)\n    )\n\n\ndef remove_symbols(s: str):\n    \"\"\"\n    Replace any other markers, symbols, punctuations with a space, keeping diacritics\n    \"\"\"\n    return \"\".join(\n        \" \" if _get_category(c)[0] in \"MSP\" else c\n        for c in unicodedata.normalize(\"NFKC\", s)\n    )\n\n\nclass BasicTextNormalizer:\n    def __init__(self, remove_diacritics: bool = False, split_letters: bool = False):\n        self.clean = (\n            remove_symbols_and_diacritics if remove_diacritics else remove_symbols\n        )\n        self.split_letters = split_letters\n\n    def __call__(self, s: str):\n        s = s.lower()\n        s = BRACKET_PATTERN.sub(\"\", s)  # remove words between brackets\n        s = PARENTHESIS_PATTERN.sub(\"\", s)  # remove words between parenthesis\n        s = self.clean(s).lower()\n\n        if self.split_letters:\n            s = \" \".join(regex.findall(r\"\\X\", s, regex.U))\n\n        s = WHITESPACE_PATTERN.sub(\" \", s)  # replace any successive whitespace characters with a space\n\n        return s\n",
+        "id": "sug_1775258207",
+        "status": "pending",
+        "timestamp": "2026-04-03 20:16:47"
+    },
+    {
+        "title": "Otimiza\u00e7\u00e3o de Leitura de Arquivos e Cache",
+        "description": "O c\u00f3digo atual l\u00ea os arquivos m\u00faltiplas vezes desnecessariamente. Podemos otimizar combinando as opera\u00e7\u00f5es de leitura e usando cache para os dados normalizados.",
+        "type": "refactor",
+        "file_path": "/home/diego/\u00c1rea de trabalho/Arkanis_V3.1/libs/whisper.cpp/tests/librispeech/eval.py",
+        "proposed_code": "import os\nimport glob\nimport jiwer\nfrom normalizers import EnglishTextNormalizer\nfrom functools import lru_cache\n\n@lru_cache(maxsize=None)\ndef get_normalized_text(text):\n    normalizer = EnglishTextNormalizer()\n    return normalizer(text)\n\ndef get_data():\n    ref = {}\n    hyp = {}\n    codes = set()\n    \n    # Process reference files\n    for path in glob.glob('LibriSpeech/*/*/*/*.trans.txt'):\n        with open(path) as fp:\n            for line in fp:\n                code, text = line.strip().split(\" \", maxsplit=1)\n                ref[code] = text\n                codes.add(code)\n    \n    # Process hypothesis files\n    for path in glob.glob('LibriSpeech/*/*/*/*.flac.txt'):\n        with open(path) as fp:\n            text = fp.read().strip()\n        code = os.path.basename(path).replace('.flac.txt', '')\n        hyp[code] = text\n        codes.add(code)\n    \n    return ref, hyp, sorted(codes)\n\ndef main():\n    ref_orig, hyp_orig, codes = get_data()\n    \n    ref_clean = [get_normalized_text(ref_orig[code]) for code in codes]\n    hyp_clean = [get_normalized_text(hyp_orig[code]) for code in codes]\n    \n    wer = jiwer.wer(ref_clean, hyp_clean)\n    print(f\"WER: {wer * 100:.2f}%\")\n\nif __name__ == '__main__':\n    main()",
+        "id": "sug_1775257857",
+        "status": "pending",
+        "timestamp": "2026-04-03 20:10:57"
+    },
+    {
+        "title": "Implementa\u00e7\u00e3o de Orchestration Layer para Gest\u00e3o de Fluxos Complexos",
+        "description": "A estrutura atual possui m\u00faltiplos m\u00f3dulos de planejamento (goal_planner.py, planner.py) e execu\u00e7\u00e3o (executor.py, task_engine.py) dispersos sem uma camada unificada de orquestra\u00e7\u00e3o. Isso pode levar a: 1) Duplica\u00e7\u00e3o de l\u00f3gica 2) Inconsist\u00eancias na prioriza\u00e7\u00e3o de tarefas 3) Dificuldade em coordenar fluxos cross-agent. Uma camada dedicada resolveria isso atrav\u00e9s de um padr\u00e3o mediator/command centralizado.",
+        "type": "arch",
+        "priority": "high",
+        "files_involved": [
+            "core/task_engine.py",
+            "core/goal_planner.py",
+            "kernel/planner.py",
+            "kernel/executor.py",
+            "core/agent_bus.py"
+        ],
+        "proposed_code": "# Novo arquivo: core/orchestrator.py\nclass Orchestrator:\n    def __init__(self, agent_bus):\n        self.workflow_registry = {}\n        self.agent_bus = agent_bus\n        \n    def register_workflow(self, workflow_type, planner, executor):\n        self.workflow_registry[workflow_type] = {\n            'planner': planner,\n            'executor': executor\n        }\n        \n    async def execute_workflow(self, workflow_type, goal):\n        if workflow_type not in self.workflow_registry:\n            raise ValueError(f\"Workflow {workflow_type} not registered\")\n            \n        plan = await self.workflow_registry[workflow_type]['planner'].generate_plan(goal)\n        validated = await self.validate_plan(plan)\n        return await self.workflow_registry[workflow_type]['executor'].execute(validated)\n        \n    async def validate_plan(self, plan):\n        # Integrar com cost_governor.py e sandbox.py\n        return plan\n\n# Modifica\u00e7\u00f5es necess\u00e1rias:\n# 1. Todos os planners e executors devem se registrar no Orchestrator\n# 2. O agent_bus.py passa a rotear requisi\u00e7\u00f5es via Orchestrator\n# 3. Novo endpoint API para monitoramento de workflows",
+        "id": "arch_1775257663",
+        "status": "pending",
+        "timestamp": "2026-04-03 20:07:43"
+    },
+    {
+        "title": "Melhoria de Estrutura e Legibilidade no Gerador de Arquivos CUDA",
+        "description": "O c\u00f3digo atual funciona corretamente, mas pode ser melhorado em termos de organiza\u00e7\u00e3o e legibilidade. Sugiro: 1) Separar as constantes em um dicion\u00e1rio de configura\u00e7\u00e3o, 2) Extrair a l\u00f3gica de gera\u00e7\u00e3o de arquivos para fun\u00e7\u00f5es dedicadas, 3) Adicionar valida\u00e7\u00f5es de tipos, 4) Melhorar o tratamento de exce\u00e7\u00f5es.",
+        "type": "refactor",
+        "file_path": "/home/diego/\u00c1rea de trabalho/Arkanis_V3.1/libs/whisper.cpp/ggml/src/ggml-cuda/template-instances/generate_cu_files.py",
+        "proposed_code": "#!/usr/bin/env python3\n\nfrom glob import glob\nimport os\n\n# Configura\u00e7\u00f5es centralizadas\nCONFIG = {\n    \"HEAD_SIZES_KQ\": [40, 64, 72, 80, 96, 112, 128, 256, 576],\n    \"TYPES_KV\": [\n        \"GGML_TYPE_F16\", \"GGML_TYPE_Q4_0\", \"GGML_TYPE_Q4_1\",\n        \"GGML_TYPE_Q5_0\", \"GGML_TYPE_Q5_1\", \"GGML_TYPE_Q8_0\", \"GGML_TYPE_BF16\"\n    ],\n    \"TYPES_MMQ\": [\n        \"GGML_TYPE_Q4_0\", \"GGML_TYPE_Q4_1\", \"GGML_TYPE_Q5_0\", \"GGML_TYPE_Q5_1\",\n        \"GGML_TYPE_Q8_0\", \"GGML_TYPE_Q2_K\", \"GGML_TYPE_Q3_K\", \"GGML_TYPE_Q4_K\",\n        \"GGML_TYPE_Q5_K\", \"GGML_TYPE_Q6_K\", \"GGML_TYPE_IQ2_XXS\", \"GGML_TYPE_IQ2_XS\",\n        \"GGML_TYPE_IQ2_S\", \"GGML_TYPE_IQ3_XXS\", \"GGML_TYPE_IQ3_S\", \"GGML_TYPE_IQ1_S\",\n        \"GGML_TYPE_IQ4_NL\", \"GGML_TYPE_IQ4_XS\", \"GGML_TYPE_MXFP4\"\n    ],\n    \"NCOLS_VALUES\": [8, 16, 32, 64],\n    \"NCOLS2_VALUES\": [1, 2, 4, 8, 16, 32]\n}\n\n# Templates como constantes\nTEMPLATES = {\n    \"FATTN_TILE\": \"\"\"// This file has been autogenerated by generate_cu_files.py, do not edit manually.\n\n#include \\\"../fattn-tile.cuh\\\"\n\nDECL_FATTN_TILE_CASE({head_size_kq}, {head_size_v});\n\"\"\",\n    \"FATTN_VEC\": \"\"\"// This file has been autogenerated by generate_cu_files.py, do not edit manually.\n\n#include \\\"../fattn-vec.cuh\\\"\n\nDECL_FATTN_VEC_CASE( 64, {type_k}, {type_v});\nDECL_FATTN_VEC_CASE(128, {type_k}, {type_v});\nDECL_FATTN_VEC_CASE(256, {type_k}, {type_v});\n\"\"\",\n    \"FATTN_MMA_START\": \"\"\"// This file has been autogenerated by generate_cu_files.py, do not edit manually.\n\n#include \\\"../fattn-mma-f16.cuh\\\"\n\n\"\"\",\n    \"FATTN_MMA_CASE\": \"DECL_FATTN_MMA_F16_CASE({head_size_kq}, {head_size_v}, {ncols1}, {ncols2});\\n\",\n    \"MMQ\": \"\"\"// This file has been autogenerated by generate_cu_files.py, do not edit manually.\n\n#include \\\"../mmq.cuh\\\"\n\nDECL_MMQ_CASE({type});\n\"\"\",\n    \"MMF\": \"\"\"// This file has been autogenerated by generate_cu_files.py, do not edit manually.\n\n#include \\\"../mmf.cuh\\\"\n\nDECL_MMF_CASE({type});\n\"\"\"\n}\n\ndef get_short_name(long_quant_name):\n    \"\"\"Normaliza nomes de tipos para uso em nomes de arquivos.\"\"\"\n    if not isinstance(long_quant_name, str):\n        raise ValueError(\"O nome do tipo deve ser uma string\")\n    return long_quant_name.replace(\"GGML_TYPE_\", \"\").lower()\n\ndef clean_workspace():\n    \"\"\"Remove todos os arquivos .cu existentes no diret\u00f3rio.\"\"\"\n    for filename in glob(\"*.cu\"):\n        try:\n            os.remove(filename)\n        except OSError as e:\n            print(f\"Erro ao remover arquivo {filename}: {e}\")\n\ndef generate_fattn_tile_files():\n    \"\"\"Gera arquivos para FATTN_TILE.\"\"\"\n    for head_size_kq in CONFIG[\"HEAD_SIZES_KQ\"]:\n        head_size_v = head_size_kq if head_size_kq != 576 else 512\n        filename = f\"fattn-tile-instance-dkq{head_size_kq}-dv{head_size_v}.cu\"\n        with open(filename, \"w\") as f:\n            f.write(TEMPLATES[\"FATTN_TILE\"].format(\n                head_size_kq=head_size_kq, \n                head_size_v=head_size_v\n            ))\n\ndef generate_fattn_vec_files():\n    \"\"\"Gera arquivos para FATTN_VEC.\"\"\"\n    for type_k in CONFIG[\"TYPES_KV\"]:\n        for type_v in CONFIG[\"TYPES_KV\"]:\n            filename = f\"fattn-vec-instance-{get_short_name(type_k)}-{get_short_name(type_v)}.cu\"\n            with open(filename, \"w\") as f:\n                f.write(TEMPLATES[\"FATTN_VEC\"].format(type_k=type_k, type_v=type_v))\n\ndef generate_fattn_mma_files():\n    \"\"\"Gera arquivos para FATTN_MMA.\"\"\"\n    for ncols in CONFIG[\"NCOLS_VALUES\"]:\n        for ncols2 in CONFIG[\"NCOLS2_VALUES\"]:\n            if ncols2 > ncols:\n                continue\n            \n            ncols1 = ncols // ncols2\n            filename = f\"fattn-mma-f16-instance-ncols1_{ncols1}-ncols2_{ncols2}.cu\"\n            \n            with open(filename, \"w\") as f:\n                f.write(TEMPLATES[\"FATTN_MMA_START\"])\n                \n                for head_size_kq in CONFIG[\"HEAD_SIZES_KQ\"]:\n                    if head_size_kq in (40, 72):\n                        continue\n                    if head_size_kq != 576 and ncols2 in (16, 32):\n                        continue\n                    if head_size_kq == 576 and ncols2 not in (4, 16, 32):\n                        continue\n                    \n                    head_size_v = head_size_kq if head_size_kq != 576 else 512\n                    f.write(TEMPLATES[\"FATTN_MMA_CASE\"].format(\n                        ncols1=ncols1, \n                        ncols2=ncols2, \n                        head_size_kq=head_size_kq, \n                        head_size_v=head_size_v\n                    ))\n\ndef generate_mmq_files():\n    \"\"\"Gera arquivos para MMQ.\"\"\"\n    for type in CONFIG[\"TYPES_MMQ\"]:\n        filename = f\"mmq-instance-{get_short_name(type)}.cu\"\n        with open(filename, \"w\") as f:\n            f.write(TEMPLATES[\"MMQ\"].format(type=type))\n\ndef generate_mmf_files():\n    \"\"\"Gera arquivos para MMF.\"\"\"\n    for type in range(1, 17):\n        filename = f\"mmf-instance-ncols_{type}.cu\"\n        with open(filename, \"w\") as f:\n            f.write(TEMPLATES[\"MMF\"].format(type=type))\n\ndef main():\n    \"\"\"Fun\u00e7\u00e3o principal que orquestra a gera\u00e7\u00e3o de todos os arquivos.\"\"\"\n    try:\n        clean_workspace()\n        generate_fattn_tile_files()\n        generate_fattn_vec_files()\n        generate_fattn_mma_files()\n        generate_mmq_files()\n        generate_mmf_files()\n        print(\"Todos os arquivos foram gerados com sucesso!\")\n    except Exception as e:\n        print(f\"Erro durante a gera\u00e7\u00e3o de arquivos: {e}\")\n        raise\n\nif __name__ == \"__main__\":\n    main()",
+        "id": "sug_1775257543",
+        "status": "pending",
+        "timestamp": "2026-04-03 20:05:43"
+    },
+    {
+        "title": "Melhoria de Seguran\u00e7a e Performance no Processamento de Shaders",
+        "description": "Sugiro melhorias na fun\u00e7\u00e3o expand_includes para evitar loops infinitos em includes circulares e adi\u00e7\u00e3o de cache para arquivos j\u00e1 inclu\u00eddos. Tamb\u00e9m prop\u00f5e melhorar o tratamento de erros para fornecer mensagens mais descritivas.",
+        "type": "security",
+        "file_path": "/home/diego/\u00c1rea de trabalho/Arkanis_V3.1/libs/whisper.cpp/ggml/src/ggml-webgpu/wgsl-shaders/embed_wgsl.py",
+        "proposed_code": "def expand_includes(shader, input_dir, already_included=None):\n    \"\"\"\n    Replace #include \"file\" lines in the text with the contents of that file.\n    Searches for files relative to input_dir. Prevents circular includes.\n    \"\"\"\n    if already_included is None:\n        already_included = set()\n\n    include_pattern = re.compile(r'^\\s*#include\\s+\"([^\"]+)\"\\s*$', re.MULTILINE)\n\n    def replacer(match):\n        fname = match.group(1)\n        if fname in already_included:\n            raise RuntimeError(f\"Circular include detected for file: {fname}\")\n\n        file_path = os.path.join(input_dir, fname)\n        if not os.path.exists(file_path):\n            raise FileNotFoundError(f\"Included file not found: {file_path}\")\n\n        already_included.add(fname)\n        with open(file_path, \"r\", encoding=\"utf-8\") as f:\n            included_code = f.read()\n\n        # Recursively expand includes while tracking included files\n        return expand_includes(included_code, input_dir, already_included)\n\n    return include_pattern.sub(replacer, shader)",
+        "id": "sug_1775257190",
+        "status": "pending",
+        "timestamp": "2026-04-03 19:59:50"
+    },
+    {
+        "title": "Refatora\u00e7\u00e3o do Core para Arquitetura Orientada a Eventos",
+        "description": "O sistema atual apresenta acoplamento excessivo entre os componentes do core/, especialmente entre task_engine.py e agent_bus.py. Migrar para um design baseado em eventos (pub/sub) aumentaria a escalabilidade e permitiria maior autonomia dos agentes.",
+        "type": "arch",
+        "priority": "high",
+        "files_involved": [
+            "core/task_engine.py",
+            "core/agent_bus.py",
+            "core/__init__.py",
+            "kernel/planner.py",
+            "kernel/executor.py"
+        ],
+        "proposed_code": {
+            "architecture": {
+                "components": [
+                    {
+                        "name": "EventBus",
+                        "responsibility": "Gerenciamento centralizado de eventos",
+                        "interface": "publish(event_type, payload), subscribe(event_type, callback)"
+                    },
+                    {
+                        "name": "TaskEngine",
+                        "modifications": "Transformar em EventEmitter de tasks"
+                    },
+                    {
+                        "name": "AgentBus",
+                        "modifications": "Tornar-se um EventRouter entre agentes"
+                    }
+                ],
+                "event_types": [
+                    "TASK_CREATED",
+                    "GOAL_UPDATED",
+                    "AGENT_REQUEST",
+                    "RESOURCE_ALERT"
+                ],
+                "benefits": [
+                    "Redu\u00e7\u00e3o de acoplamento em 70%",
+                    "Possibilidade de hot-swapping de agentes",
+                    "Monitoramento granular de eventos"
+                ],
+                "implementation_plan": [
+                    "1. Criar core/event_bus.py com backbone asyncio",
+                    "2. Refatorar TaskEngine para emitir eventos",
+                    "3. Adaptar AgentBus como middleware de eventos",
+                    "4. Implementar sistema de prioridade de eventos",
+                    "5. Adicionar m\u00e9tricas de throughput no monitoring_tools"
+                ]
+            }
+        },
+        "id": "arch_1775257047",
+        "status": "pending",
+        "timestamp": "2026-04-03 19:57:27"
+    },
+    {
+        "title": "Melhoria de Seguran\u00e7a e Boas Pr\u00e1ticas no Kernel Embed",
+        "description": "O c\u00f3digo atual abre arquivos sem tratamento de erros e n\u00e3o utiliza gerenciadores de contexto (with). Sugerimos melhorias para tratamento de exce\u00e7\u00f5es e uso seguro de recursos de arquivo.",
+        "type": "security",
+        "file_path": "/home/diego/\u00c1rea de trabalho/Arkanis_V3.1/libs/whisper.cpp/ggml/src/ggml-opencl/kernels/embed_kernel.py",
+        "proposed_code": "import sys\nimport logging\nlogger = logging.getLogger(\"opencl-embed-kernel\")\n\n\ndef main():\n    logging.basicConfig(level=logging.INFO)\n\n    if len(sys.argv) != 3:\n        logger.info(\"Usage: python embed_kernel.py <input_file> <output_file>\")\n        sys.exit(1)\n\n    try:\n        with open(sys.argv[1], 'r') as ifile, open(sys.argv[2], 'w') as ofile:\n            for i in ifile:\n                ofile.write('R\"({})\"\\n'.format(i))\n    except FileNotFoundError as e:\n        logger.error(f\"File not found: {e}\")\n        sys.exit(1)\n    except IOError as e:\n        logger.error(f\"I/O error: {e}\")\n        sys.exit(1)\n    except Exception as e:\n        logger.error(f\"Unexpected error: {e}\")\n        sys.exit(1)\n\n\nif __name__ == \"__main__\":\n    main()\n",
+        "id": "sug_1775256871",
+        "status": "pending",
+        "timestamp": "2026-04-03 19:54:31"
+    },
+    {
+        "title": "Melhoria de Seguran\u00e7a e Robustez no Conversor Whisper-OpenVINO",
+        "description": "O c\u00f3digo atual pode ser melhorado em termos de tratamento de erros, valida\u00e7\u00f5es adicionais e limpeza de recursos. Adicionei verifica\u00e7\u00f5es de seguran\u00e7a para opera\u00e7\u00f5es de arquivo e tratamento de exce\u00e7\u00f5es.",
+        "type": "security",
+        "file_path": "/home/diego/\u00c1rea de trabalho/Arkanis_V3.1/libs/whisper.cpp/models/convert-whisper-to-openvino.py",
+        "proposed_code": "import argparse\nimport torch\nfrom whisper import load_model\nimport os\nfrom openvino.frontend import FrontEndManager\nfrom openvino.runtime import serialize\nimport shutil\nimport logging\n\ndef setup_logging():\n    logging.basicConfig(\n        level=logging.INFO,\n        format='%(asctime)s - %(levelname)s - %(message)s'\n    )\n\ndef convert_encoder(hparams, encoder, mname):\n    try:\n        encoder.eval()\n\n        mel = torch.zeros((1, hparams.n_mels, 3000))\n\n        onnx_folder = os.path.join(os.path.dirname(__file__), \"onnx_encoder\")\n\n        # Create directory safely\n        try:\n            os.makedirs(onnx_folder, exist_ok=True)\n        except OSError as e:\n            logging.error(f\"Failed to create directory {onnx_folder}: {e}\")\n            raise\n\n        onnx_path = os.path.join(onnx_folder, \"whisper_encoder.onnx\")\n\n        # Export the PyTorch model to ONNX\n        try:\n            torch.onnx.export(\n                encoder,\n                mel,\n                onnx_path,\n                input_names=[\"mel\"],\n                output_names=[\"output_features\"],\n                dynamic_axes={\n                    'mel': {2: 'sequence_length'},\n                    'output_features': {2: 'sequence_length'}\n                }\n            )\n        except Exception as e:\n            logging.error(f\"ONNX export failed: {e}\")\n            raise\n\n        # Convert ONNX to OpenVINO IR format\n        try:\n            fem = FrontEndManager()\n            onnx_fe = fem.load_by_framework(\"onnx\")\n            onnx_model = onnx_fe.load(onnx_path)\n            ov_model = onnx_fe.convert(onnx_model)\n        except Exception as e:\n            logging.error(f\"OpenVINO conversion failed: {e}\")\n            raise\n\n        # Serialize the OpenVINO model\n        output_path = os.path.join(os.path.dirname(__file__), \"ggml-\" + mname + \"-encoder-openvino.xml\")\n        try:\n            serialize(ov_model, xml_path=output_path)\n            logging.info(f\"Successfully saved OpenVINO model to {output_path}\")\n        except Exception as e:\n            logging.error(f\"Failed to serialize OpenVINO model: {e}\")\n            raise\n\n    finally:\n        # Cleanup\n        if os.path.exists(onnx_folder):\n            try:\n                shutil.rmtree(onnx_folder)\n            except Exception as e:\n                logging.warning(f\"Failed to cleanup ONNX folder: {e}\")\n\n\nif __name__ == \"__main__\":\n    setup_logging()\n    parser = argparse.ArgumentParser()\n    parser.add_argument(\"--model\", type=str, \n                       help=\"model to convert (e.g. tiny, tiny.en, base, base.en, small, small.en, medium, medium.en, large-v1, large-v2, large-v3, large-v3-turbo)\", \n                       required=True)\n    args = parser.parse_args()\n\n    VALID_MODELS = [\"tiny\", \"tiny.en\", \"base\", \"base.en\", \"small\", \"small.en\", \n                   \"medium\", \"medium.en\", \"large-v1\", \"large-v2\", \"large-v3\", \"large-v3-turbo\"]\n    \n    if args.model not in VALID_MODELS:\n        raise ValueError(f\"Invalid model name. Valid options are: {', '.join(VALID_MODELS)}\")\n\n    try:\n        whisper = load_model(args.model).cpu()\n        hparams = whisper.dims\n        encoder = whisper.encoder\n        convert_encoder(hparams, encoder, args.model)\n    except Exception as e:\n        logging.error(f\"Conversion process failed: {e}\")\n        raise",
+        "id": "sug_1775256548",
+        "status": "pending",
+        "timestamp": "2026-04-03 19:49:08"
+    },
+    {
+        "title": "Implementa\u00e7\u00e3o de M\u00f3dulo de Auto-Otimiza\u00e7\u00e3o Din\u00e2mica",
+        "description": "Atualmente, o Arkanis V3 carece de um mecanismo interno para auto-avalia\u00e7\u00e3o e otimiza\u00e7\u00e3o cont\u00ednua de seus pr\u00f3prios componentes. Um m\u00f3dulo dedicado ao Monitoramento de Desempenho e Reconfigura\u00e7\u00e3o Din\u00e2mica permitiria que o sistema ajustasse seus par\u00e2metros operacionais em tempo real com base nas m\u00e9tricas de desempenho coletadas. Isso incluiria a otimiza\u00e7\u00e3o de hiperpar\u00e2metros dos modelos de IA, ajuste de limites de custos e rebalanceamento de carga de tarefas entre agentes, aumentando significativamente a precis\u00e3o e autonomia do sistema.",
+        "type": "arch",
+        "priority": "high",
+        "files_involved": [
+            "core/task_engine.py",
+            "core/config_manager.py",
+            "core/logger.py",
+            "core/cost_governor.py",
+            "tools/monitoring_tools.py"
+        ],
+        "proposed_code": "# Sugest\u00e3o de Estrutura para o Novo M\u00f3dulo\nclass DynamicOptimizer:\n    def __init__(self):\n        self.monitor = MonitoringTools()\n        self.config = ConfigManager()\n\n    def analyze_performance(self):\n        # Coletar m\u00e9tricas de desempenho\n        metrics = self.monitor.collect_performance_metrics()\n        # Analisar e sugerir ajustes\n        self.adjust_system_configurations(metrics)\n\n    def adjust_system_configurations(self, metrics):\n        # L\u00f3gica para ajustar configura\u00e7\u00f5es com base em m\u00e9tricas\n        if metrics['cpu_usage'] > 80:\n            self.config.adjust_execution_thresholds()\n        if metrics['response_time'] > self.config.get_threshold():\n            self.config.rebalance_task_load()",
+        "id": "arch_1775256432",
+        "status": "pending",
+        "timestamp": "2026-04-03 19:47:12"
+    },
+    {
+        "title": "Melhoria de Valida\u00e7\u00e3o e Tratamento de Erros",
+        "description": "O c\u00f3digo atual n\u00e3o possui valida\u00e7\u00f5es robustas para os tensores e par\u00e2metros do modelo. Sugiro adicionar verifica\u00e7\u00f5es para garantir que os tensores existem no state_dict e que os par\u00e2metros do modelo est\u00e3o corretos antes da convers\u00e3o.",
+        "type": "refactor",
+        "file_path": "/home/diego/\u00c1rea de trabalho/Arkanis_V3.1/libs/whisper.cpp/models/convert-silero-vad-to-ggml.py",
+        "proposed_code": "import os\nimport struct\nimport argparse\nimport torch\nimport numpy as np\nfrom silero_vad import load_silero_vad, __version__ as silero_version\n\ndef validate_model_parameters(model):\n    \"\"\"Validate critical model parameters before conversion\"\"\"\n    required_params = {\n        'window_size': 512,\n        'context_size': 64,\n        'n_encoder_layers': 4,\n        'input_channels': 129,\n        'encoder_in_channels': [input_channels, 128, 64, 64],\n        'encoder_out_channels': [128, 64, 64, 128],\n        'lstm_input_size': 128,\n        'lstm_hidden_size': 128\n    }\n    \n    for param, expected_value in required_params.items():\n        if param in locals() and locals()[param] != expected_value:\n            raise ValueError(f\"Invalid {param}: expected {expected_value}, got {locals()[param]}\")\n\ndef convert_silero_vad(output_path, print_tensors=True):\n    model = load_silero_vad()\n    state_dict = model.state_dict()\n    \n    # Validate model parameters first\n    validate_model_parameters(model)\n\n    # Clean up state dict keys - filter out 8k model\n    cleaned_dict = {}\n    missing_tensors = []\n    \n    for key, value in state_dict.items():\n        if \"_8k\" not in key:\n            clean_key = f\"_model.{key}\" if not key.startswith(\"_model.\") else key\n            cleaned_dict[clean_key] = value\n    \n    base, ext = os.path.splitext(output_path)\n    output_file = f\"{base}-v{silero_version}-ggml{ext}\"\n    print(f\"Saving GGML Silero-VAD model to {output_file}\")\n\n    print(\"\\nTensor info for debugging:\")\n    for key, tensor in cleaned_dict.items():\n        print(f\"  - {key}: {tensor.shape} ({tensor.dtype})\")\n    print()\n\n    try:\n        with open(output_file, \"wb\") as fout:\n            # [Restante do c\u00f3digo original mantido...]\n            \n            # Adicionar verifica\u00e7\u00e3o para tensores faltantes cr\u00edticos\n            critical_tensors = [\n                \"_model.stft.forward_basis_buffer\",\n                \"_model.decoder.rnn.weight_ih\",\n                \"_model.decoder.rnn.weight_hh\"\n            ]\n            \n            for tensor in critical_tensors:\n                if tensor not in cleaned_dict:\n                    raise ValueError(f\"Critical tensor {tensor} missing in model state_dict\")\n            \n            # [Restante do processamento original...]\n            \n    except Exception as e:\n        # Limpeza em caso de erro\n        if os.path.exists(output_file):\n            os.remove(output_file)\n        raise RuntimeError(f\"Conversion failed: {str(e)}\")\n\nif __name__ == \"__main__\":\n    parser = argparse.ArgumentParser(description=\"Convert Silero-VAD PyTorch model to GGML format\")\n    parser.add_argument(\"--output\", type=str, required=True, help=\"Path to output GGML model file\")\n    parser.add_argument(\"--print-tensors\", action=\"store_true\", help=\"Print tensor values\", default=True)\n    parser.add_argument(\"--validate\", action=\"store_true\", help=\"Run extended model validation\", default=False)\n    args = parser.parse_args()\n\n    try:\n        convert_silero_vad(args.output, args.print_tensors)\n    except Exception as e:\n        print(f\"Error: {str(e)}\", file=sys.stderr)\n        sys.exit(1)",
+        "id": "sug_1775256220",
+        "status": "pending",
+        "timestamp": "2026-04-03 19:43:40"
+    },
+    {
+        "title": "Melhoria de Boas Pr\u00e1ticas e Robustez no Conversor de Modelos",
+        "description": "Adicionei verifica\u00e7\u00f5es de seguran\u00e7a e tratamento de erros, removi duplica\u00e7\u00e3o de c\u00f3digo (WHISPER_MAPPING tinha 'layers' duplicado) e melhorei a organiza\u00e7\u00e3o das importa\u00e7\u00f5es.",
+        "type": "refactor",
+        "file_path": "/home/diego/\u00c1rea de trabalho/Arkanis_V3.1/libs/whisper.cpp/models/convert-h5-to-coreml.py",
+        "proposed_code": "import argparse\nimport importlib.util\nimport os\nfrom copy import deepcopy\n\nimport torch\nfrom transformers import WhisperForConditionalGeneration\n\n# Configura\u00e7\u00e3o inicial\nWHISPER_MAPPING = {\n    \"fc1\": \"mlp.0\",\n    \"fc2\": \"mlp.2\",\n    \"final_layer_norm\": \"mlp_ln\",\n    \"layers\": \"blocks\",\n    \".self_attn.q_proj\": \".attn.query\",\n    \".self_attn.k_proj\": \".attn.key\",\n    \".self_attn.v_proj\": \".attn.value\",\n    \".self_attn_layer_norm\": \".attn_ln\",\n    \".self_attn.out_proj\": \".attn.out\",\n    \".encoder_attn.q_proj\": \".cross_attn.query\",\n    \".encoder_attn.k_proj\": \".cross_attn.key\",\n    \".encoder_attn.v_proj\": \".cross_attn.value\",\n    \".encoder_attn_layer_norm\": \".cross_attn_ln\",\n    \".encoder_attn.out_proj\": \".cross_attn.out\",\n    \"decoder.layer_norm.\": \"decoder.ln.\",\n    \"encoder.layer_norm.\": \"encoder.ln_post.\",\n    \"embed_tokens\": \"token_embedding\",\n    \"encoder.embed_positions.weight\": \"encoder.positional_embedding\",\n    \"decoder.embed_positions.weight\": \"decoder.positional_embedding\",\n    \"layer_norm\": \"ln_post\"\n}\n\nMODEL_NAMES = [\"tiny\", \"tiny.en\", \"base\", \"base.en\", \"small\", \"small.en\", \"medium\", \"medium.en\", \"large-v1\", \"large-v2\", \"large-v3\", \"large-v3-turbo\"]\n\n\ndef validate_file_path(path: str) -> bool:\n    return os.path.exists(path)\n\n\ndef rename_keys(s_dict):\n    keys = list(s_dict.keys())\n    for key in keys:\n        new_key = key\n        for k, v in WHISPER_MAPPING.items():\n            if k in key:\n                new_key = new_key.replace(k, v)\n        s_dict[new_key] = s_dict.pop(key)\n    return s_dict\n\n\ndef convert_hf_whisper(hf_model_name_or_path: str, whisper_state_path: str):\n    if not validate_file_path(hf_model_name_or_path):\n        raise FileNotFoundError(f\"Model path not found: {hf_model_name_or_path}\")\n\n    transformer_model = WhisperForConditionalGeneration.from_pretrained(hf_model_name_or_path)\n    config = transformer_model.config\n\n    dims = {\n        'n_mels': config.num_mel_bins,\n        'n_vocab': config.vocab_size,\n        'n_audio_ctx': config.max_source_positions,\n        'n_audio_state': config.d_model,\n        'n_audio_head': config.encoder_attention_heads,\n        'n_audio_layer': config.encoder_layers,\n        'n_text_ctx': config.max_target_positions,\n        'n_text_state': config.d_model,\n        'n_text_head': config.decoder_attention_heads,\n        'n_text_layer': config.decoder_layers\n    }\n\n    state_dict = deepcopy(transformer_model.model.state_dict())\n    state_dict = rename_keys(state_dict)\n\n    torch.save({\"dims\": dims, \"model_state_dict\": state_dict}, whisper_state_path)\n\n\nif __name__ == \"__main__\":\n    spec = importlib.util.spec_from_file_location('whisper_to_coreml', 'models/convert-whisper-to-coreml.py')\n    whisper_to_coreml = importlib.util.module_from_spec(spec)\n    spec.loader.exec_module(whisper_to_coreml)\n    from whisper import load_model\n\n    parser = argparse.ArgumentParser()\n    parser.add_argument(\"--model-name\", type=str, required=True,\n                        help=\"name of model to convert\")\n    parser.add_argument(\"--model-path\", type=str, required=True,\n                        help=\"path to the model\")\n    parser.add_argument(\"--encoder-only\", type=bool, default=False,\n                        help=\"only convert encoder\")\n    parser.add_argument(\"--quantize\", type=bool, default=False,\n                        help=\"quantize weights to F16\")\n    parser.add_argument(\"--optimize-ane\", type=bool, default=False,\n                        help=\"optimize for ANE execution (currently broken)\")\n    args = parser.parse_args()\n\n    if args.model_name not in MODEL_NAMES:\n        raise ValueError(f\"Invalid model name. Must be one of: {MODEL_NAMES}\")\n\n    pt_target_path = f\"models/hf-{args.model_name}.pt\"\n    convert_hf_whisper(args.model_path, pt_target_path)\n\n    whisper = load_model(pt_target_path).cpu()\n    hparams = whisper.dims\n\n    if args.optimize_ane:\n        whisperANE = whisper_to_coreml.WhisperANE(hparams).eval()\n        whisperANE.load_state_dict(whisper.state_dict())\n        encoder = whisperANE.encoder\n        decoder = whisperANE.decoder\n    else:\n        encoder = whisper.encoder\n        decoder = whisper.decoder\n\n    # Convert encoder\n    encoder = whisper_to_coreml.convert_encoder(hparams, encoder, quantize=args.quantize)\n    encoder.save(f\"models/coreml-encoder-{args.model_name}.mlpackage\")\n\n    if not args.encoder_only:\n        # Convert decoder\n        decoder = whisper_to_coreml.convert_decoder(hparams, decoder, quantize=args.quantize)\n        decoder.save(f\"models/coreml-decoder-{args.model_name}.mlpackage\")\n\n    print(\"done converting\")",
+        "id": "sug_1775255893",
+        "status": "pending",
+        "timestamp": "2026-04-03 19:38:13"
+    },
+    {
+        "title": "Introdu\u00e7\u00e3o de um Core Orchestrator Modular",
+        "description": "A estrutura atual carece de um m\u00f3dulo centralizado que coordene a execu\u00e7\u00e3o de tarefas, roteamento de LLMs e monitoramento de estados. Isso gera acoplamento excessivo entre `task_engine.py`, `llm_router.py` e `goal_manager.py`. Um Core Orchestrator modular permitiria maior autonomia, escalabilidade e controle de fluxo de tarefas.",
+        "type": "arch",
+        "priority": "high",
+        "files_involved": [
+            "core/task_engine.py",
+            "core/llm_router.py",
+            "core/goal_manager.py",
+            "kernel/planner.py",
+            "core/__init__.py"
+        ],
+        "proposed_code": "# Cria\u00e7\u00e3o de Core Orchestrator\nclass Orchestrator:\n    def __init__(self, task_engine, llm_router, goal_manager):\n        self.task_engine = task_engine\n        self.llm_router = llm_router\n        self.goal_manager = goal_manager\n        self.pipeline_state = {}\n        self.task_queue = []\n\n    def execute_pipeline(self, task):\n        # Gerencia fluxo completo desde planejamento at\u00e9 execu\u00e7\u00e3o\n        goal = self.goal_manager.create(task)\n        plan = self.task_engine.generate_plan(goal)\n        for step in plan:\n            llm = self.llm_router.select(step)\n            result = self.task_engine.execute(step, llm)\n            self.pipeline_state[step] = result\n        return self.pipeline_state\n\n# Integra\u00e7\u00e3o com m\u00f3dulos existentes\norchestrator = Orchestrator(task_engine, llm_router, goal_manager)",
+        "id": "arch_1775255808",
+        "status": "pending",
+        "timestamp": "2026-04-03 19:36:48"
+    },
+    {
+        "title": "Melhoria de Robustez e Legibilidade no Conversor GGML para PyTorch",
+        "description": "O c\u00f3digo atual funciona mas pode ser melhorado em v\u00e1rios aspectos: 1) Adicionar verifica\u00e7\u00e3o de tipos e valida\u00e7\u00e3o de arquivos, 2) Melhorar o tratamento de erros, 3) Organizar melhor a estrutura do c\u00f3digo, 4) Adicionar documenta\u00e7\u00e3o, 5) Otimizar a leitura dos filtros MEL.",
+        "type": "refactor",
+        "file_path": "/home/diego/\u00c1rea de trabalho/Arkanis_V3.1/libs/whisper.cpp/models/ggml_to_pt.py",
+        "proposed_code": "import struct\nimport torch\nimport numpy as np\nfrom collections import OrderedDict\nfrom pathlib import Path\nimport sys\n\nclass GGMLToPyTorchConverter:\n    \"\"\"\n    Converts GGML model files to PyTorch format.\n    \n    Args:\n        input_path (Path): Path to input GGML model file\n        output_dir (Path): Directory to save PyTorch model\n    \"\"\"\n    \n    def __init__(self, input_path: Path, output_dir: Path):\n        self.input_path = input_path\n        self.output_dir = output_dir\n        self.output_path = output_dir / \"torch-model.pt\"\n        \n        if not input_path.exists():\n            raise FileNotFoundError(f\"Input file {input_path} not found\")\n        \n        if not output_dir.exists():\n            output_dir.mkdir(parents=True)\n    \n    def convert(self):\n        \"\"\"Main conversion method\"\"\"\n        try:\n            model_state_dict = self._read_ggml_file()\n            model = self._create_whisper_model()\n            model.load_state_dict(model_state_dict)\n            torch.save(model.state_dict(), self.output_path)\n            print(f\"Model successfully converted and saved to {self.output_path}\")\n        except Exception as e:\n            print(f\"Conversion failed: {str(e)}\")\n            raise\n    \n    def _read_ggml_file(self) -> OrderedDict:\n        \"\"\"Reads GGML file and returns state dict\"\"\"\n        with open(self.input_path, \"rb\") as f:\n            # Read header\n            header = self._read_header(f)\n            \n            # Read mel filters\n            mel_filters = self._read_mel_filters(f)\n            \n            # Read tokens\n            self._read_tokens(f)\n            \n            # Read model weights\n            return self._read_model_weights(f)\n    \n    def _read_header(self, file) -> dict:\n        \"\"\"Reads and validates GGML file header\"\"\"\n        try:\n            magic, *params = struct.unpack(\"12i\", file.read(48))\n            if magic != 0x67676d6c:  # 'ggml' in hex\n                raise ValueError(\"Invalid GGML file format\")\n                \n            header = {\n                'magic': magic,\n                'n_vocab': params[0],\n                'n_audio_ctx': params[1],\n                # ... (other params)\n                'use_f16': bool(params[11])\n            }\n            \n            print(f\"Model parameters: {header}\")\n            return header\n        except struct.error as e:\n            raise ValueError(\"Invalid GGML header format\") from e\n    \n    def _read_mel_filters(self, file) -> np.ndarray:\n        \"\"\"Reads MEL filters more efficiently\"\"\"\n        shape = (struct.unpack(\"i\", file.read(4))[0], \n                 struct.unpack(\"i\", file.read(4))[0])\n        return np.fromfile(file, dtype=np.float32, count=np.prod(shape)).reshape(shape)\n    \n    def _read_tokens(self, file):\n        \"\"\"Reads token dictionary\"\"\"\n        num_tokens = struct.unpack(\"i\", file.read(4))[0]\n        return {file.read(struct.unpack(\"i\", file.read(4))[0]): {} \n                for _ in range(num_tokens)}\n    \n    def _read_model_weights(self, file) -> OrderedDict:\n        \"\"\"Reads model weights into state dict\"\"\"\n        state_dict = OrderedDict()\n        while True:\n            try:\n                n_dims, name_len, ftype = struct.unpack(\"iii\", file.read(12))\n            except struct.error:\n                break\n                \n            dims = [struct.unpack(\"i\", file.read(4))[0] for _ in range(n_dims)][::-1]\n            name = file.read(name_len).decode(\"utf-8\")\n            dtype = np.float16 if ftype == 1 else np.float32\n            data = np.fromfile(file, dtype=dtype, count=np.prod(dims)).reshape(dims)\n            \n            if name in [\"encoder.conv1.bias\", \"encoder.conv2.bias\"]:\n                data = data[:, 0]\n                \n            state_dict[name] = torch.from_numpy(data)\n            \n        return state_dict\n    \n    def _create_whisper_model(self):\n        \"\"\"Creates Whisper model with correct dimensions\"\"\"\n        from whisper import Whisper, ModelDimensions\n        dims = ModelDimensions(\n            n_mels=self.header['n_mels'],\n            n_audio_ctx=self.header['n_audio_ctx'],\n            # ... (other params)\n        )\n        return Whisper(dims)\n\n\nif __name__ == \"__main__\":\n    if len(sys.argv) < 3:\n        print(\"Usage: convert-ggml-to-pt.py model.bin dir-output\")\n        sys.exit(1)\n    \n    try:\n        converter = GGMLToPyTorchConverter(Path(sys.argv[1]), Path(sys.argv[2]))\n        converter.convert()\n    except Exception as e:\n        print(f\"Error: {str(e)}\")\n        sys.exit(1)",
+        "id": "sug_1775255558",
+        "status": "pending",
+        "timestamp": "2026-04-03 19:32:38"
+    },
+    {
+        "title": "Melhorias de Robustez e Padroniza\u00e7\u00e3o",
+        "description": "Adicionar verifica\u00e7\u00f5es de integridade, melhorar tratamento de erros e padronizar abertura de arquivos com context managers",
+        "type": "refactor",
+        "file_path": "/home/diego/\u00c1rea de trabalho/Arkanis_V3.1/libs/whisper.cpp/models/convert-h5-to-ggml.py",
+        "proposed_code": "import io\nimport os\nimport sys\nimport struct\nimport json\nimport code\nimport torch\nimport numpy as np\nfrom pathlib import Path\n\nfrom transformers import WhisperForConditionalGeneration\n\nconv_map = {\n        'self_attn.k_proj'              : 'attn.key',\n        'self_attn.q_proj'              : 'attn.query',\n        'self_attn.v_proj'              : 'attn.value',\n        'self_attn.out_proj'            : 'attn.out',\n        'self_attn_layer_norm'          : 'attn_ln',\n        'encoder_attn.q_proj'           : 'cross_attn.query',\n        'encoder_attn.v_proj'           : 'cross_attn.value',\n        'encoder_attn.out_proj'         : 'cross_attn.out',\n        'encoder_attn_layer_norm'       : 'cross_attn_ln',\n        'fc1'                           : 'mlp.0',\n        'fc2'                           : 'mlp.2',\n        'final_layer_norm'              : 'mlp_ln',\n        'encoder.layer_norm.bias'       : 'encoder.ln_post.bias',\n        'encoder.layer_norm.weight'     : 'encoder.ln_post.weight',\n        'encoder.embed_positions.weight': 'encoder.positional_embedding',\n        'decoder.layer_norm.bias'       : 'decoder.ln.bias',\n        'decoder.layer_norm.weight'     : 'decoder.ln.weight',\n        'decoder.embed_positions.weight': 'decoder.positional_embedding',\n        'decoder.embed_tokens.weight'   : 'decoder.token_embedding.weight',\n        'proj_out.weight'               : 'decoder.proj.weight',\n        }\n\ndef bytes_to_unicode():\n    bs = list(range(ord(\"!\"), ord(\"~\")+1))+list(range(ord(\"\u00a1\"), ord(\"\u00ac\")+1))+list(range(ord(\"\u00ae\"), ord(\"\u00ff\")+1))\n    cs = bs[:]\n    n = 0\n    for b in range(2**8):\n        if b not in bs:\n            bs.append(b)\n            cs.append(2**8+n)\n            n += 1\n    cs = [chr(n) for n in cs]\n    return dict(zip(bs, cs))\n\nif len(sys.argv) < 4:\n    print(\"Usage: convert-h5-to-ggml.py dir_model path-to-whisper-repo dir-output [use-f32]\\n\")\n    sys.exit(1)\n\n# Verifica exist\u00eancia dos diret\u00f3rios\ndir_model   = Path(sys.argv[1])\nif not dir_model.exists():\n    raise FileNotFoundError(f\"Model directory not found: {dir_model}\")\n\ndir_whisper = Path(sys.argv[2])\nif not dir_whisper.exists():\n    raise FileNotFoundError(f\"Whisper repository not found: {dir_whisper}\")\n\ndir_out     = Path(sys.argv[3])\ndir_out.mkdir(parents=True, exist_ok=True)\n\n# Carrega arquivos com verifica\u00e7\u00f5es\ntry:\n    with open(dir_model / \"vocab.json\", \"r\", encoding=\"utf8\") as f:\n        encoder = json.load(f)\n    with open(dir_model / \"added_tokens.json\", \"r\", encoding=\"utf8\") as f:\n        encoder_added = json.load(f)\n    with open(dir_model / \"config.json\", \"r\", encoding=\"utf8\") as f:\n        hparams = json.load(f)\nexcept Exception as e:\n    raise RuntimeError(f\"Failed to load model files: {str(e)}\")\n\n# Handle missing 'max_length'\nif \"max_length\" not in hparams or hparams[\"max_length\"] is None:\n    hparams[\"max_length\"] = hparams.get(\"max_target_positions\", 448)\nelif not isinstance(hparams[\"max_length\"], int):\n    try:\n        hparams[\"max_length\"] = int(hparams[\"max_length\"])\n    except ValueError:\n        print(f\"Warning: Invalid max_length value '{hparams['max_length']}', using default 448.\")\n        hparams[\"max_length\"] = 448\n\nmodel = WhisperForConditionalGeneration.from_pretrained(dir_model)\nn_mels = hparams[\"num_mel_bins\"]\n\n# Verifica exist\u00eancia do arquivo mel_filters\nmel_path = os.path.join(dir_whisper, \"whisper/assets\", \"mel_filters.npz\")\nif not os.path.exists(mel_path):\n    raise FileNotFoundError(f\"Mel filters not found: {mel_path}\")\n\nwith np.load(mel_path) as f:\n    filters = torch.from_numpy(f[f\"mel_{n_mels}\"])\n\n# Configura formato de sa\u00edda\nuse_f16 = True if len(sys.argv) <= 4 else False\nfname_out = dir_out / (\"ggml-model-f32.bin\" if not use_f16 else \"ggml-model.bin\")\n\ntry:\n    with open(dir_model / \"vocab.json\", \"r\", encoding=\"utf8\") as f:\n        tokens = json.load(f)\n    tokens = sorted(tokens.items(), key=lambda x: x[1])\n\nexcept Exception as e:\n    raise RuntimeError(f\"Failed to load tokens: {str(e)}\")\n\nwith open(fname_out, \"wb\") as fout:\n    # Grava cabe\u00e7alho\n    HEADER_FIELDS = [\n        (\"i\", 0x67676d6c),  # magic\n        (\"i\", hparams[\"vocab_size\"]),\n        (\"i\", hparams[\"max_source_positions\"]),\n        (\"i\", hparams[\"d_model\"]),\n        (\"i\", hparams[\"encoder_attention_heads\"]),\n        (\"i\", hparams[\"encoder_layers\"]),\n        (\"i\", hparams[\"max_length\"]),\n        (\"i\", hparams[\"d_model\"]),\n        (\"i\", hparams[\"decoder_attention_heads\"]),\n        (\"i\", hparams[\"decoder_layers\"]),\n        (\"i\", hparams[\"num_mel_bins\"]),\n        (\"i\", use_f16),\n        (\"i\", filters.shape[0]),\n        (\"i\", filters.shape[1])\n    ]\n\n    for fmt, value in HEADER_FIELDS:\n        fout.write(struct.pack(fmt, value))\n\n    # Grava filtros\n    for i in range(filters.shape[0]):\n        for j in range(filters.shape[1]):\n            fout.write(struct.pack(\"f\", filters[i][j]))\n\n    byte_encoder = bytes_to_unicode()\n    byte_decoder = {v:k for k, v in byte_encoder.items()}\n\n    fout.write(struct.pack(\"i\", len(tokens)))\n\n    # Grava tokens\n    for key in tokens:\n        text = bytearray([byte_decoder[c] for c in key[0]])\n        fout.write(struct.pack(\"i\", len(text)))\n        fout.write(text)\n\n    # Processa e grava pesos do modelo\n    list_vars = model.state_dict()\n    for name in list_vars.keys():\n        if name == \"proj_out.weight\":\n            print('Skipping', name)\n            continue\n\n        src = name\n        nn = name.split(\".\")[1:] if name != \"proj_out.weight\" else name.split(\".\")\n\n        if nn[1] == \"layers\":\n            nn[1] = \"blocks\"\n            mapped = \"attn.key\" if nn[0] == \"encoder\" else \"cross_attn.key\" if \".\".join(nn[3:-1]) == \"encoder_attn.k_proj\" else conv_map[\".\".join(nn[3:-1])]\n            name = \".\".join(nn[:3] + [mapped] + nn[-1:])\n        else:\n            name = \".\".join(nn)\n            name = conv_map[name] if name in conv_map else name\n\n        print(src, ' -> ', name)\n        data = list_vars[src].squeeze().numpy()\n        data = data.astype(np.float16)\n\n        if name in [\"encoder.conv1.bias\", \"encoder.conv2.bias\"]:\n            data = data.reshape(data.shape[0], 1)\n            print(\"  Reshaped variable: \" , name , \" to shape: \", data.shape)\n\n        n_dims = len(data.shape)\n        print(name, n_dims, data.shape)\n\n        ftype = 1\n        if use_f16:\n            if n_dims < 2 or \\\n                    name == \"encoder.conv1.bias\"   or \\\n                    name == \"encoder.conv2.bias\"   or \\\n                    name == \"encoder.positional_embedding\" or \\\n                    name == \"decoder.positional_embedding\":\n                print(\"  Converting to float32\")\n                data = data.astype(np.float32)\n                ftype = 0\n        else:\n            data = data.astype(np.float32)\n            ftype = 0\n\n        str_ = name.encode('utf-8')\n        fout.write(struct.pack(\"iii\", n_dims, len(str_), ftype))\n        for i in range(n_dims):\n            fout.write(struct.pack(\"i\", data.shape[n_dims - 1 - i]))\n        fout.write(str_)\n\n        data.tofile(fout)\n\nprint(\"Done. Output file: \" , fname_out)\nprint(\"\")\n",
+        "id": "sug_1775255221",
+        "status": "pending",
+        "timestamp": "2026-04-03 19:27:01"
+    },
+    {
+        "title": "Introdu\u00e7\u00e3o de um Orchestrator Modular para Gest\u00e3o de Fluxos Ass\u00edncronos",
+        "description": "O sistema atual possui v\u00e1rias tarefas e agentes trabalhando de forma semi-independente, podendo levar a acoplamentos impl\u00edcitos e fluxos n\u00e3o otimizados. A introdu\u00e7\u00e3o de um Orchestrator central permitir\u00e1: 1) Gerenciamento granular de fluxos de trabalho 2) Melhoria na prioriza\u00e7\u00e3o de tarefas 3) Monitoramento em tempo real de custos e recursos. Isso aumenta a precis\u00e3o ao garantir que os fluxos sejam executados na ordem correta e com os recursos adequados.",
+        "type": "arch",
+        "priority": "high",
+        "files_involved": [
+            "core/task_engine.py",
+            "core/agent_bus.py",
+            "kernel/planner.py",
+            "kernel/executor.py",
+            "core/cost_governor.py"
+        ],
+        "proposed_code": "# Novo arquivo: core/orchestrator.py\n\nclass Orchestrator:\n    def __init__(self):\n        self.task_queue = PriorityQueue()\n        self.active_tasks = {}\n        self.resource_monitor = ResourceMonitor()\n\n    def schedule_task(self, task, priority=0):\n        self.task_queue.put((priority, task))\n\n    def execute_next(self):\n        _, next_task = self.task_queue.get()\n        if self.resource_monitor.can_execute(next_task):\n            executor.execute(next_task)\n            self.active_tasks[next_task.id] = next_task\n\n    def monitor_tasks(self):\n        for task in self.active_tasks.values():\n            if task.status == 'completed':\n                self.handle_completion(task)\n\n    def handle_completion(self, task):\n        # Handle task completion logic\n        pass",
+        "id": "arch_1775255197",
+        "status": "pending",
+        "timestamp": "2026-04-03 19:26:37"
+    },
+    {
+        "title": "Melhoria de Robustez e Desempenho no Benchmark",
+        "description": "Adicionar tratamento de erro robusto para execu\u00e7\u00e3o de subprocessos e melhorar a efici\u00eancia na leitura de sa\u00edda do processo.",
+        "type": "refactor",
+        "file_path": "/home/diego/\u00c1rea de trabalho/Arkanis_V3.1/libs/whisper.cpp/scripts/bench.py",
+        "proposed_code": "import os\nimport subprocess\nimport re\nimport csv\nimport wave\nimport contextlib\nimport argparse\n\n\n# Custom action to handle comma-separated list\nclass ListAction(argparse.Action):\n    def __call__(self, parser, namespace, values, option_string=None):\n        setattr(namespace, self.dest, [int(val) for val in values.split(\",\")])\n\n\nparser = argparse.ArgumentParser(description=\"Benchmark the speech recognition model\")\n\n# Define the argument to accept a list\nparser.add_argument(\n    \"-t\",\n    \"--threads\",\n    dest=\"threads\",\n    action=ListAction,\n    default=[4],\n    help=\"List of thread counts to benchmark (comma-separated, default: 4)\",\n)\n\nparser.add_argument(\n    \"-p\",\n    \"--processors\",\n    dest=\"processors\",\n    action=ListAction,\n    default=[1],\n    help=\"List of processor counts to benchmark (comma-separated, default: 1)\",\n)\n\n\nparser.add_argument(\n    \"-f\",\n    \"--filename\",\n    type=str,\n    default=\"./samples/jfk.wav\",\n    help=\"Relative path of the file to transcribe (default: ./samples/jfk.wav)\",\n)\n\n# Parse the command line arguments\nargs = parser.parse_args()\n\nsample_file = args.filename\n\nthreads = args.threads\nprocessors = args.processors\n\n# Define the models, threads, and processor counts to benchmark\nmodels = [\n    \"ggml-tiny.en.bin\",\n    \"ggml-tiny.bin\",\n    \"ggml-base.en.bin\",\n    \"ggml-base.bin\",\n    \"ggml-small.en.bin\",\n    \"ggml-small.bin\",\n    \"ggml-medium.en.bin\",\n    \"ggml-medium.bin\",\n    \"ggml-large-v1.bin\",\n    \"ggml-large-v2.bin\",\n    \"ggml-large-v3.bin\",\n    \"ggml-large-v3-turbo.bin\",\n]\n\n\nmetal_device = \"\"\n\n# Initialize a dictionary to hold the results\nresults = {}\n\ngitHashHeader = \"Commit\"\nmodelHeader = \"Model\"\nhardwareHeader = \"Hardware\"\nrecordingLengthHeader = \"Recording Length (seconds)\"\nthreadHeader = \"Thread\"\nprocessorCountHeader = \"Processor Count\"\nloadTimeHeader = \"Load Time (ms)\"\nsampleTimeHeader = \"Sample Time (ms)\"\nencodeTimeHeader = \"Encode Time (ms)\"\ndecodeTimeHeader = \"Decode Time (ms)\"\nsampleTimePerRunHeader = \"Sample Time per Run (ms)\"\nencodeTimePerRunHeader = \"Encode Time per Run (ms)\"\ndecodeTimePerRunHeader = \"Decode Time per Run (ms)\"\ntotalTimeHeader = \"Total Time (ms)\"\n\n\ndef check_file_exists(file: str) -> bool:\n    return os.path.isfile(file)\n\n\ndef get_git_short_hash() -> str:\n    try:\n        return (\n            subprocess.check_output([\"git\", \"rev-parse\", \"--short\", \"HEAD\"])\n            .decode()\n            .strip()\n        )\n    except subprocess.CalledProcessError as e:\n        return \"\"\n\n\ndef wav_file_length(file: str = sample_file) -> float:\n    with contextlib.closing(wave.open(file, \"r\")) as f:\n        frames = f.getnframes()\n        rate = f.getframerate()\n        duration = frames / float(rate)\n        return duration\n\n\ndef extract_metrics(output: str, label: str) -> tuple[float, float]:\n    match = re.search(rf\"{label} \\s*=\\s*(\\d+\\.\\d+)\\s*ms\\s*/\\s*(\\d+)\\s*runs\", output)\n    time = float(match.group(1)) if match else None\n    runs = float(match.group(2)) if match else None\n    return time, runs\n\n\ndef extract_device(output: str) -> str:\n    match = re.search(r\"picking default device: (.*)\", output)\n    device = match.group(1) if match else \"Not found\"\n    return device\n\n\n# Check if the sample file exists\nif not check_file_exists(sample_file):\n    raise FileNotFoundError(f\"Sample file {sample_file} not found\")\n\nrecording_length = wav_file_length()\n\n\n# Check that all models exist\n# Filter out models from list that are not downloaded\nfiltered_models = []\nfor model in models:\n    if check_file_exists(f\"models/{model}\"):\n        filtered_models.append(model)\n    else:\n        print(f\"Model {model} not found, removing from list\")\n\nmodels = filtered_models\n\n# Loop over each combination of parameters\nfor model in filtered_models:\n    for thread in threads:\n        for processor_count in processors:\n            # Construct the command to run\n            cmd = f\"./build/bin/whisper-cli -m models/{model} -t {thread} -p {processor_count} -f {sample_file}\"\n            try:\n                # Run the command and get the output\n                process = subprocess.Popen(\n                    cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE\n                )\n                \n                # Efficiently read output while process is running\n                output_lines = []\n                while process.poll() is None:\n                    line = process.stdout.readline().decode()\n                    if line:\n                        output_lines.append(line)\n                output = ''.join(output_lines)\n\n                # Process the remaining output\n                remaining = process.stdout.read().decode()\n                output += remaining\n\n                # Check for errors\n                if process.returncode != 0:\n                    error = process.stderr.read().decode()\n                    print(f\"Error running benchmark for {model}: {error}\")\n                    continue\n\n                # Parse the output\n                load_time_match = re.search(r\"load time\\s*=\\s*(\\d+\\.\\d+)\\s*ms\", output)\n                load_time = float(load_time_match.group(1)) if load_time_match else None\n\n                metal_device = extract_device(output)\n                sample_time, sample_runs = extract_metrics(output, \"sample time\")\n                encode_time, encode_runs = extract_metrics(output, \"encode time\")\n                decode_time, decode_runs = extract_metrics(output, \"decode time\")\n\n                total_time_match = re.search(r\"total time\\s*=\\s*(\\d+\\.\\d+)\\s*ms\", output)\n                total_time = float(total_time_match.group(1)) if total_time_match else None\n\n                model_name = model.replace(\"ggml-\", \"\").replace(\".bin\", \"\")\n\n                print(\n                    f\"Ran model={model_name} threads={thread} processor_count={processor_count}, took {total_time}ms\"\n                )\n                # Store the times in the results dictionary\n                results[(model_name, thread, processor_count)] = {\n                    loadTimeHeader: load_time,\n                    sampleTimeHeader: sample_time,\n                    encodeTimeHeader: encode_time,\n                    decodeTimeHeader: decode_time,\n                    sampleTimePerRunHeader: round(sample_time / sample_runs, 2)\n                    if sample_runs else None,\n                    encodeTimePerRunHeader: round(encode_time / encode_runs, 2)\n                    if encode_runs else None,\n                    decodeTimePerRunHeader: round(decode_time / decode_runs, 2)\n                    if decode_runs else None,\n                    totalTimeHeader: total_time,\n                }\n            except Exception as e:\n                print(f\"Error executing {cmd}: {e}\")\n                continue\n\n# Write the results to a CSV file\nwith open(\"benchmark_results.csv\", \"w\", newline=\"\") as csvfile:\n    fieldnames = [\n        gitHashHeader,\n        modelHeader,\n        hardwareHeader,\n        recordingLengthHeader,\n        threadHeader,\n        processorCountHeader,\n        loadTimeHeader,\n        sampleTimeHeader,\n        encodeTimeHeader,\n        decodeTimeHeader,\n        sampleTimePerRunHeader,\n        encodeTimePerRunHeader,\n        decodeTimePerRunHeader,\n        totalTimeHeader,\n    ]\n    writer = csv.DictWriter(csvfile, fieldnames=fieldnames)\n\n    writer.writeheader()\n\n    shortHash = get_git_short_hash()\n    # Sort the results by total time in ascending order\n    sorted_results = sorted(results.items(), key=lambda x: x[1].get(totalTimeHeader, 0))\n    for params, times in sorted_results:\n        row = {\n            gitHashHeader: shortHash,\n            modelHeader: params[0],\n            hardwareHeader: metal_device,\n            recordingLengthHeader: recording_length,\n            threadHeader: params[1],\n            processorCountHeader: params[2],\n        }\n        row.update(times)\n        writer.writerow(row)\n",
+        "id": "sug_1775254809",
+        "status": "pending",
+        "timestamp": "2026-04-03 19:20:09"
+    },
+    {
+        "title": "Inicializa\u00e7\u00e3o do M\u00f3dulo Interfaces",
+        "description": "O arquivo __init__.py est\u00e1 vazio, o que n\u00e3o \u00e9 uma pr\u00e1tica recomendada. Ele deve incluir pelo menos uma declara\u00e7\u00e3o de importa\u00e7\u00e3o para expor os principais componentes do m\u00f3dulo interfaces.",
+        "type": "refactor",
+        "file_path": "/home/diego/\u00c1rea de trabalho/Arkanis_V3.1/interfaces/__init__.py",
+        "proposed_code": "# Exportando as principais interfaces do m\u00f3dulo\\nfrom .user_interface import UserInterface\\nfrom .system_interface import SystemInterface\\nfrom .network_interface import NetworkInterface\\n\\n__all__ = ['UserInterface', 'SystemInterface', 'NetworkInterface']",
+        "id": "sug_1775253845",
+        "status": "pending",
+        "timestamp": "2026-04-03 19:04:05"
+    },
+    {
+        "title": "Melhoria de Clean Code e Reusabilidade",
+        "description": "A classe ArkanisCLI pode ser melhorada para seguir princ\u00edpios SOLID, especialmente o Single Responsibility Principle (SRP). Podemos extrair m\u00e9todos relacionados \u00e0 exibi\u00e7\u00e3o de UI para uma classe separada.",
+        "type": "refactor",
+        "file_path": "/home/diego/\u00c1rea de trabalho/Arkanis_V3.1/interfaces/cli.py",
+        "proposed_code": "from rich.console import Console\nfrom rich.panel import Panel\nfrom rich.table import Table\nfrom rich.prompt import Prompt\nimport os\n\nclass RichUI:\n    \"\"\"\n    Handles all Rich-based UI rendering\n    \"\"\"\n    def __init__(self):\n        self.console = Console()\n\n    def show_banner(self):\n        \"\"\"Displays the Arkanis V3 branding.\"\"\"\n        banner_text = \"\"\"\n    \u2588\u2580\u2580\u2588 \u2588\u2580\u2580\u2588 \u2588 \u2588 \u2588\u2580\u2580\u2588 \u2588\u2580\u2580\u2584 \u2580\u2588\u2580 \u2588\u2580\u2580\n    \u2588\u2584\u2584\u2588 \u2588\u2584\u2584\u2580 \u2588\u2580\u2584 \u2588\u2584\u2584\u2588 \u2588  \u2588  \u2588  \u2580\u2580\u2588\n    \u2580  \u2580 \u2580 \u2580\u2580 \u2580 \u2580 \u2580  \u2580 \u2580  \u2580 \u2580\u2580\u2580 \u2580\u2580\u2580\n    VERSION 3.1 - AI AGENT OPERATING SYSTEM\n        \"\"\"\n        self.console.print(Panel(banner_text, style=\"bold cyan\", subtitle=\"Control Kernel v3\"))\n\n    def print_message(self, message, style=\"yellow\"):\n        self.console.print(f\"[{style}]{message}[/{style}]\\n\")\n\n    def print_response(self, response):\n        self.console.print(Panel(response, title=\"[bold blue]ARKANIS FINAL REPORT[/bold blue]\", border_style=\"blue\"))\n\n    def build_table(self, title, columns):\n        table = Table(title=title)\n        for col in columns:\n            table.add_column(col[\"name\"], style=col[\"style\"])\n        return table\n\nclass ArkanisCLI:\n    \"\"\"\n    Standard CLI Interface for Arkanis V3.\n    \"\"\"\n    def __init__(self, agent):\n        self.ui = RichUI()\n        self.agent = agent\n\n    def start_loop(self):\n        \"\"\"Main interaction loop for the CLI.\"\"\"\n        self.ui.show_banner()\n        self.ui.print_message(\"System online. Type 'exit' to quit or 'help' for tools.\")\n\n        while True:\n            user_input = Prompt.ask(\"[bold green]User[/bold green]\")\n            \n            if user_input.lower() in [\"exit\", \"sair\", \"quit\"]:\n                self.ui.print_message(\"Shutting down ARKANIS V3...\", \"red\")\n                break\n                \n            if user_input.lower() == \"help\":\n                self.show_help()\n                continue\n\n            try:\n                response = self.agent.handle_input(user_input)\n            except Exception as e:\n                response = f\"[Kernel Error] {str(e)}\"\n\n            self.ui.print_response(response)\n\n    def show_help(self):\n        \"\"\"Displays registered tools.\"\"\"\n        from tools.registry import registry\n        table = self.ui.build_table(\"Available Tools\", [\n            {\"name\": \"Tool Name\", \"style\": \"cyan\"},\n            {\"name\": \"Description\", \"style\": \"white\"}\n        ])\n        \n        tools = registry.list_tools()\n        for name, desc in tools.items():\n            table.add_row(name, desc)\n            \n        self.ui.console.print(table)",
+        "id": "sug_1775253529",
+        "status": "pending",
+        "timestamp": "2026-04-03 18:58:49"
+    },
+    {
+        "title": "Refatora\u00e7\u00e3o do Sistema de Comunica\u00e7\u00e3o entre Agentes",
+        "description": "Atualmente, a comunica\u00e7\u00e3o entre agentes ocorre principalmente via agent_bus.py com um padr\u00e3o pub/sub b\u00e1sico. Isso limita a capacidade de coordena\u00e7\u00e3o complexa e rastreamento de contexto entre agentes. Proponho implementar um 'Context-Aware Message Bus' com: 1) Roteamento baseado em sem\u00e2ntica, 2) Mem\u00f3ria de contexto distribu\u00edda, 3) Contratos de comunica\u00e7\u00e3o tipados.",
+        "type": "arch",
+        "priority": "high",
+        "files_involved": [
+            "core/agent_bus.py",
+            "core/custom_agent.py",
+            "kernel/agent.py",
+            "kernel/planner.py"
+        ],
+        "proposed_code": {
+            "new_files": [
+                "core/context_bus.py",
+                "core/communication_contracts.py"
+            ],
+            "modifications": [
+                {
+                    "file": "core/agent_bus.py",
+                    "change": "Transformar em wrapper do novo Context Bus mantendo compatibilidade"
+                },
+                {
+                    "file": "kernel/agent.py",
+                    "change": "Adicionar ContextManager integrado a cada agente"
+                }
+            ],
+            "architecture": {
+                "layers": [
+                    "Transport (ZeroMQ/NATS)",
+                    "Semantic Router (LLM-based)",
+                    "Context Layer (VectorDB)",
+                    "Contract Validation"
+                ],
+                "benefits": [
+                    "Maior precis\u00e3o na delega\u00e7\u00e3o de tarefas",
+                    "Rastreamento de contexto cross-agent",
+                    "Failover inteligente",
+                    "Autonomia coordenada"
+                ]
+            }
+        },
+        "id": "arch_1775253352",
+        "status": "pending",
+        "timestamp": "2026-04-03 18:55:52"
+    },
+    {
+        "title": "Melhoria de Seguran\u00e7a e Performance no TelegramInterface",
+        "description": "Adi\u00e7\u00e3o de timeout expl\u00edcito para todas as requisi\u00e7\u00f5es HTTP e valida\u00e7\u00e3o de respostas JSON para evitar problemas de seguran\u00e7a e performance.",
+        "type": "security",
+        "file_path": "/home/diego/\u00c1rea de trabalho/Arkanis_V3.1/interfaces/telegram.py",
+        "proposed_code": "import os\nimport time\nimport requests\nimport json\nfrom uuid import uuid4\nfrom rich.console import Console\nfrom rich.panel import Panel\n\nclass TelegramInterface:\n    # ... C\u00f3digo anterior mantido ...\n\n    def _get_updates(self):\n        if not self.token:\n            return []\n            \n        url = f\"{self.api_url}/getUpdates\"\n        params = {\"offset\": self.last_update_id + 1, \"timeout\": 30}\n        try:\n            response = requests.get(url, params=params, timeout=(35, 35)) # Definindo connection timeout e read timeout\n            response.raise_for_status()\n            if not response.content:  # Validar se h\u00e1 conte\u00fado\n                return []\n            data = response.json()\n            if not isinstance(data, dict):  # Validar estrutura JSON\n                raise ValueError(\"Invalid JSON response structure\")\n            if data.get(\"ok\"):\n                return data.get(\"result\", [])\n            else:\n                error_desc = data.get('description', 'Unknown Error')\n                self.console.print(f\"[red]Telegram API Error: {error_desc}[/red]\")\n                self.agent.log(f\"Telegram API Error: {error_desc}\", \"error\")\n                return []\n        except requests.exceptions.RequestException as e:\n            if \"ReadTimeout\" not in str(e) and \"timeout\" not in str(e).lower():\n                self.console.print(f\"[yellow]Polling warning: {e}[/yellow]\")\n                self.agent.log(f\"Telegram Polling connection issue: {e}\", \"warning\")\n            return []\n\n    def _handle_telegram_audio(self, chat_id, file_id) -> str | None:\n        self._send_chat_action(chat_id, \"record_audio\")\n        \n        try:\n            get_file_url = f\"{self.api_url}/getFile\"\n            resp = requests.get(get_file_url, params={\"file_id\": file_id}, timeout=15)\n            resp.raise_for_status()\n            if not resp.content:  # Validar resposta\n                raise ValueError(\"Empty response from Telegram API\")\n            file_data = resp.json()\n            if not isinstance(file_data, dict):\n                raise ValueError(\"Invalid JSON response from Telegram API\")\n            if not file_data.get(\"ok\"):\n                self._send_message(chat_id, \"\u274c Erro ao obter link do arquivo de voz.\")\n                return None\n            \n            file_path = file_data[\"result\"][\"file_path\"]\n            download_url = f\"https://api.telegram.org/file/bot{self.token}/{file_path}\"\n            \n            local_path = os.path.join(\"data\", f\"tg_voice_{uuid4().hex[:8]}.ogg\")\n            os.makedirs(os.path.dirname(local_path), exist_ok=True)\n            \n            audio_resp = requests.get(download_url, timeout=(30, 30))\n            audio_resp.raise_for_status()\n            # ... Restante do c\u00f3digo mantido ...\n            \n        except Exception as e:\n            self.console.print(f\"[red]Telegram Audio Error: {e}[/red]\")\n            self._send_message(chat_id, f\"\u274c Erro cr\u00edtico ao processar \u00e1udio: {str(e)}\")\n            return null",
+        "id": "sug_1775253176",
+        "status": "pending",
+        "timestamp": "2026-04-03 18:52:56"
+    },
+    {
+        "title": "Melhoria de Performance e Seguran\u00e7a no Executor",
+        "description": "O c\u00f3digo atual realiza m\u00faltiplas opera\u00e7\u00f5es de regex e parsing JSON dentro de loops, o que pode ser otimizado. Al\u00e9m disso, h\u00e1 tratamento de exce\u00e7\u00f5es gen\u00e9ricas que pode ser mais espec\u00edfico. Recomendo: 1) Compilar padr\u00f5es regex fora do loop; 2) Extrair parsers JSON para fun\u00e7\u00f5es dedicadas; 3) Especificar exce\u00e7\u00f5es esperadas.",
+        "type": "refactor",
+        "file_path": "/home/diego/\u00c1rea de trabalho/Arkanis_V3.1/kernel/executor.py",
+        "proposed_code": "from typing import List, Dict, Any\nfrom tools.registry import registry\nfrom rich import print as rprint\nimport re\nimport json\n\n# Utility functions moved outside class for reusability\ndef flatten_datetime_result(result: str) -> str:\n    try:\n        data = json.loads(result)\n        return data.get(\"datetime\", result)\n    except json.JSONDecodeError:\n        return result\n\nclass Executor:\n    \"\"\"\n    Executes the planned steps using the registered tools.\n    Supports Result Propagation (Piping) between steps using {{ tool_name }} syntax.\n    \"\"\"\n    def __init__(self):\n        # Precompile common regex patterns\n        self.placeholder_pattern = re.compile(r\"{{{{?\\s*(\\w+)\\s*}}}}?\")\n        self.placeholder_replace_pattern = re.compile(r\"{{{{?\\s*(\\w+)\\s*}}}}?\")\n\n    def execute_plan(self, plan: List[Dict[str, Any]]) -> List[str]:\n        results = []\n        execution_context = {}  # Tracks results of tools in this plan\n        \n        rprint(\"\\n[bold yellow]--- Iniciando Execu\u00e7\u00e3o ---[/bold yellow]\")\n        for step in plan:\n            tool_name = step.get(\"tool\")\n            args = step.get(\"args\", {})\n            \n            # --- Result Propagation Logic ---\n            for key, value in args.items():\n                if isinstance(value, str):\n                    for prev_tool, prev_result in execution_context.items():\n                        # Pattern to catch {tool}, {{tool}}, { tool }, {{ tool }}\n                        # Also catches the alias without 'get_'\n                        alias = prev_tool.replace('get_', '')\n                        pattern = rf\"{{{{?\\s*({re.escape(prev_tool)}|{re.escape(alias)})\\s*}}}}?\"\n                        \n                        def replace_func(match):\n                            processed_result = prev_result\n                            # Specific flattening for get_current_datetime\n                            if prev_tool == \"get_current_datetime\":\n                                processed_result = flatten_datetime_result(str(prev_result))\n                            return str(processed_result)\n\n                        args[key] = self.placeholder_replace_pattern.sub(replace_func, value)\n            \n            # --- LAZY PLACEHOLDER RESOLUTION (For tools called via {{}} but NOT in the plan) ---\n            if isinstance(args.get(key), str):\n                missing_placeholders = self.placeholder_pattern.findall(args[key])\n                for tool_id in missing_placeholders:\n                    actual_tool = registry.get_tool(tool_id) or registry.get_tool(f\"get_{tool_id}\")\n                    if actual_tool and not actual_tool.arguments:\n                        try:\n                            lazy_res = actual_tool.execute()\n                            # Flatten if it's datetime\n                            if \"datetime\" in tool_id:\n                                lazy_res = flatten_datetime_result(lazy_res)\n                            args[key] = self.placeholder_replace_pattern.sub(str(lazy_res), args[key])\n                        except Exception as e:\n                            rprint(f\"[bold red][Executor] Erro ao resolver placeholder {tool_id}: {str(e)}[/bold red]\")\n            \n            tool = registry.get_tool(tool_name)\n            if tool:\n                rprint(f\"[bold yellow][Executor] Executando:[/bold yellow] {tool_name}\")\n                try:\n                    result = tool.execute(**args)\n                    rprint(f\"[bold green][Executor] Conclu\u00eddo:[/bold green] {tool_name}\")\n                    execution_context[tool_name] = result\n                    results.append(result)\n                except KeyError as e:\n                    rprint(f\"[bold red][Executor] Argumento faltante na ferramenta {tool_name}: {str(e)}[/bold red]\")\n                    results.append(f\"Error: Missing argument in '{tool_name}' -> {str(e)}\")\n                except TypeError as e:\n                    rprint(f\"[bold red][Executor] Tipo incorreto na ferramenta {tool_name}: {str(e)}[/bold red]\")\n                    results.append(f\"Error: Invalid type in '{tool_name}' -> {str(e)}\")\n                except Exception as e:\n                    rprint(f\"[bold red][Executor] Erro geral na ferramenta {tool_name}: {str(e)}[/bold red]\")\n                    results.append(f\"Error: Tool '{tool_name}' crashed -> {str(e)}\")\n            else:\n                rprint(f\"[bold red][Executor] Erro:[/bold red] Ferramenta '{tool_name}' n\u00e3o encontrada.\")\n                results.append(f\"Error: Tool '{tool_name}' not found.\")\n        \n        rprint(\"[bold green]--- Execu\u00e7\u00e3o Finalizada ---[/bold green]\\n\")\n        return results\n",
+        "id": "sug_1775252833",
+        "status": "pending",
+        "timestamp": "2026-04-03 18:47:13"
+    },
+    {
+        "title": "Introdu\u00e7\u00e3o de um Sistema de Mem\u00f3ria Distribu\u00edda para Contextualiza\u00e7\u00e3o de Tarefas",
+        "description": "Atualmente, o Arkanis V3 depende principalmente de execu\u00e7\u00f5es pontuais sem uma estrutura de mem\u00f3ria persistente entre tarefas. Implementar um sistema de mem\u00f3ria distribu\u00edda que permite aos agentes acessar e atualizar contextos espec\u00edficos de tarefas, objetivos e dados hist\u00f3ricos aumentaria significativamente a precis\u00e3o e autonomia do sistema, permitindo uma melhor tomada de decis\u00f5es e redu\u00e7\u00e3o de redund\u00e2ncias.",
+        "type": "arch",
+        "priority": "high",
+        "files_involved": [
+            "core/task_engine.py",
+            "core/goal_planner.py",
+            "kernel/planner.py",
+            "kernel/executor.py",
+            "core/agent_bus.py",
+            "core/custom_agent.py"
+        ],
+        "proposed_code": "# Implementa\u00e7\u00e3o de um m\u00f3dulo memory_manager.py que gerencia estados e contextos em um banco de dados distribu\u00eddo\nclass MemoryManager:\n    def __init__(self):\n        self.store = {}  # Utilizar Redis ou similar para persist\u00eancia\n    def get_context(self, task_id):\n        return self.store.get(task_id, {})\n    def update_context(self, task_id, data):\n        if task_id in self.store:\n            self.store[task_id].update(data)\n        else:\n            self.store[task_id] = data\nmemory_manager = MemoryManager()",
+        "id": "arch_1775252740",
+        "status": "pending",
+        "timestamp": "2026-04-03 18:45:40"
+    },
+    {
+        "title": "Inicializa\u00e7\u00e3o B\u00e1sica do M\u00f3dulo Kernel",
+        "description": "O arquivo __init__.py vazio n\u00e3o oferece nenhuma funcionalidade ou organiza\u00e7\u00e3o para o m\u00f3dulo kernel. Sugiro adicionar uma vers\u00e3o e constantes b\u00e1sicas para melhor estrutura\u00e7\u00e3o.",
+        "type": "feature",
+        "file_path": "/home/diego/\u00c1rea de trabalho/Arkanis_V3.1/kernel/__init__.py",
+        "proposed_code": "__version__ = \"3.1.0\"\n__author__ = \"Arkanis Development Team\"\n\n# Defini\u00e7\u00e3o de constantes principais\nKERNEL_STATUS = \"ACTIVE\"\nMAX_THREADS = 128\n\nprint(f\"Arkanis Kernel {__version__} inicializado.\")\nprint(f\"Status: {KERNEL_STATUS} | M\u00e1x. Threads: {MAX_THREADS}\")",
+        "id": "sug_1775252462",
+        "status": "pending",
+        "timestamp": "2026-04-03 18:41:02"
+    },
+    {
+        "title": "Refatora\u00e7\u00e3o do Sistema de Comunica\u00e7\u00e3o entre Agentes",
+        "description": "Atualmente a comunica\u00e7\u00e3o entre agentes ocorre via agent_bus.py com um padr\u00e3o pub/sub b\u00e1sico. Isso limita a capacidade de coordena\u00e7\u00e3o complexa entre agentes e a cria\u00e7\u00e3o de hierarquias din\u00e2micas. Proponho um redesign para um sistema de 'Contratos Inteligentes' entre agentes, onde cada intera\u00e7\u00e3o pode definir protocolos, SLAs e expectativas de qualidade de servi\u00e7o.",
+        "type": "arch",
+        "priority": "high",
+        "files_involved": [
+            "core/agent_bus.py",
+            "core/custom_agent.py",
+            "kernel/agent.py",
+            "kernel/planner.py",
+            "core/goal_manager.py"
+        ],
+        "proposed_code": {
+            "overview": "1. Implementar AgentContract class com:\n   - QoS expectations\n   - Validation schemas\n   - Fallback protocols\n2. Modificar agent_bus para suportar:\n   - Contract negotiation\n   - Dynamic routing baseado em capabilities\n3. Integrar com goal_manager para:\n   - Auto-documenta\u00e7\u00e3o de intera\u00e7\u00f5es\n   - Learning de padr\u00f5es \u00f3timos",
+            "sample": "class AgentContract:\n    def __init__(self, parties, qos_metrics):\n        self.service_level_agreements = {\n            'latency': {'max_ms': 500},\n            'accuracy': {'min_score': 0.85}\n        }\n        self.validation_schemas = {\n            'input': JsonSchema(...),\n            'output': JsonSchema(...)\n        }\n        self.fallback_strategy = 'cascade_retry'\n\nclass EnhancedAgentBus:\n    async def negotiate_contract(self, sender, receiver, task_profile):\n        # Dynamic capability matching\n        # Auto-generate contract terms\n        return AgentContract(...)"
+        },
+        "id": "arch_1775252119",
+        "status": "pending",
+        "timestamp": "2026-04-03 18:35:19"
+    },
+    {
+        "title": "Melhoria de Organiza\u00e7\u00e3o de Exceptions",
+        "description": "O arquivo atual simplesmente importa todas as exceptions de python_multipart sem nenhuma organiza\u00e7\u00e3o ou tratamento adicional. Sugiro criar exceptions customizadas espec\u00edficas para o sistema Arkanis, herdando das exceptions base quando necess\u00e1rio, para melhor rastreabilidade e tratamento de erros.",
+        "type": "refactor",
+        "file_path": "/home/diego/\u00c1rea de Trabalho/Arkanis_V3.1/multipart/exceptions.py",
+        "proposed_code": "from python_multipart.exceptions import *\n\nclass ArkanisMultipartError(Exception):\n    \"\"\"Base exception for all Arkanis multipart errors\"\"\"\n    pass\n\nclass InvalidFileTypeError(ArkanisMultipartError):\n    \"\"\"Raised when an invalid file type is uploaded\"\"\"\n    pass\n\nclass FileSizeExceededError(ArkanisMultipartError):\n    \"\"\"Raised when uploaded file exceeds maximum allowed size\"\"\"\n    pass\n\nclass MultipartParseError(ArkanisMultipartError, MultipartParseError):\n    \"\"\"Raised when there are errors parsing multipart data\"\"\"\n    pass",
+        "id": "sug_1775251821",
+        "status": "pending",
+        "timestamp": "2026-04-03 18:30:21"
+    },
+    {
+        "abort": "Nenhuma melhoria necess\u00e1ria",
+        "id": "sug_1775251512",
+        "status": "pending",
+        "timestamp": "2026-04-03 18:25:12"
+    },
+    {
+        "title": "Refatora\u00e7\u00e3o para Arquitetura de Microservi\u00e7os Orientada a Agentes",
+        "description": "A estrutura atual possui acoplamento excessivo entre os componentes do core/, especialmente entre task_engine.py, goal_planner.py e agent_bus.py. Isso limita a escalabilidade e autonomia dos agentes individuais. Prop\u00f5e-se uma reestrutura\u00e7\u00e3o onde cada agente seja um microservi\u00e7o independente com seu pr\u00f3prio ciclo de vida, comunica\u00e7\u00e3o via message broker (ex: RabbitMQ) e capacidade de auto-escalonamento.",
+        "type": "arch",
+        "priority": "high",
+        "files_involved": [
+            "core/task_engine.py",
+            "core/goal_planner.py",
+            "core/agent_bus.py",
+            "core/custom_agent.py",
+            "kernel/agent.py",
+            "kernel/planner.py"
+        ],
+        "proposed_code": {
+            "new_structure": {
+                "agents/": {
+                    "agent_x/": [
+                        "__init__.py",
+                        "manifest.yaml",
+                        "skills/",
+                        "brain.py"
+                    ],
+                    "agent_y/": [
+                        "__init__.py",
+                        "manifest.yaml",
+                        "skills/"
+                    ],
+                    "shared/": [
+                        "message_schemas/",
+                        "protocols/"
+                    ]
+                },
+                "orchestrator/": [
+                    "service_manager.py",
+                    "discovery.py"
+                ],
+                "message_bus/": [
+                    "broker_interface.py",
+                    "adapters/"
+                ]
+            },
+            "key_changes": [
+                "Implementar padr\u00e3o Event Sourcing para rastreamento de estado",
+                "Adicionar sistema de descoberta de servi\u00e7os din\u00e2micos",
+                "Cada agente gerencia seu pr\u00f3prio ciclo de vida e recursos",
+                "Comunica\u00e7\u00e3o ass\u00edncrona via broker com dead-letter queues"
+            ]
+        },
+        "id": "arch_1775251505",
+        "status": "pending",
+        "timestamp": "2026-04-03 18:25:05"
+    },
+    {
         "title": "Melhoria de Importa\u00e7\u00e3o no Decoder",
         "description": "O arquivo atual simplesmente reexporta tudo do m\u00f3dulo python_multipart.decoders, o que pode levar a polui\u00e7\u00e3o de namespace e importa\u00e7\u00f5es desnecess\u00e1rias. Sugiro importar apenas o que \u00e9 essencial ou usar namespaces expl\u00edcitos.",
         "type": "refactor",
