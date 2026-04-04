@@ -167,3 +167,20 @@ Pense como o Arquiteto das Máquinas.
         data.insert(0, suggestion)
         with open(self.suggestions_file, "w", encoding="utf-8") as f:
             json.dump(data, f, indent=4)
+
+    def get_suggestions(self) -> List[Dict]:
+        try:
+            if not os.path.exists(self.suggestions_file): return []
+            with open(self.suggestions_file, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except Exception:
+            return []
+            
+    def update_suggestion_status(self, sug_id: str, new_status: str):
+        data = self.get_suggestions()
+        for s in data:
+            if s["id"] == sug_id:
+                s["status"] = new_status
+                break
+        with open(self.suggestions_file, "w", encoding="utf-8") as f:
+            json.dump(data, f, indent=4)

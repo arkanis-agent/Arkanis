@@ -46,9 +46,6 @@ def main():
             import api.server as api_server
             from api.server import app
             
-            # Inject the kernel instance into the API server (Fixing Double Agent bug)
-            api_server.agent = agent
-            
             print("\n[Boot] Initializing Web Interface (FastAPI)...")
             print("[INFO] Access ARKANIS at: http://127.0.0.1:8000")
             
@@ -61,7 +58,7 @@ def main():
             import threading
             threading.Thread(target=open_browser, daemon=True).start()
             
-            uvicorn.run(app, host="0.0.0.0", port=8000)
+            uvicorn.run("api.server:app", host="0.0.0.0", port=8000, reload=True)
         
     except KeyboardInterrupt:
         print("\n\n[System] Forced shutdown detected. Closing memory buffers...")

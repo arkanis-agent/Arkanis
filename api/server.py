@@ -79,8 +79,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Shared agent instance (Initialized as None, will be injected by main.py)
-agent: ArkanisAgent = None
+# Managed singleton for the core ArkanisAgent
+agent: ArkanisAgent = ArkanisAgent()
 
 class MessageRequest(BaseModel):
     text: str
