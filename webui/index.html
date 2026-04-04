@@ -192,53 +192,55 @@
 <body class="bg-[#020617] text-slate-100 overflow-hidden font-inter selection:bg-blue-500/30">
     <!-- TopNavBar -->
     <header
-        class="fixed top-0 left-64 right-0 h-16 flex justify-between items-center px-8 z-50 bg-slate-950/85 backdrop-blur-xl shadow-sm dark:shadow-none">
-        <div class="flex items-center gap-6">
+        class="fixed top-0 left-64 right-0 h-16 flex justify-between items-center px-6 z-50 bg-[#030712]/90 backdrop-blur-2xl border-b border-white/[0.04]">
+        <!-- LEFT: Model Selector + Nav -->
+        <div class="flex items-center gap-4">
+
             <!-- Model Selector Dropdown -->
             <div class="relative">
                 <button id="activeModelBtn"
-                    class="flex items-center gap-2.5 px-4 py-2 bg-slate-800/70 border border-white/10 rounded-lg hover:bg-slate-700/70 hover:border-white/20 transition-all">
-                    <span class="material-symbols-outlined text-[15px] text-blue-400"
-                        style="font-variation-settings:'FILL' 1;">smart_toy</span>
-                    <div class="flex flex-col items-start min-w-[110px] max-w-[170px]">
+                    class="group flex items-center gap-2.5 px-3.5 py-2 bg-white/[0.04] border border-white/10 rounded-md hover:bg-white/[0.07] hover:border-blue-500/30 transition-all duration-200 shadow-sm">
+                    <!-- Status dot -->
+                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-[0_0_6px_rgba(52,211,153,0.8)] shrink-0"></span>
+                    <div class="flex flex-col items-start min-w-[100px] max-w-[160px]">
                         <span id="currentModelName"
-                            class="text-[11px] font-bold text-slate-100 leading-tight truncate w-full">CARREGANDO...</span>
-                        <span id="currentModelProvider" class="text-[9px] text-slate-500 leading-tight">--</span>
+                            class="text-[11px] font-black text-slate-100 leading-tight truncate w-full tracking-tight">CARREGANDO...</span>
+                        <span id="currentModelProvider" class="text-[9px] text-slate-500 leading-tight font-mono tracking-widest uppercase">--</span>
                     </div>
                     <span id="modelFreeBadge"
-                        class="hidden text-[8px] font-bold px-1.5 py-0.5 rounded-sm bg-emerald-500/15 text-emerald-400 border border-emerald-500/20 whitespace-nowrap">FREE</span>
-                    <span class="material-symbols-outlined text-[13px] text-slate-500 ml-1">expand_more</span>
+                        class="hidden text-[8px] font-black px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-400 border border-emerald-500/25 whitespace-nowrap">FREE</span>
+                    <span class="material-symbols-outlined text-[14px] text-slate-500 group-hover:text-slate-300 transition-colors">unfold_more</span>
                 </button>
+
+                <!-- Model Dropdown Panel -->
                 <div id="modelDropdown"
-                    class="absolute top-full left-0 mt-1.5 w-[420px] bg-[#0d1117] border border-white/8 rounded-xl shadow-2xl overflow-hidden hidden z-[60]">
+                    class="absolute top-full left-0 mt-2 w-[440px] bg-[#080e18] border border-white/10 rounded-lg shadow-2xl shadow-black/60 overflow-hidden hidden z-[60] backdrop-blur-xl">
+                    <!-- Header -->
+                    <div class="px-4 py-3 bg-white/[0.03] border-b border-white/5 flex items-center gap-2">
+                        <span class="material-symbols-outlined text-blue-400 text-[14px]">neurology</span>
+                        <span class="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Motor de Inteligência</span>
+                    </div>
                     <!-- Search + filters -->
-                    <div class="p-3 border-b border-white/5 bg-slate-900/70 space-y-2.5">
+                    <div class="p-3 border-b border-white/5 space-y-2.5">
                         <div class="relative">
                             <span
-                                class="material-symbols-outlined absolute left-2.5 top-1/2 -translate-y-1/2 text-[14px] text-slate-500 pointer-events-none">search</span>
+                                class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-[14px] text-slate-500 pointer-events-none">search</span>
                             <input id="modelSearchInput" type="text" placeholder="Buscar modelo..." autocomplete="off"
-                                class="w-full bg-slate-800/80 border border-white/8 rounded-lg pl-8 pr-3 py-2 text-[12px] text-white placeholder-slate-500 focus:outline-none focus:border-blue-500/50 transition-colors">
+                                class="w-full bg-black/40 border border-white/8 rounded-md pl-9 pr-3 py-2 text-[12px] text-white placeholder-slate-600 focus:outline-none focus:border-blue-500/40 transition-colors">
                         </div>
                         <div class="flex items-center gap-1.5">
-                            <button
-                                class="model-filter active px-2.5 py-1 rounded-full text-[10px] font-bold bg-blue-500/20 text-blue-300 border border-blue-500/30"
-                                data-filter="all">Todos</button>
-                            <button
-                                class="model-filter px-2.5 py-1 rounded-full text-[10px] font-bold bg-white/5 text-slate-400 border border-white/10 hover:bg-emerald-500/10 hover:text-emerald-400 hover:border-emerald-500/20 transition-all"
-                                data-filter="free">Gratuitos</button>
-                            <button
-                                class="model-filter px-2.5 py-1 rounded-full text-[10px] font-bold bg-white/5 text-slate-400 border border-white/10 hover:bg-amber-500/10 hover:text-amber-400 hover:border-amber-500/20 transition-all"
-                                data-filter="paid">Pagos</button>
-                            <button id="refreshModelsBtn"
-                                class="ml-auto flex items-center gap-1 text-[10px] text-slate-500 hover:text-blue-400 transition-colors whitespace-nowrap">
-                                <span class="material-symbols-outlined text-[13px]">cloud_download</span>Atualizar OR
+                            <button class="model-filter active px-2.5 py-1 rounded text-[9px] font-black bg-blue-500/20 text-blue-300 border border-blue-500/30 uppercase tracking-widest" data-filter="all">Todos</button>
+                            <button class="model-filter px-2.5 py-1 rounded text-[9px] font-black bg-white/5 text-slate-400 border border-white/8 hover:bg-emerald-500/10 hover:text-emerald-400 hover:border-emerald-500/20 transition-all uppercase tracking-widest" data-filter="free">Free</button>
+                            <button class="model-filter px-2.5 py-1 rounded text-[9px] font-black bg-white/5 text-slate-400 border border-white/8 hover:bg-amber-500/10 hover:text-amber-400 hover:border-amber-500/20 transition-all uppercase tracking-widest" data-filter="paid">Premium</button>
+                            <button id="refreshModelsBtn" class="ml-auto flex items-center gap-1 text-[10px] text-slate-500 hover:text-blue-400 transition-colors whitespace-nowrap">
+                                <span class="material-symbols-outlined text-[13px]">cloud_sync</span>
+                                <span>Sincronizar</span>
                             </button>
                         </div>
                     </div>
                     <!-- Model list -->
                     <div id="modelListContainer" class="overflow-y-auto max-h-[360px] custom-scrollbar p-1.5">
-                        <div class="text-center py-10 text-slate-600 text-xs">Clique em "Atualizar OR" para buscar
-                            modelos</div>
+                        <div class="text-center py-10 text-slate-600 text-xs font-bold">Clique em "Sincronizar" para buscar modelos</div>
                     </div>
                     <!-- Hidden legacy containers kept for JS compat -->
                     <div id="cloudModelsList" class="hidden"></div>
@@ -248,36 +250,55 @@
                 </div>
             </div>
 
-            <!-- Auto Model Strategy Toggle -->
-            <div class="flex items-center gap-2 ml-4 px-3 py-1.5 border border-white/5 rounded-lg bg-black/20">
-                <span class="material-symbols-outlined text-sm text-purple-400">smart_toy</span>
-                <span class="text-[11px] font-bold text-slate-400 mr-2">AUTO STRATEGY</span>
-                <label class="relative inline-flex items-center cursor-pointer">
+            <!-- Vertical divider -->
+            <div class="w-px h-5 bg-white/8"></div>
+
+            <!-- Auto Strategy Toggle -->
+            <div class="flex items-center gap-2.5 px-3 py-1.5 border border-white/[0.06] rounded-md bg-white/[0.02] hover:bg-white/[0.04] transition-colors cursor-pointer" onclick="document.getElementById('autoStrategyToggle').click()">
+                <span class="material-symbols-outlined text-[15px] text-purple-400" style="font-variation-settings:'FILL' 1;">auto_awesome</span>
+                <span class="text-[10px] font-black text-slate-400 uppercase tracking-[0.15em]">Auto Strategy</span>
+                <label class="relative inline-flex items-center cursor-pointer" onclick="event.stopPropagation()">
                     <input type="checkbox" id="autoStrategyToggle" class="sr-only peer">
-                    <div
-                        class="w-7 h-4 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-purple-500">
-                    </div>
+                    <div class="w-8 h-4 bg-slate-700/80 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-4 peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-purple-600"></div>
                 </label>
             </div>
 
+            <!-- Vertical divider -->
+            <div class="w-px h-5 bg-white/8"></div>
 
-            <nav class="flex gap-8 items-center font-manrope text-sm tracking-tight font-medium">
-                <a id="topNavChat"
-                    class="text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400 pb-1 cursor-pointer">Mensagens</a>
-                <a id="topNavIntegrations"
-                    class="text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 transition-colors cursor-pointer">Integrações</a>
+            <!-- Navigation Tabs -->
+            <nav class="flex items-center gap-1">
+                <a id="topNavChat" class="relative px-3.5 py-1.5 text-[11px] font-black uppercase tracking-widest text-blue-400 cursor-pointer transition-colors">
+                    Mensagens
+                    <span class="absolute bottom-0 left-0 right-0 h-[2px] bg-gradient-to-r from-blue-500 to-cyan-500 rounded-full"></span>
+                </a>
+                <a id="topNavIntegrations" class="relative px-3.5 py-1.5 text-[11px] font-black uppercase tracking-widest text-slate-500 hover:text-slate-300 cursor-pointer transition-colors">
+                    Integrações
+                </a>
             </nav>
         </div>
-        <div class="flex items-center gap-4">
-            <button class="p-2 hover:bg-slate-900 rounded-lg transition-all active:scale-95 duration-200">
-                <span class="material-symbols-outlined text-slate-400">notifications</span>
+
+        <!-- RIGHT: Actions + Avatar -->
+        <div class="flex items-center gap-2">
+            <!-- System status indicator -->
+            <div class="flex items-center gap-2 px-3 py-1.5 rounded-md border border-white/[0.05] bg-white/[0.02] mr-2">
+                <span id="statusBadge" class="w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-[0_0_6px_rgba(52,211,153,0.8)]"></span>
+                <span id="statusText" class="text-[9px] font-black text-slate-400 uppercase tracking-widest">IDLE</span>
+            </div>
+
+            <button class="w-8 h-8 flex items-center justify-center hover:bg-white/[0.06] rounded-md transition-colors">
+                <span class="material-symbols-outlined text-[18px] text-slate-400">notifications</span>
             </button>
-            <button class="p-2 hover:bg-slate-900 rounded-lg transition-all active:scale-95 duration-200">
-                <span class="material-symbols-outlined text-slate-400">settings</span>
+            <button onclick="setActivePanel('providers')" class="w-8 h-8 flex items-center justify-center hover:bg-white/[0.06] rounded-md transition-colors" title="APIs & Config">
+                <span class="material-symbols-outlined text-[18px] text-slate-400">settings</span>
             </button>
-            <div class="w-8 h-8 rounded-full overflow-hidden ml-2 ring-2 ring-primary/20">
-                <img alt="Avatar"
-                    src="https://lh3.googleusercontent.com/aida-public/AB6AXuBDqLm4aTLeSm5HAXt2de0eEXxA637naKJx2Baf1xAWtlF84ZnPYEUBVl5fME84LZxU9YXC7-Exa6Q8MbG5M9PnyTMYatO8iyVjd2KMvUWwDr3XcWMV5PJAXZ7gB9qra6iBGzzuBY-DU--63lerKMOnbnckTovth7LJsTWab8LRbspjIhrdIzc_lAwhWChGYG4PDjA13GABBEhqOUGzrBzlmVKM-GnzcD4bSAS7oQe70mvlKva4XMqULVTSnfOe5WgISa9b2M9BnNY" />
+
+            <!-- Divider -->
+            <div class="w-px h-5 bg-white/8 mx-1"></div>
+
+            <!-- Avatar -->
+            <div class="w-7 h-7 rounded-md overflow-hidden ring-1 ring-white/10">
+                <img alt="Avatar" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBDqLm4aTLeSm5HAXt2de0eEXxA637naKJx2Baf1xAWtlF84ZnPYEUBVl5fME84LZxU9YXC7-Exa6Q8MbG5M9PnyTMYatO8iyVjd2KMvUWwDr3XcWMV5PJAXZ7gB9qra6iBGzzuBY-DU--63lerKMOnbnckTovth7LJsTWab8LRbspjIhrdIzc_lAwhWChGYG4PDjA13GABBEhqOUGzrBzlmVKM-GnzcD4bSAS7oQe70mvlKva4XMqULVTSnfOe5WgISa9b2M9BnNY" />
             </div>
         </div>
     </header>
@@ -385,19 +406,10 @@
                 <span>APIs & Engine</span>
             </a>
         </nav>
-            <!-- Status Panel moved to bottom -->
-            <div id="statusPanel" class="bg-slate-800/10 rounded-xl p-3 mb-2 border border-white/5 backdrop-blur-sm">
-                <div class="flex items-center gap-2 mb-1">
-                    <span id="statusBadge" class="w-2 h-2 bg-green-500 rounded-full shadow-[0_0_8px_#22c55e]"></span>
-                    <span id="statusText" class="text-[10px] text-slate-400 font-black uppercase tracking-widest">IDLE</span>
-                </div>
-                <div class="flex justify-between items-end mt-2">
-                    <div class="space-y-0.5">
-                        <p id="agentModeText" class="text-[8px] text-slate-500 font-bold uppercase">MODE: MANUAL</p>
-                        <p id="agentCycleText" class="text-[8px] text-slate-500 font-bold uppercase">CYCLE: 0/5</p>
-                    </div>
-                    <div class="text-[8px] text-blue-500/40 font-mono">SYS.OK</div>
-                </div>
+            <!-- Hidden legacy elements kept for JS compat -->
+            <div id="statusPanel" class="hidden">
+                <span id="agentModeText"></span>
+                <span id="agentCycleText"></span>
             </div>
     </aside>
 
@@ -460,6 +472,58 @@
                             <p class="text-slate-500 text-xs leading-relaxed">Identificação de falhas, vulnerabilidades
                                 e otimização estrutural.</p>
                         </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Archive / History Panel -->
+        <section id="historyPanel" class="hidden flex-1 overflow-y-auto p-8 lg:p-12 custom-scrollbar relative">
+            <div class="max-w-5xl mx-auto space-y-8 pb-24 relative z-10">
+                <!-- Header -->
+                <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 border-b border-white/5 pb-6">
+                    <div>
+                        <div class="flex items-center gap-2 mb-2">
+                            <div class="px-2.5 py-1 bg-indigo-500/10 border border-indigo-500/20 rounded-md flex items-center gap-1.5">
+                                <span class="w-1.5 h-1.5 bg-indigo-400 rounded-full animate-pulse"></span>
+                                <span class="text-[9px] font-black text-indigo-400 uppercase tracking-widest">Neural Archive</span>
+                            </div>
+                        </div>
+                        <h2 class="text-4xl font-headline font-black text-white tracking-tight">
+                            <span class="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-purple-500 drop-shadow-[0_0_10px_rgba(99,102,241,0.4)]">Arquivo</span>
+                            <span class="text-white"> de Sess&otilde;es</span>
+                        </h2>
+                        <p class="text-slate-400 text-sm mt-1 uppercase tracking-tighter font-bold opacity-60">Hist&oacute;rico completo de intera&ccedil;&otilde;es neurais</p>
+                    </div>
+                    <div class="flex gap-3">
+                        <button onclick="loadHistory()" class="p-3 bg-slate-800/40 hover:bg-slate-800/60 text-slate-400 hover:text-white rounded-lg border border-white/5 transition-all">
+                            <span class="material-symbols-outlined text-[18px]">sync</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Stats Row -->
+                <div class="grid grid-cols-3 gap-4">
+                    <div class="bg-slate-900/40 border border-white/5 rounded-xl p-4 text-center">
+                        <p class="text-[8px] font-black text-slate-500 uppercase tracking-widest mb-1">Intera&ccedil;&otilde;es</p>
+                        <p id="historyTotalCount" class="text-3xl font-black text-white">&mdash;</p>
+                    </div>
+                    <div class="bg-indigo-500/5 border border-indigo-500/10 rounded-xl p-4 text-center">
+                        <p class="text-[8px] font-black text-indigo-500 uppercase tracking-widest mb-1">Sess&atilde;o Atual</p>
+                        <p class="text-3xl font-black text-indigo-400">1</p>
+                    </div>
+                    <div class="bg-slate-900/40 border border-white/5 rounded-xl p-4 text-center">
+                        <p class="text-[8px] font-black text-slate-500 uppercase tracking-widest mb-1">Status</p>
+                        <p class="text-xs font-black text-emerald-400 mt-2 uppercase tracking-wider">&#9679; Live</p>
+                    </div>
+                </div>
+
+                <!-- History List -->
+                <div id="historyList" class="space-y-3">
+                    <div class="flex flex-col items-center justify-center py-20 text-center opacity-50">
+                        <span class="material-symbols-outlined text-4xl text-slate-600 mb-3">auto_stories</span>
+                        <p class="text-slate-500 text-sm font-bold">Carregando hist&oacute;rico...</p>
+                        <span class="material-symbols-outlined animate-spin text-slate-600 mt-3 text-sm">sync</span>
                     </div>
                 </div>
             </div>

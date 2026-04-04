@@ -751,8 +751,8 @@ document.addEventListener('DOMContentLoaded', () => {
         searchInput.addEventListener('click', e => e.stopPropagation());
     }
     
-    // Initialize Neural Map
-    initNeuralMap();
+    // Neural Map is NOT initialized here — it needs the panel to be visible for D3 dimension calculations.
+    // It will be initialized by showObservability() when the panel opens.
 
     // Filter buttons
     document.querySelectorAll('.model-filter').forEach(btn => {
@@ -1212,25 +1212,26 @@ function setActivePanel(panelId) {
     window.dispatchEvent(new Event('resize'));
 }
 
+
 function initSidebarNav() {
-    const navItems = [
-        { id: 'navChat', panel: 'chat' },
-        { id: 'navHistory', panel: 'history' },
-        { id: 'navObservability', panel: 'observability' },
-        { id: 'navTasks', panel: 'tasks' },
-        { id: 'navMemory', panel: 'memory' },
-        { id: 'navArsenal', panel: 'arsenal' },
-        { id: 'navLogs', panel: 'nerveFusion' },
-        { id: 'navDevCenter', panel: 'devCenter' },
-        { id: 'navProviders', panel: 'providers' }
+    const navActions = [
+        { id: 'navChat',         action: () => setActivePanel('chat') },
+        { id: 'navHistory',      action: () => showHistory() },
+        { id: 'navObservability',action: () => showObservability() },
+        { id: 'navTasks',        action: () => showTasks() },
+        { id: 'navMemory',       action: () => showMemory() },
+        { id: 'navArsenal',      action: () => showArsenal() },
+        { id: 'navLogs',         action: () => showNerveFusion() },
+        { id: 'navDevCenter',    action: () => showDevCenter() },
+        { id: 'navProviders',    action: () => showProviders() },
     ];
 
-    navItems.forEach(item => {
+    navActions.forEach(item => {
         const el = document.getElementById(item.id);
         if (el) {
             el.onclick = (e) => {
                 e.preventDefault();
-                setActivePanel(item.panel);
+                item.action();
             };
         }
     });
@@ -1252,6 +1253,203 @@ function showArsenal() {
     setActivePanel('arsenal');
     fetchToolsArsenal();
 }
+
+// --- Archive History Loader ---
+function showHistory() {
+    setActivePanel('history');
+    loadHistory();
+}
+
+async function loadHistory() {
+    const list = document.getElementById('historyList');
+    const counter = document.getElementById('historyTotalCount');
+    if (!list) return;
+
+    list.innerHTML = `<div class="flex flex-col items-center justify-center py-16 text-center opacity-40">
+        <span class="material-symbols-outlined animate-spin text-3xl text-slate-600 mb-3">sync</span>
+        <p class="text-slate-500 text-xs font-bold uppercase tracking-widest">Sincronizando com a rede neural...</p>
+    </div>`;
+
+    try {
+        const res = await fetch('/chat/history');
+        const data = await res.json();
+        const history = data.history || [];
+        
+        if (counter) counter.textContent = history.length;
+
+        if (history.length === 0) {
+            list.innerHTML = `
+                <div class="flex flex-col items-center justify-center py-24 text-center">
+                    <div class="w-20 h-20 rounded-3xl bg-slate-900/60 border border-white/5 flex items-center justify-center mb-5 shadow-xl">
+                        <span class="material-symbols-outlined text-4xl text-slate-600">auto_stories</span>
+                    </div>
+                    <p class="text-slate-400 font-black text-sm uppercase tracking-widest">Nenhuma intera&#231;&#227;o arquivada</p>
+                    <p class="text-slate-600 text-xs mt-2">Inicie uma conversa no Neural Chat para criar o primeiro registro.</p>
+                </div>`;
+            return;
+        }
+
+        list.innerHTML = history.map((item, idx) => {
+            const num = idx + 1;
+            const userSnippet = (item.user || '').substring(0, 120);
+            const agentSnippet = (item.agent || '').substring(0, 160);
+            const isLast = idx === history.length - 1;
+            return `
+            <div class="group p-5 bg-slate-900/30 hover:bg-slate-900/60 border border-white/5 hover:border-indigo-500/20 rounded-xl transition-all duration-200 cursor-pointer" onclick="restoreHistory(${idx})">
+                <div class="flex items-start gap-4">
+                    <div class="w-9 h-9 shrink-0 rounded-lg ${isLast ? 'bg-indigo-500/20 border-indigo-500/30' : 'bg-slate-800 border-white/5'} border flex items-center justify-center">
+                        <span class="text-[11px] font-black ${isLast ? 'text-indigo-400' : 'text-slate-500'}">${num}</span>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <div class="flex items-center gap-2 mb-2">
+                            <span class="text-[9px] font-black text-slate-500 uppercase tracking-widest">VOC&#202;</span>
+                        </div>
+                        <p class="text-[12px] text-slate-300 font-medium truncate mb-3">${userSnippet || '(mensagem vazia)'}</p>
+                        <div class="flex items-center gap-2 mb-1.5">
+                            <span class="text-[9px] font-black text-indigo-400 uppercase tracking-widest">ARKANIS</span>
+                            ${isLast ? '<span class="px-1.5 py-0.5 bg-indigo-500/15 text-indigo-400 text-[8px] font-black rounded uppercase tracking-widest">&#218;ltima</span>' : ''}
+                        </div>
+                        <p class="text-[11px] text-slate-500 line-clamp-2 leading-relaxed">${agentSnippet || '(sem resposta)'}</p>
+                    </div>
+                    <span class="material-symbols-outlined text-slate-700 group-hover:text-indigo-500 transition-colors text-sm shrink-0 mt-1">chevron_right</span>
+                </div>
+            </div>`;
+        }).join('');
+    } catch (e) {
+        list.innerHTML = `
+            <div class="col-span-3 flex flex-col items-center justify-center py-16 text-rose-500/60 border border-rose-500/10 bg-rose-500/5 rounded-xl">
+                <span class="material-symbols-outlined text-3xl mb-2">cloud_off</span>
+                <p class="text-xs font-bold">Falha ao sincronizar o arquivo: ${e.message}</p>
+            </div>`;
+    }
+}
+
+function restoreHistory(idx) {
+    // Navigate to chat and show a toast that history viewing is in read-only summary mode
+    setActivePanel('chat');
+    showToast(`Exibindo contexto #${idx + 1} — para reativar, inicie uma nova mensagem.`, 'indigo');
+}
+
+// --- Terminal CLI (Nerve Fusion) ---
+let _nerveFusionInitialized = false;
+
+function showNerveFusion() {
+    setActivePanel('nerveFusion');
+    if (!_nerveFusionInitialized) {
+        _nerveFusionInitialized = true;
+        initNerveFusion();
+    }
+}
+
+function initNerveFusion() {
+    const container = document.getElementById('terminalContainer');
+    const loader = document.getElementById('terminalLoader');
+    const statusBadge = document.getElementById('terminalStatusBadge');
+    const statusText = document.getElementById('terminalStatusText');
+    if (!container || typeof Terminal === 'undefined') {
+        console.warn('[NerveFusion] Xterm.js not ready or container missing.');
+        return;
+    }
+
+    // Create Xterm.js instance
+    terminal = new Terminal({
+        cursorBlink: true,
+        fontFamily: '"JetBrains Mono", "Fira Code", monospace',
+        fontSize: 13,
+        lineHeight: 1.5,
+        theme: {
+            background: '#020617',
+            foreground: '#cbd5e1',
+            cursor: '#60a5fa',
+            selectionBackground: 'rgba(59,130,246,0.3)',
+            black: '#0f172a',
+            red: '#f43f5e',
+            green: '#34d399',
+            yellow: '#fbbf24',
+            blue: '#60a5fa',
+            magenta: '#a78bfa',
+            cyan: '#22d3ee',
+            white: '#e2e8f0',
+        },
+        allowTransparency: true,
+    });
+
+    // FitAddon for responsive sizing
+    if (typeof FitAddon !== 'undefined') {
+        terminalFitAddon = new FitAddon.FitAddon();
+        terminal.loadAddon(terminalFitAddon);
+    }
+
+    terminal.open(container);
+    if (terminalFitAddon) terminalFitAddon.fit();
+
+    terminal.writeln('\x1b[1;34m  ARKANIS NERVE FUSION v1.0 — Unified Terminal Interconnect\x1b[0m');
+    terminal.writeln('\x1b[90m  Connecting to kernel shell...\x1b[0m');
+    terminal.writeln('');
+
+    // WebSocket connection
+    const wsProto = window.location.protocol === 'https:' ? 'wss' : 'ws';
+    const wsUrl = `${wsProto}://${window.location.host}/terminal/ws`;
+    terminalWs = new WebSocket(wsUrl);
+
+    terminalWs.onopen = () => {
+        if (loader) loader.classList.add('opacity-0', 'pointer-events-none');
+        setTimeout(() => loader && loader.classList.add('hidden'), 500);
+        if (statusBadge) { statusBadge.className = 'w-2 h-2 bg-emerald-400 rounded-full shadow-[0_0_8px_rgba(52,211,153,0.7)]'; }
+        if (statusText) statusText.textContent = 'CONNECTED';
+        terminal.writeln('\x1b[1;32m  ✓ Nerve Link established. Shell ready.\x1b[0m');
+        terminal.writeln('');
+        // Resize to inform the backend
+        if (terminalFitAddon) terminalFitAddon.fit();
+        terminalWs.send(JSON.stringify({ type: 'resize', rows: terminal.rows, cols: terminal.cols }));
+    };
+
+    terminalWs.onmessage = (event) => {
+        terminal.write(event.data);
+    };
+
+    terminalWs.onerror = (err) => {
+        terminal.writeln('\x1b[1;31m  ✗ Nerve Link error. Check server connection.\x1b[0m');
+        if (statusBadge) statusBadge.className = 'w-2 h-2 bg-rose-500 rounded-full';
+        if (statusText) statusText.textContent = 'ERROR';
+    };
+
+    terminalWs.onclose = () => {
+        terminal.writeln('\x1b[33m  Nerve Link disconnected. Reconnecting in 3s...\x1b[0m');
+        if (statusBadge) statusBadge.className = 'w-2 h-2 bg-amber-400 rounded-full';
+        if (statusText) statusText.textContent = 'DISCONNECTED';
+        _nerveFusionInitialized = false; // Allow re-init on next open
+    };
+
+    // Forward user input to backend
+    terminal.onData((data) => {
+        if (terminalWs && terminalWs.readyState === WebSocket.OPEN) {
+            terminalWs.send(JSON.stringify({ type: 'input', data }));
+        }
+    });
+
+    // Resize observer
+    const resizeObs = new ResizeObserver(() => {
+        if (terminalFitAddon) {
+            terminalFitAddon.fit();
+            if (terminalWs && terminalWs.readyState === WebSocket.OPEN) {
+                terminalWs.send(JSON.stringify({ type: 'resize', rows: terminal.rows, cols: terminal.cols }));
+            }
+        }
+    });
+    resizeObs.observe(container);
+}
+
+function sendTerminalCommand(cmd) {
+    if (terminalWs && terminalWs.readyState === WebSocket.OPEN) {
+        terminalWs.send(JSON.stringify({ type: 'input', data: cmd + '\n' }));
+    }
+}
+
+function clearTerminal() {
+    if (terminal) terminal.clear();
+}
+
 async function fetchToolsArsenal() {
     const grid = document.getElementById('arsenalGrid');
     if (!grid) return;
@@ -1515,7 +1713,7 @@ async function sendVoiceMessage(blob) {
     }
 }
 
-function showHistory() { setActivePanel('history'); }
+
 function showProviders() {
     setActivePanel('providers');
     loadProvidersConfig();
@@ -1533,7 +1731,25 @@ function showTasks() {
 function showObservability() { 
     setActivePanel('observability'); 
     // Ensure Map is initialized with correct dimensions when shown
-    setTimeout(initNeuralMap, 50); 
+    setTimeout(() => {
+        initNeuralMap();
+        // Seed with default nodes so map always renders something
+        const seedData = {
+            nodes: [
+                { id: 'Arkanis', status: 'running' },
+                { id: 'Orchestrator', status: 'idle' },
+                { id: 'Dev Agent', status: 'idle' },
+                { id: 'Researcher', status: 'idle' },
+            ],
+            links: [
+                { source: 'Arkanis', target: 'Orchestrator', last_interaction: 'boot', last_interaction_ms: Date.now() },
+                { source: 'Orchestrator', target: 'Dev Agent', last_interaction: 'boot', last_interaction_ms: Date.now() - 5000 },
+                { source: 'Orchestrator', target: 'Researcher', last_interaction: 'boot', last_interaction_ms: Date.now() - 8000 },
+            ],
+            task_holder: 'Arkanis'
+        };
+        updateNeuralMap(seedData);
+    }, 80); 
     fetchObservabilityData();
     fetchSystemLogs();
     fetchTimeline();
@@ -2055,8 +2271,7 @@ if (navTasks) {
 if (navLogs) {
     navLogs.addEventListener('click', (e) => {
         e.preventDefault();
-        showSystemLogs();
-        updateTopNav('logs');
+        showNerveFusion();
     });
 }
 
@@ -2190,15 +2405,15 @@ if (saveIntegrationsBtn) {
 
 // --- Elite UI Sidebar Navigation Listeners ---
 const sidebarLinks = [
-    { id: 'navChat', action: showChat, topNav: 'chat' },
-    { id: 'navHistory', action: showHistory, topNav: null },
-    { id: 'navObservability', action: () => setActivePanel('observability'), topNav: null },
-    { id: 'navTasks', action: () => setActivePanel('tasks'), topNav: null },
-    { id: 'navMemory', action: () => setActivePanel('memory'), topNav: null },
-    { id: 'navArsenal', action: () => setActivePanel('arsenal'), topNav: null },
-    { id: 'navLogs', action: () => setActivePanel('nerveFusion'), topNav: null },
-    { id: 'navDevCenter', action: () => setActivePanel('devCenter'), topNav: null },
-    { id: 'navProviders', action: () => setActivePanel('providers'), topNav: 'integrations' }
+    { id: 'navChat',          action: showChat,             topNav: 'chat' },
+    { id: 'navHistory',       action: showHistory,          topNav: null },
+    { id: 'navObservability', action: showObservability,    topNav: null },
+    { id: 'navTasks',         action: showTasks,            topNav: null },
+    { id: 'navMemory',        action: showMemory,           topNav: null },
+    { id: 'navArsenal',       action: showArsenal,          topNav: null },
+    { id: 'navLogs',          action: showNerveFusion,      topNav: null },
+    { id: 'navDevCenter',     action: showDevCenter,        topNav: null },
+    { id: 'navProviders',     action: showProviders,        topNav: 'integrations' }
 ];
 
 sidebarLinks.forEach(link => {
