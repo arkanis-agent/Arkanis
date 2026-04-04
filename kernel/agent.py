@@ -27,11 +27,19 @@ class ArkanisAgent:
     Main Agent class for ARKANIS V3.
     Coordinates between Thinking (Planner) and Acting (Executor).
     """
-    def __init__(self, agent_id: str = None):
+    def __init__(self, 
+                 agent_id: str = None, 
+                 planner: Optional[Planner] = None, 
+                 executor: Optional[Executor] = None, 
+                 critic: Optional[CriticAgent] = None):
         self.id = agent_id if agent_id else "main"
-        self.planner = Planner()
-        self.executor = Executor()
-        self.critic = CriticAgent()
+        
+        # Dependency Injection: Use provided components or default to new ones
+        self.planner = planner if planner else Planner()
+        self.executor = executor if executor else Executor()
+        self.critic = critic if critic else CriticAgent()
+        
+        # Fixed system components
         self.sentinel = AutoHealAgent() # The Self-Maintenance Sentinel
         self.dev_agent = DevAgent() # The Developer Agent
         self.architect = ArchitectAgent() # The Master Architect (Maestro)

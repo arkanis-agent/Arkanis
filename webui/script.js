@@ -1813,10 +1813,22 @@ function stopObservabilityPolling() {
     }
 }
 
-// Intercept setActivePanel to manage polling
+// Intercept setActivePanel to manage polling and UI refreshes
 const originalSetActivePanel = setActivePanel;
 setActivePanel = function(panelId) {
     if (panelId !== 'observability' && panelId !== 'devCenter') stopObservabilityPolling();
+    
+    // UI FIX: Restart Neural Map if switching to observability
+    if (panelId === 'observability') {
+        if (!neuralGraph.simulation) {
+            initNeuralMap();
+        } else {
+            neuralGraph.simulation.alpha(1).restart();
+            // Force a tiny delay then trigger resize event to fix D3 container sizing
+            setTimeout(() => window.dispatchEvent(new Event('resize')), 100);
+        }
+    }
+    
     originalSetActivePanel(panelId);
 };
 

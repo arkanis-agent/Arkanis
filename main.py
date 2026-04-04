@@ -23,8 +23,15 @@ def main():
     Initializes and starts the Arkanis V3 AI Agent OS.
     """
     try:
-        # 1. Initialize the Kernel (Agent)
-        agent = ArkanisAgent()
+        from kernel.planner import Planner
+        from kernel.executor import Executor
+        
+        # 1. Initialize core components (DI Lite)
+        planner = Planner()
+        executor = Executor()
+        
+        # 2. Start the Kernel
+        agent = ArkanisAgent(planner=planner, executor=executor)
         
         # 2. Interface Selection (Default to Web, or CLI/Telegram)
         arg = sys.argv[1].lower() if len(sys.argv) > 1 else ""

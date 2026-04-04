@@ -7,13 +7,19 @@ from datetime import datetime
 
 GOALS_FILE = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data", "goals.json")
 
+from typing import Dict, List, Any, Optional
+from datetime import datetime
+import uuid
+
 class Goal:
-    def __init__(self, description: str, priority: str = "medium"):
+    def __init__(self, description: str, priority: str = "medium", parent_id: Optional[str] = None):
         self.id = str(uuid.uuid4())[:8]
         self.description = description
         self.priority = priority # low, medium, high
-        self.status = "active" # active, paused, completed
+        self.status = "active" # active, paused, completed, blocked
         self.progress = 0 # 0 to 100
+        self.parent_id = parent_id # For sub-goals
+        self.depends_on: List[str] = [] # List of Goal IDs that must be completed first
         self.agents_involved: List[str] = []
         self.created_at = datetime.now()
         self.updated_at = datetime.now()
@@ -26,6 +32,8 @@ class Goal:
             "priority": self.priority,
             "status": self.status,
             "progress": self.progress,
+            "parent_id": self.parent_id,
+            "depends_on": self.depends_on,
             "agents_involved": self.agents_involved,
             "created_at": self.created_at.strftime("%Y-%m-%d %H:%M:%S"),
             "updated_at": self.updated_at.strftime("%Y-%m-%d %H:%M:%S"),
@@ -34,10 +42,11 @@ class Goal:
 
     @classmethod
     def from_dict(cls, data: dict):
-        g = cls(data["description"], data.get("priority", "medium"))
+        g = cls(data["description"], data.get("priority", "medium"), data.get("parent_id"))
         g.id = data["id"]
         g.status = data.get("status", "active")
         g.progress = data.get("progress", 0)
+        g.depends_on = data.get("depends_on", [])
         g.agents_involved = data.get("agents_involved", [])
         g.created_at = datetime.strptime(data["created_at"], "%Y-%m-%d %H:%M:%S")
         g.updated_at = datetime.strptime(data["updated_at"], "%Y-%m-%d %H:%M:%S")
@@ -78,8 +87,10 @@ class GoalManager:
             except Exception as e:
                 print(f"[GoalManager] Falha ao salvar goals: {e}")
 
-    def create_goal(self, description: str, priority: str = "medium") -> Goal:
-        g = Goal(description, priority)
+    def create_goal(self, description: str, priority: str = "medium", parent_id: Optional[str] = None) -> Goal:
+        g = Goal(description, priority, parent_id)
+        # If parent exists, we could theoretically add logic to link them back
+        # but for now, the parent_id in the child is enough for filtering.
         with self._lock:
             self.goals[g.id] = g
         self._save()
@@ -88,6 +99,10 @@ class GoalManager:
     def list_goals(self) -> List[Dict[str, Any]]:
         with self._lock:
             return [g.to_dict() for g in self.goals.values()]
+
+    def get_subgoals(self, parent_id: str) -> List[Dict[str, Any]]:
+        with self._lock:
+            return [g.to_dict() for g in self.goals.values() if g.parent_id == parent_id]
 
     def update_status(self, goal_id: str, status: str):
         with self._lock:
