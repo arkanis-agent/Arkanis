@@ -1,153 +1,196 @@
 <!DOCTYPE html>
 <html class="dark" lang="pt-BR">
+
 <head>
-    <meta charset="utf-8"/>
-    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
     <title>ARKANIS AI | Inteligência de Elite</title>
     <script src="https://d3js.org/d3.v7.min.js"></script>
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;700;800&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet"/>
-    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;700;800&family=Inter:wght@300;400;500;600&display=swap"
+        rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap"
+        rel="stylesheet" />
     <script id="tailwind-config">
-          tailwind.config = {
+        tailwind.config = {
             darkMode: "class",
             theme: {
-              extend: {
-                colors: {
-                  "error-dim": "#9f0519",
-                  "on-tertiary-fixed-variant": "#6c1a6c",
-                  "on-error": "#ffefee",
-                  "error": "#b31b25",
-                  "outline-variant": "#a5adc6",
-                  "tertiary-dim": "#7f2d7e",
-                  "surface-container-lowest": "#0b0e14",
-                  "on-primary": "#f2f1ff",
-                  "surface-bright": "#1a1f2e",
-                  "surface": "#060e20",
-                  "on-secondary-fixed": "#324053",
-                  "secondary-dim": "#435164",
-                  "inverse-surface": "#f6f6ff",
-                  "on-background": "#e2e7ff",
-                  "tertiary-container": "#f797f0",
-                  "on-primary-container": "#001a63",
-                  "outline": "#6f768e",
-                  "on-error-container": "#570008",
-                  "surface-container-highest": "#1e293b",
-                  "surface-container": "#0f172a",
-                  "secondary-fixed": "#d5e3fc",
-                  "on-surface-variant": "#a5adc6",
-                  "on-tertiary-fixed": "#400042",
-                  "surface-variant": "#1e293b",
-                  "background": "#060e20",
-                  "inverse-on-surface": "#959cb5",
-                  "on-surface": "#f1f5f9",
-                  "surface-dim": "#020617",
-                  "secondary-container": "#1e293b",
-                  "on-primary-fixed": "#000000",
-                  "inverse-primary": "#6a89ff",
-                  "error-container": "#fb5151",
-                  "primary-dim": "#0040cb",
-                  "on-secondary-fixed-variant": "#4e5c71",
-                  "on-primary-fixed-variant": "#002278",
-                  "surface-container-high": "#111827",
-                  "tertiary-fixed-dim": "#e88ae1",
-                  "secondary-fixed-dim": "#c7d5ed",
-                  "primary-container": "#0049e6",
-                  "tertiary": "#8d3a8b",
-                  "primary": "#0049e6",
-                  "on-secondary-container": "#d1d5db",
-                  "primary-fixed": "#829bff",
-                  "on-tertiary": "#ffeef8",
-                  "surface-container-low": "#0f172a",
-                  "tertiary-fixed": "#f797f0",
-                  "surface-tint": "#0049e6",
-                  "primary-fixed-dim": "#6e8cff",
-                  "on-tertiary-container": "#610e63",
-                  "secondary": "#4e5c71",
-                  "on-secondary": "#edf3ff"
+                extend: {
+                    colors: {
+                        "error-dim": "#9f0519",
+                        "on-tertiary-fixed-variant": "#6c1a6c",
+                        "on-error": "#ffefee",
+                        "error": "#b31b25",
+                        "outline-variant": "#a5adc6",
+                        "tertiary-dim": "#7f2d7e",
+                        "surface-container-lowest": "#0b0e14",
+                        "on-primary": "#f2f1ff",
+                        "surface-bright": "#1a1f2e",
+                        "surface": "#060e20",
+                        "on-secondary-fixed": "#324053",
+                        "secondary-dim": "#435164",
+                        "inverse-surface": "#f6f6ff",
+                        "on-background": "#e2e7ff",
+                        "tertiary-container": "#f797f0",
+                        "on-primary-container": "#001a63",
+                        "outline": "#6f768e",
+                        "on-error-container": "#570008",
+                        "surface-container-highest": "#1e293b",
+                        "surface-container": "#0f172a",
+                        "secondary-fixed": "#d5e3fc",
+                        "on-surface-variant": "#a5adc6",
+                        "on-tertiary-fixed": "#400042",
+                        "surface-variant": "#1e293b",
+                        "background": "#060e20",
+                        "inverse-on-surface": "#959cb5",
+                        "on-surface": "#f1f5f9",
+                        "surface-dim": "#020617",
+                        "secondary-container": "#1e293b",
+                        "on-primary-fixed": "#000000",
+                        "inverse-primary": "#6a89ff",
+                        "error-container": "#fb5151",
+                        "primary-dim": "#0040cb",
+                        "on-secondary-fixed-variant": "#4e5c71",
+                        "on-primary-fixed-variant": "#002278",
+                        "surface-container-high": "#111827",
+                        "tertiary-fixed-dim": "#e88ae1",
+                        "secondary-fixed-dim": "#c7d5ed",
+                        "primary-container": "#0049e6",
+                        "tertiary": "#8d3a8b",
+                        "primary": "#0049e6",
+                        "on-secondary-container": "#d1d5db",
+                        "primary-fixed": "#829bff",
+                        "on-tertiary": "#ffeef8",
+                        "surface-container-low": "#0f172a",
+                        "tertiary-fixed": "#f797f0",
+                        "surface-tint": "#0049e6",
+                        "primary-fixed-dim": "#6e8cff",
+                        "on-tertiary-container": "#610e63",
+                        "secondary": "#4e5c71",
+                        "on-secondary": "#edf3ff"
+                    },
+                    fontFamily: {
+                        "headline": ["Manrope"],
+                        "body": ["Inter"],
+                        "label": ["Inter"]
+                    },
+                    borderRadius: { "DEFAULT": "1rem", "lg": "2rem", "xl": "3rem", "full": "9999px" },
                 },
-                fontFamily: {
-                  "headline": ["Manrope"],
-                  "body": ["Inter"],
-                  "label": ["Inter"]
-                },
-                borderRadius: {"DEFAULT": "1rem", "lg": "2rem", "xl": "3rem", "full": "9999px"},
-              },
             },
-          }
+        }
     </script>
     <style>
-      body {
-        background-color: #060e20;
-        color: #f1f5f9;
-        font-family: 'Inter', sans-serif;
-      }
-      .glass-effect {
-        backdrop-filter: blur(20px);
-        -webkit-backdrop-filter: blur(20px);
-      }
-      .no-line-border {
-        border: none !important;
-      }
-      .material-symbols-outlined {
-        font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
-      }
-      .custom-scrollbar::-webkit-scrollbar {
-        width: 4px;
-      }
-      .custom-scrollbar::-webkit-scrollbar-track {
-        background: transparent;
-      }
-      .custom-scrollbar::-webkit-scrollbar-thumb {
-        background: #1e293b;
-        border-radius: 10px;
-      }
-      #activityTickerText.fade {
-        animation: fadeText 3s infinite;
-      }
-      @keyframes fadeText {
-        0% { opacity: 0; transform: translateY(5px); }
-        10% { opacity: 1; transform: translateY(0); }
-        90% { opacity: 1; transform: translateY(0); }
-        100% { opacity: 0; transform: translateY(-5px); }
-      }
+        body {
+            background-color: #060e20;
+            color: #f1f5f9;
+            font-family: 'Inter', sans-serif;
+        }
+
+        .glass-effect {
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+        }
+
+        .no-line-border {
+            border: none !important;
+        }
+
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #1e293b;
+            border-radius: 10px;
+        }
+
+        #activityTickerText.fade {
+            animation: fadeText 3s infinite;
+        }
+
+        @keyframes fadeText {
+            0% {
+                opacity: 0;
+                transform: translateY(5px);
+            }
+
+            10% {
+                opacity: 1;
+                transform: translateY(0);
+            }
+
+            90% {
+                opacity: 1;
+                transform: translateY(0);
+            }
+
+            100% {
+                opacity: 0;
+                transform: translateY(-5px);
+            }
+        }
     </style>
 </head>
+
 <body class="overflow-hidden">
     <!-- TopNavBar -->
-    <header class="fixed top-0 left-64 right-0 h-16 flex justify-between items-center px-8 z-50 bg-slate-950/85 backdrop-blur-xl shadow-sm dark:shadow-none">
+    <header
+        class="fixed top-0 left-64 right-0 h-16 flex justify-between items-center px-8 z-50 bg-slate-950/85 backdrop-blur-xl shadow-sm dark:shadow-none">
         <div class="flex items-center gap-6">
             <!-- Model Selector Dropdown -->
             <div class="relative">
-                <button id="activeModelBtn" class="flex items-center gap-2.5 px-4 py-2 bg-slate-800/70 border border-white/10 rounded-lg hover:bg-slate-700/70 hover:border-white/20 transition-all">
-                    <span class="material-symbols-outlined text-[15px] text-blue-400" style="font-variation-settings:'FILL' 1;">smart_toy</span>
+                <button id="activeModelBtn"
+                    class="flex items-center gap-2.5 px-4 py-2 bg-slate-800/70 border border-white/10 rounded-lg hover:bg-slate-700/70 hover:border-white/20 transition-all">
+                    <span class="material-symbols-outlined text-[15px] text-blue-400"
+                        style="font-variation-settings:'FILL' 1;">smart_toy</span>
                     <div class="flex flex-col items-start min-w-[110px] max-w-[170px]">
-                        <span id="currentModelName" class="text-[11px] font-bold text-slate-100 leading-tight truncate w-full">CARREGANDO...</span>
+                        <span id="currentModelName"
+                            class="text-[11px] font-bold text-slate-100 leading-tight truncate w-full">CARREGANDO...</span>
                         <span id="currentModelProvider" class="text-[9px] text-slate-500 leading-tight">--</span>
                     </div>
-                    <span id="modelFreeBadge" class="hidden text-[8px] font-bold px-1.5 py-0.5 rounded-sm bg-emerald-500/15 text-emerald-400 border border-emerald-500/20 whitespace-nowrap">FREE</span>
+                    <span id="modelFreeBadge"
+                        class="hidden text-[8px] font-bold px-1.5 py-0.5 rounded-sm bg-emerald-500/15 text-emerald-400 border border-emerald-500/20 whitespace-nowrap">FREE</span>
                     <span class="material-symbols-outlined text-[13px] text-slate-500 ml-1">expand_more</span>
                 </button>
-                <div id="modelDropdown" class="absolute top-full left-0 mt-1.5 w-[420px] bg-[#0d1117] border border-white/8 rounded-xl shadow-2xl overflow-hidden hidden z-[60]">
+                <div id="modelDropdown"
+                    class="absolute top-full left-0 mt-1.5 w-[420px] bg-[#0d1117] border border-white/8 rounded-xl shadow-2xl overflow-hidden hidden z-[60]">
                     <!-- Search + filters -->
                     <div class="p-3 border-b border-white/5 bg-slate-900/70 space-y-2.5">
                         <div class="relative">
-                            <span class="material-symbols-outlined absolute left-2.5 top-1/2 -translate-y-1/2 text-[14px] text-slate-500 pointer-events-none">search</span>
+                            <span
+                                class="material-symbols-outlined absolute left-2.5 top-1/2 -translate-y-1/2 text-[14px] text-slate-500 pointer-events-none">search</span>
                             <input id="modelSearchInput" type="text" placeholder="Buscar modelo..." autocomplete="off"
                                 class="w-full bg-slate-800/80 border border-white/8 rounded-lg pl-8 pr-3 py-2 text-[12px] text-white placeholder-slate-500 focus:outline-none focus:border-blue-500/50 transition-colors">
                         </div>
                         <div class="flex items-center gap-1.5">
-                            <button class="model-filter active px-2.5 py-1 rounded-full text-[10px] font-bold bg-blue-500/20 text-blue-300 border border-blue-500/30" data-filter="all">Todos</button>
-                            <button class="model-filter px-2.5 py-1 rounded-full text-[10px] font-bold bg-white/5 text-slate-400 border border-white/10 hover:bg-emerald-500/10 hover:text-emerald-400 hover:border-emerald-500/20 transition-all" data-filter="free">Gratuitos</button>
-                            <button class="model-filter px-2.5 py-1 rounded-full text-[10px] font-bold bg-white/5 text-slate-400 border border-white/10 hover:bg-amber-500/10 hover:text-amber-400 hover:border-amber-500/20 transition-all" data-filter="paid">Pagos</button>
-                            <button id="refreshModelsBtn" class="ml-auto flex items-center gap-1 text-[10px] text-slate-500 hover:text-blue-400 transition-colors whitespace-nowrap">
+                            <button
+                                class="model-filter active px-2.5 py-1 rounded-full text-[10px] font-bold bg-blue-500/20 text-blue-300 border border-blue-500/30"
+                                data-filter="all">Todos</button>
+                            <button
+                                class="model-filter px-2.5 py-1 rounded-full text-[10px] font-bold bg-white/5 text-slate-400 border border-white/10 hover:bg-emerald-500/10 hover:text-emerald-400 hover:border-emerald-500/20 transition-all"
+                                data-filter="free">Gratuitos</button>
+                            <button
+                                class="model-filter px-2.5 py-1 rounded-full text-[10px] font-bold bg-white/5 text-slate-400 border border-white/10 hover:bg-amber-500/10 hover:text-amber-400 hover:border-amber-500/20 transition-all"
+                                data-filter="paid">Pagos</button>
+                            <button id="refreshModelsBtn"
+                                class="ml-auto flex items-center gap-1 text-[10px] text-slate-500 hover:text-blue-400 transition-colors whitespace-nowrap">
                                 <span class="material-symbols-outlined text-[13px]">cloud_download</span>Atualizar OR
                             </button>
                         </div>
                     </div>
                     <!-- Model list -->
                     <div id="modelListContainer" class="overflow-y-auto max-h-[360px] custom-scrollbar p-1.5">
-                        <div class="text-center py-10 text-slate-600 text-xs">Clique em "Atualizar OR" para buscar modelos</div>
+                        <div class="text-center py-10 text-slate-600 text-xs">Clique em "Atualizar OR" para buscar
+                            modelos</div>
                     </div>
                     <!-- Hidden legacy containers kept for JS compat -->
                     <div id="cloudModelsList" class="hidden"></div>
@@ -163,14 +206,18 @@
                 <span class="text-[11px] font-bold text-slate-400 mr-2">AUTO STRATEGY</span>
                 <label class="relative inline-flex items-center cursor-pointer">
                     <input type="checkbox" id="autoStrategyToggle" class="sr-only peer">
-                    <div class="w-7 h-4 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-purple-500"></div>
+                    <div
+                        class="w-7 h-4 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-purple-500">
+                    </div>
                 </label>
             </div>
 
-            
+
             <nav class="flex gap-8 items-center font-manrope text-sm tracking-tight font-medium">
-                <a id="topNavChat" class="text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400 pb-1 cursor-pointer">Mensagens</a>
-                <a id="topNavIntegrations" class="text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 transition-colors cursor-pointer">Integrações</a>
+                <a id="topNavChat"
+                    class="text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400 pb-1 cursor-pointer">Mensagens</a>
+                <a id="topNavIntegrations"
+                    class="text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 transition-colors cursor-pointer">Integrações</a>
             </nav>
         </div>
         <div class="flex items-center gap-4">
@@ -181,74 +228,105 @@
                 <span class="material-symbols-outlined text-slate-400">settings</span>
             </button>
             <div class="w-8 h-8 rounded-full overflow-hidden ml-2 ring-2 ring-primary/20">
-                <img alt="Avatar" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBDqLm4aTLeSm5HAXt2de0eEXxA637naKJx2Baf1xAWtlF84ZnPYEUBVl5fME84LZxU9YXC7-Exa6Q8MbG5M9PnyTMYatO8iyVjd2KMvUWwDr3XcWMV5PJAXZ7gB9qra6iBGzzuBY-DU--63lerKMOnbnckTovth7LJsTWab8LRbspjIhrdIzc_lAwhWChGYG4PDjA13GABBEhqOUGzrBzlmVKM-GnzcD4bSAS7oQe70mvlKva4XMqULVTSnfOe5WgISa9b2M9BnNY"/>
+                <img alt="Avatar"
+                    src="https://lh3.googleusercontent.com/aida-public/AB6AXuBDqLm4aTLeSm5HAXt2de0eEXxA637naKJx2Baf1xAWtlF84ZnPYEUBVl5fME84LZxU9YXC7-Exa6Q8MbG5M9PnyTMYatO8iyVjd2KMvUWwDr3XcWMV5PJAXZ7gB9qra6iBGzzuBY-DU--63lerKMOnbnckTovth7LJsTWab8LRbspjIhrdIzc_lAwhWChGYG4PDjA13GABBEhqOUGzrBzlmVKM-GnzcD4bSAS7oQe70mvlKva4XMqULVTSnfOe5WgISa9b2M9BnNY" />
             </div>
         </div>
     </header>
 
     <!-- SideNavBar -->
-    <aside class="flex flex-col h-full py-6 px-4 fixed left-0 top-0 z-40 h-screen w-64 bg-slate-900/50 backdrop-blur-md border-r-0">
+    <aside
+        class="flex flex-col h-full py-6 px-4 fixed left-0 top-0 z-40 h-screen w-64 bg-slate-900/50 backdrop-blur-md border-r-0">
         <div class="flex items-center gap-3 px-4 mb-10">
             <div class="w-10 h-10 bg-primary rounded-xl flex items-center justify-center">
-                <span class="material-symbols-outlined text-white text-2xl" style="font-variation-settings: 'FILL' 1;">bolt</span>
+                <span class="material-symbols-outlined text-white text-2xl"
+                    style="font-variation-settings: 'FILL' 1;">bolt</span>
             </div>
             <div>
-                <h1 class="font-manrope font-extrabold text-blue-700 dark:text-blue-400 text-xl leading-none">ARKANIS</h1>
+                <h1 class="font-manrope font-extrabold text-blue-700 dark:text-blue-400 text-xl leading-none">ARKANIS
+                </h1>
                 <p class="text-[10px] text-slate-500 uppercase tracking-widest font-bold">Inteligência de Elite</p>
             </div>
         </div>
         <nav class="flex-1 space-y-2 overflow-y-auto custom-scrollbar px-2">
-            <a id="navChat" class="text-slate-400 hover:text-white px-3 py-2.5 flex items-center gap-3 hover:bg-white/5 transition-all rounded-xl font-body text-[13px] font-bold tracking-wide group" href="#">
-                <div class="w-8 h-8 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center group-hover:bg-blue-500/20 transition-all">
+            <a id="navChat"
+                class="text-slate-400 hover:text-white px-3 py-2.5 flex items-center gap-3 hover:bg-white/5 transition-all rounded-xl font-body text-[13px] font-bold tracking-wide group"
+                href="#">
+                <div
+                    class="w-8 h-8 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center group-hover:bg-blue-500/20 transition-all">
                     <span class="material-symbols-outlined text-blue-400 text-sm">chat</span>
                 </div>
                 Chat & Comandos
             </a>
-            <a id="navHistory" class="text-slate-400 hover:text-white px-3 py-2.5 flex items-center gap-3 hover:bg-white/5 transition-all rounded-xl font-body text-[13px] font-bold tracking-wide group" href="#">
-                <div class="w-8 h-8 rounded-lg bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center group-hover:bg-indigo-500/20 transition-all">
+            <a id="navHistory"
+                class="text-slate-400 hover:text-white px-3 py-2.5 flex items-center gap-3 hover:bg-white/5 transition-all rounded-xl font-body text-[13px] font-bold tracking-wide group"
+                href="#">
+                <div
+                    class="w-8 h-8 rounded-lg bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center group-hover:bg-indigo-500/20 transition-all">
                     <span class="material-symbols-outlined text-indigo-400 text-sm">history</span>
                 </div>
                 Histórico de Memória
             </a>
-            <a id="navObservability" class="text-slate-400 hover:text-white px-3 py-2.5 flex items-center gap-3 hover:bg-white/5 transition-all rounded-xl font-body text-[13px] font-bold tracking-wide group" href="#">
-                <div class="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center group-hover:bg-emerald-500/20 transition-all">
+            <a id="navObservability"
+                class="text-slate-400 hover:text-white px-3 py-2.5 flex items-center gap-3 hover:bg-white/5 transition-all rounded-xl font-body text-[13px] font-bold tracking-wide group"
+                href="#">
+                <div
+                    class="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center group-hover:bg-emerald-500/20 transition-all">
                     <span class="material-symbols-outlined text-emerald-400 text-sm">monitoring</span>
                 </div>
                 System Watch
             </a>
-            <a id="navTasks" class="text-slate-400 hover:text-white px-3 py-2.5 flex items-center gap-3 hover:bg-white/5 transition-all rounded-xl font-body text-[13px] font-bold tracking-wide group" href="#">
-                <div class="w-8 h-8 rounded-lg bg-purple-500/10 border border-purple-500/20 flex items-center justify-center group-hover:bg-purple-500/20 transition-all">
+            <a id="navTasks"
+                class="text-slate-400 hover:text-white px-3 py-2.5 flex items-center gap-3 hover:bg-white/5 transition-all rounded-xl font-body text-[13px] font-bold tracking-wide group"
+                href="#">
+                <div
+                    class="w-8 h-8 rounded-lg bg-purple-500/10 border border-purple-500/20 flex items-center justify-center group-hover:bg-purple-500/20 transition-all">
                     <span class="material-symbols-outlined text-purple-400 text-sm">account_tree</span>
                 </div>
                 Agent Orchestrator
             </a>
-            <a id="navArsenal" class="text-slate-400 hover:text-white px-3 py-2.5 flex items-center gap-3 hover:bg-white/5 transition-all rounded-xl font-body text-[13px] font-bold tracking-wide group" href="#">
-                <div class="w-8 h-8 rounded-lg bg-amber-500/10 border border-amber-500/20 flex items-center justify-center group-hover:bg-amber-500/20 transition-all">
+            <a id="navArsenal"
+                class="text-slate-400 hover:text-white px-3 py-2.5 flex items-center gap-3 hover:bg-white/5 transition-all rounded-xl font-body text-[13px] font-bold tracking-wide group"
+                href="#">
+                <div
+                    class="w-8 h-8 rounded-lg bg-amber-500/10 border border-amber-500/20 flex items-center justify-center group-hover:bg-amber-500/20 transition-all">
                     <span class="material-symbols-outlined text-amber-400 text-sm">construction</span>
                 </div>
                 System Arsenal
             </a>
-            <a id="navMemory" class="text-slate-400 hover:text-white px-3 py-2.5 flex items-center gap-3 hover:bg-white/5 transition-all rounded-xl font-body text-[13px] font-bold tracking-wide group" href="#">
-                <div class="w-8 h-8 rounded-lg bg-pink-500/10 border border-pink-500/20 flex items-center justify-center group-hover:bg-pink-500/20 transition-all">
+            <a id="navMemory"
+                class="text-slate-400 hover:text-white px-3 py-2.5 flex items-center gap-3 hover:bg-white/5 transition-all rounded-xl font-body text-[13px] font-bold tracking-wide group"
+                href="#">
+                <div
+                    class="w-8 h-8 rounded-lg bg-pink-500/10 border border-pink-500/20 flex items-center justify-center group-hover:bg-pink-500/20 transition-all">
                     <span class="material-symbols-outlined text-pink-400 text-sm">psychology</span>
                 </div>
                 Memory Vault
             </a>
-            
+
             <div class="pt-4 pb-2">
                 <hr class="border-white/5 mx-4">
             </div>
 
-            <a id="navLogs" class="text-slate-500 hover:text-slate-300 px-3 py-2 flex items-center gap-3 hover:bg-white/5 transition-all rounded-xl font-body text-[12px] font-bold tracking-wide group" href="#">
-                <span class="material-symbols-outlined text-slate-500 text-sm ml-1 group-hover:text-slate-300">terminal</span>
+            <a id="navLogs"
+                class="text-slate-500 hover:text-slate-300 px-3 py-2 flex items-center gap-3 hover:bg-white/5 transition-all rounded-xl font-body text-[12px] font-bold tracking-wide group"
+                href="#">
+                <span
+                    class="material-symbols-outlined text-slate-500 text-sm ml-1 group-hover:text-slate-300">terminal</span>
                 Log do Terminal
             </a>
-            <a id="navDevCenter" class="text-slate-500 hover:text-slate-300 px-3 py-2 flex items-center gap-3 hover:bg-white/5 transition-all rounded-xl font-body text-[12px] font-bold tracking-wide group" href="#">
-                <span class="material-symbols-outlined text-slate-500 text-sm ml-1 group-hover:text-slate-300">rocket_launch</span>
+            <a id="navDevCenter"
+                class="text-slate-500 hover:text-slate-300 px-3 py-2 flex items-center gap-3 hover:bg-white/5 transition-all rounded-xl font-body text-[12px] font-bold tracking-wide group"
+                href="#">
+                <span
+                    class="material-symbols-outlined text-slate-500 text-sm ml-1 group-hover:text-slate-300">rocket_launch</span>
                 Dev Center
             </a>
-            <a id="navProviders" class="text-slate-500 hover:text-slate-300 px-3 py-2 flex items-center gap-3 hover:bg-white/5 transition-all rounded-xl font-body text-[12px] font-bold tracking-wide group" href="#">
-                <span class="material-symbols-outlined text-slate-500 text-sm ml-1 group-hover:text-slate-300">api</span>
+            <a id="navProviders"
+                class="text-slate-500 hover:text-slate-300 px-3 py-2 flex items-center gap-3 hover:bg-white/5 transition-all rounded-xl font-body text-[12px] font-bold tracking-wide group"
+                href="#">
+                <span
+                    class="material-symbols-outlined text-slate-500 text-sm ml-1 group-hover:text-slate-300">api</span>
                 APIs & Chaves
             </a>
         </nav>
@@ -263,8 +341,11 @@
             </div>
             <div class="bg-primary/10 rounded-2xl p-4 mb-4">
                 <p class="text-xs text-blue-400 font-bold uppercase tracking-wider mb-2">Upgrade para Pro</p>
-                <p class="text-xs text-slate-400 leading-relaxed mb-3">Tenha acesso aos modelos GPT-4 e Claude 3 Opus.</p>
-                <button class="w-full bg-primary text-white text-xs font-bold py-2 rounded-lg hover:bg-primary-dim transition-colors">Assinar Agora</button>
+                <p class="text-xs text-slate-400 leading-relaxed mb-3">Tenha acesso aos modelos GPT-4 e Claude 3 Opus.
+                </p>
+                <button
+                    class="w-full bg-primary text-white text-xs font-bold py-2 rounded-lg hover:bg-primary-dim transition-colors">Assinar
+                    Agora</button>
             </div>
         </div>
     </aside>
@@ -277,40 +358,56 @@
                 <!-- Welcome Screen -->
                 <div id="welcomeScreen" class="text-center py-12 space-y-8 flex flex-col items-center">
                     <div class="mascot-container relative w-64 h-64 mb-4">
-                        <div class="mascot-shadow absolute bottom-0 left-1/2 -translate-x-1/2 w-40 h-8 rounded-[100%]"></div>
-                        <img src="assets/mascot.png" alt="Arkanis Mascot" class="mascot-hero w-full h-full object-contain relative z-10">
+                        <div class="mascot-shadow absolute bottom-0 left-1/2 -translate-x-1/2 w-40 h-8 rounded-[100%]">
+                        </div>
+                        <img src="assets/mascot.png" alt="Arkanis Mascot"
+                            class="mascot-hero w-full h-full object-contain relative z-10">
                     </div>
-                    
+
                     <div class="space-y-4 max-w-2xl px-6">
-                        <h2 class="text-4xl md:text-6xl font-headline font-extrabold text-white tracking-tight drop-shadow-sm">
+                        <h2
+                            class="text-4xl md:text-6xl font-headline font-extrabold text-white tracking-tight drop-shadow-sm">
                             Olá, eu sou <span class="text-blue-500 text-glow-blue uppercase">Arkanis</span>
                         </h2>
                         <p class="text-slate-400 text-lg font-body leading-relaxed">
-                            Seu Centro de Comando para Inteligência de Elite. Estou pronto para analisar, criar e evoluir seu ambiente.
+                            Seu Centro de Comando para Inteligência de Elite. Estou pronto para analisar, criar e
+                            evoluir seu ambiente.
                         </p>
                     </div>
 
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-6 w-full max-w-5xl px-6 pt-4">
-                        <button class="suggestion-card p-6 bg-slate-900/40 rounded-2xl text-left hover:bg-slate-800/60 transition-all group border border-white/5 backdrop-blur-sm shadow-xl" data-action="auto: Analisar estrutura do diretório atual">
-                            <div class="w-10 h-10 rounded-lg bg-blue-500/10 flex items-center justify-center mb-4 border border-blue-500/20 group-hover:scale-110 transition-transform">
+                        <button
+                            class="suggestion-card p-6 bg-slate-900/40 rounded-2xl text-left hover:bg-slate-800/60 transition-all group border border-white/5 backdrop-blur-sm shadow-xl"
+                            data-action="auto: Analisar estrutura do diretório atual">
+                            <div
+                                class="w-10 h-10 rounded-lg bg-blue-500/10 flex items-center justify-center mb-4 border border-blue-500/20 group-hover:scale-110 transition-transform">
                                 <span class="material-symbols-outlined text-blue-400 text-xl">analytics</span>
                             </div>
                             <h3 class="text-white font-bold text-sm mb-1">Análise de Ambiente</h3>
-                            <p class="text-slate-500 text-xs leading-relaxed">Varredura completa e reporte técnico do diretório atual.</p>
+                            <p class="text-slate-500 text-xs leading-relaxed">Varredura completa e reporte técnico do
+                                diretório atual.</p>
                         </button>
-                        <button class="suggestion-card p-6 bg-slate-900/40 rounded-2xl text-left hover:bg-slate-800/60 transition-all group border border-white/5 backdrop-blur-sm shadow-xl" data-action="auto: Buscar últimas notícias de tecnologia e salvar em tech_news.txt">
-                            <div class="w-10 h-10 rounded-lg bg-indigo-500/10 flex items-center justify-center mb-4 border border-indigo-500/20 group-hover:scale-110 transition-transform">
+                        <button
+                            class="suggestion-card p-6 bg-slate-900/40 rounded-2xl text-left hover:bg-slate-800/60 transition-all group border border-white/5 backdrop-blur-sm shadow-xl"
+                            data-action="auto: Buscar últimas notícias de tecnologia e salvar em tech_news.txt">
+                            <div
+                                class="w-10 h-10 rounded-lg bg-indigo-500/10 flex items-center justify-center mb-4 border border-indigo-500/20 group-hover:scale-110 transition-transform">
                                 <span class="material-symbols-outlined text-indigo-400 text-xl">auto_awesome</span>
                             </div>
                             <h3 class="text-white font-bold text-sm mb-1">Web Research</h3>
-                            <p class="text-slate-500 text-xs leading-relaxed">Busca autônoma na rede com síntese inteligente de dados.</p>
+                            <p class="text-slate-500 text-xs leading-relaxed">Busca autônoma na rede com síntese
+                                inteligente de dados.</p>
                         </button>
-                        <button class="suggestion-card p-6 bg-slate-900/40 rounded-2xl text-left hover:bg-slate-800/60 transition-all group border border-white/5 backdrop-blur-sm shadow-xl" data-action="auto: Ler server.py e sugerir melhorias de segurança">
-                            <div class="w-10 h-10 rounded-lg bg-emerald-500/10 flex items-center justify-center mb-4 border border-emerald-500/20 group-hover:scale-110 transition-transform">
+                        <button
+                            class="suggestion-card p-6 bg-slate-900/40 rounded-2xl text-left hover:bg-slate-800/60 transition-all group border border-white/5 backdrop-blur-sm shadow-xl"
+                            data-action="auto: Ler server.py e sugerir melhorias de segurança">
+                            <div
+                                class="w-10 h-10 rounded-lg bg-emerald-500/10 flex items-center justify-center mb-4 border border-emerald-500/20 group-hover:scale-110 transition-transform">
                                 <span class="material-symbols-outlined text-emerald-400 text-xl">code</span>
                             </div>
                             <h3 class="text-white font-bold text-sm mb-1">Audit de Código</h3>
-                            <p class="text-slate-500 text-xs leading-relaxed">Identificação de falhas, vulnerabilidades e otimização estrutural.</p>
+                            <p class="text-slate-500 text-xs leading-relaxed">Identificação de falhas, vulnerabilidades
+                                e otimização estrutural.</p>
                         </button>
                     </div>
                 </div>
@@ -323,9 +420,11 @@
                 <div class="flex items-center justify-between border-b border-white/10 pb-4">
                     <div>
                         <h2 class="text-3xl font-headline font-extrabold text-on-surface">Provedores de APIs</h2>
-                        <p class="text-on-surface-variant text-sm mt-1">Gerencie seus provedores de LLM e chaves de acesso externas.</p>
+                        <p class="text-on-surface-variant text-sm mt-1">Gerencie seus provedores de LLM e chaves de
+                            acesso externas.</p>
                     </div>
-                    <button id="saveConfigBtn" class="bg-primary hover:bg-primary-dim text-white px-5 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition-all shadow-lg shadow-primary/20">
+                    <button id="saveConfigBtn"
+                        class="bg-primary hover:bg-primary-dim text-white px-5 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition-all shadow-lg shadow-primary/20">
                         <span class="material-symbols-outlined text-sm">save</span>
                         Salvar Modelos
                     </button>
@@ -334,16 +433,17 @@
                 <!-- LLMs Content Tab -->
                 <div id="tabLlmsContent" class="space-y-8 block mt-6">
 
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    <!-- Provider Cards will be injected here by script.js -->
-                    <div id="providerCardsContainer" class="col-span-full grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
-                </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        <!-- Provider Cards will be injected here by script.js -->
+                        <div id="providerCardsContainer"
+                            class="col-span-full grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+                    </div>
 
-                <div class="bg-slate-900/40 rounded-2xl border border-white/5 p-6 mt-8">
-                    <h3 class="text-lg font-bold text-on-surface mb-4 flex items-center gap-2">
-                        <span class="material-symbols-outlined text-primary">category</span>
-                        Modelos Disponíveis
-                    </h3>
+                    <div class="bg-slate-900/40 rounded-2xl border border-white/5 p-6 mt-8">
+                        <h3 class="text-lg font-bold text-on-surface mb-4 flex items-center gap-2">
+                            <span class="material-symbols-outlined text-primary">category</span>
+                            Modelos Disponíveis
+                        </h3>
                         <div id="modelsListTable" class="space-y-2">
                             <!-- Table injected here -->
                         </div>
@@ -359,9 +459,11 @@
                 <div class="flex items-center justify-between border-b border-white/10 pb-4">
                     <div>
                         <h2 class="text-3xl font-headline font-extrabold text-on-surface">Integrações Externas</h2>
-                        <p class="text-on-surface-variant text-sm mt-1">Gerencie chaves e configurações para integrações com serviços de terceiros (ex: GitHub, Jira).</p>
+                        <p class="text-on-surface-variant text-sm mt-1">Gerencie chaves e configurações para integrações
+                            com serviços de terceiros (ex: GitHub, Jira).</p>
                     </div>
-                    <button id="saveIntegrationsBtn" class="bg-primary hover:bg-primary-dim text-white px-5 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition-all shadow-lg shadow-primary/20">
+                    <button id="saveIntegrationsBtn"
+                        class="bg-primary hover:bg-primary-dim text-white px-5 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition-all shadow-lg shadow-primary/20">
                         <span class="material-symbols-outlined text-sm">save</span>
                         Salvar Integrações
                     </button>
@@ -379,13 +481,18 @@
         <section id="tasksPanel" class="hidden flex-1 overflow-y-auto p-8 lg:p-12 custom-scrollbar bg-black/20">
             <div class="max-w-7xl mx-auto space-y-10 pb-32">
                 <!-- Header -->
-                <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 border-b border-white/5 pb-6">
+                <div
+                    class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 border-b border-white/5 pb-6">
                     <div>
-                        <h2 class="text-4xl font-headline font-black text-white tracking-tight">Agent <span class="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-blue-500 drop-shadow-[0_0_10px_rgba(168,85,247,0.4)]">Orchestrator</span></h2>
-                        <p class="text-slate-400 text-sm mt-1 uppercase tracking-tighter font-bold opacity-60">Matriz de Tarefas Contínuas & Web Crawlers</p>
+                        <h2 class="text-4xl font-headline font-black text-white tracking-tight">Agent <span
+                                class="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-blue-500 drop-shadow-[0_0_10px_rgba(168,85,247,0.4)]">Orchestrator</span>
+                        </h2>
+                        <p class="text-slate-400 text-sm mt-1 uppercase tracking-tighter font-bold opacity-60">Matriz de
+                            Tarefas Contínuas & Web Crawlers</p>
                     </div>
                     <div class="flex items-center gap-3">
-                        <button onclick="loadTasks(); loadGoals();" class="flex items-center gap-2 bg-slate-900 border border-white/10 hover:border-white/20 text-slate-300 px-4 py-2 rounded-xl text-xs font-bold transition-all shadow-md">
+                        <button onclick="loadTasks(); loadGoals();"
+                            class="flex items-center gap-2 bg-slate-900 border border-white/10 hover:border-white/20 text-slate-300 px-4 py-2 rounded-xl text-xs font-bold transition-all shadow-md">
                             <span class="material-symbols-outlined text-sm">cached</span> Sync
                         </button>
                     </div>
@@ -398,24 +505,34 @@
                     </h3>
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <!-- Blueprint 1: Internet Crawler -->
-                        <button onclick="applyBlueprint('web_monitor')" class="text-left bg-gradient-to-br from-blue-900/40 to-slate-900/40 border border-blue-500/20 hover:border-blue-400/50 rounded-2xl p-4 transition-all group relative overflow-hidden">
-                            <div class="absolute inset-0 bg-blue-500/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                        <button onclick="applyBlueprint('web_monitor')"
+                            class="text-left bg-gradient-to-br from-blue-900/40 to-slate-900/40 border border-blue-500/20 hover:border-blue-400/50 rounded-2xl p-4 transition-all group relative overflow-hidden">
+                            <div
+                                class="absolute inset-0 bg-blue-500/5 opacity-0 group-hover:opacity-100 transition-opacity">
+                            </div>
                             <span class="material-symbols-outlined text-blue-400 mb-2 block">travel_explore</span>
                             <h4 class="text-sm font-bold text-white uppercase tracking-wide">Web Monitor (Test)</h4>
-                            <p class="text-[10px] text-slate-400 mt-1 line-clamp-2">Navega autonomamente na internet para extrair as ultimas notícias de AI e retorna um resumo no log.</p>
+                            <p class="text-[10px] text-slate-400 mt-1 line-clamp-2">Navega autonomamente na internet
+                                para extrair as ultimas notícias de AI e retorna um resumo no log.</p>
                         </button>
                         <!-- Blueprint 2: Self-Healing -->
-                        <button onclick="applyBlueprint('system_audit')" class="text-left bg-gradient-to-br from-emerald-900/40 to-slate-900/40 border border-emerald-500/20 hover:border-emerald-400/50 rounded-2xl p-4 transition-all group relative overflow-hidden">
-                            <div class="absolute inset-0 bg-emerald-500/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                        <button onclick="applyBlueprint('system_audit')"
+                            class="text-left bg-gradient-to-br from-emerald-900/40 to-slate-900/40 border border-emerald-500/20 hover:border-emerald-400/50 rounded-2xl p-4 transition-all group relative overflow-hidden">
+                            <div
+                                class="absolute inset-0 bg-emerald-500/5 opacity-0 group-hover:opacity-100 transition-opacity">
+                            </div>
                             <span class="material-symbols-outlined text-emerald-400 mb-2 block">security</span>
                             <h4 class="text-sm font-bold text-white uppercase tracking-wide">Auto-Audit</h4>
-                            <p class="text-[10px] text-slate-400 mt-1 line-clamp-2">Audita logs passados e faz varredura no terminal por sugestões de melhorias arquiteturais.</p>
+                            <p class="text-[10px] text-slate-400 mt-1 line-clamp-2">Audita logs passados e faz varredura
+                                no terminal por sugestões de melhorias arquiteturais.</p>
                         </button>
                         <!-- Blueprint 3: Clear -->
-                        <button onclick="applyBlueprint('custom')" class="text-left bg-slate-900/40 border border-white/5 hover:border-white/10 rounded-2xl p-4 transition-all group relative overflow-hidden">
+                        <button onclick="applyBlueprint('custom')"
+                            class="text-left bg-slate-900/40 border border-white/5 hover:border-white/10 rounded-2xl p-4 transition-all group relative overflow-hidden">
                             <span class="material-symbols-outlined text-slate-400 mb-2 block">code</span>
                             <h4 class="text-sm font-bold text-white uppercase tracking-wide">Custom Task</h4>
-                            <p class="text-[10px] text-slate-500 mt-1 line-clamp-2">Limpe o formulário para criar uma diretiva sob medida.</p>
+                            <p class="text-[10px] text-slate-500 mt-1 line-clamp-2">Limpe o formulário para criar uma
+                                diretiva sob medida.</p>
                         </button>
                     </div>
                 </div>
@@ -423,10 +540,13 @@
                 <!-- Agent Forge -->
                 <div class="space-y-4 pt-10 border-t border-white/5">
                     <div class="flex items-center justify-between">
-                        <h3 class="text-[11px] font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2">
-                            <span class="material-symbols-outlined text-sm text-purple-400">smart_toy</span> Custom Agents (Forge)
+                        <h3
+                            class="text-[11px] font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2">
+                            <span class="material-symbols-outlined text-sm text-purple-400">smart_toy</span> Custom
+                            Agents (Forge)
                         </h3>
-                        <button id="showAgentForgeModalBtn" class="bg-purple-600 hover:bg-purple-500 text-white px-4 py-2 rounded-xl text-xs font-bold transition-all shadow-[0_0_15px_rgba(147,51,234,0.3)]">
+                        <button id="showAgentForgeModalBtn"
+                            class="bg-purple-600 hover:bg-purple-500 text-white px-4 py-2 rounded-xl text-xs font-bold transition-all shadow-[0_0_15px_rgba(147,51,234,0.3)]">
                             <span class="material-symbols-outlined text-[14px] align-middle mr-1">add</span> Forge Agent
                         </button>
                     </div>
@@ -436,42 +556,61 @@
                 </div>
 
                 <!-- Create Continuous Task Form -->
-                <div class="bg-[#050B14] rounded-2xl border border-blue-500/10 p-6 shadow-[0_0_30px_-15px_rgba(59,130,246,0.15)] relative overflow-hidden">
-                    <div class="absolute inset-0 pointer-events-none opacity-[0.03] mix-blend-screen overflow-hidden" 
+                <div
+                    class="bg-[#050B14] rounded-2xl border border-blue-500/10 p-6 shadow-[0_0_30px_-15px_rgba(59,130,246,0.15)] relative overflow-hidden">
+                    <div class="absolute inset-0 pointer-events-none opacity-[0.03] mix-blend-screen overflow-hidden"
                         style="background-image: repeating-linear-gradient(transparent, transparent 2px, #3b82f6 2px, #3b82f6 4px);">
                     </div>
-                    
-                    <h3 class="text-[11px] font-bold text-blue-400 uppercase tracking-widest flex items-center gap-2 mb-4 relative z-10">
+
+                    <h3
+                        class="text-[11px] font-bold text-blue-400 uppercase tracking-widest flex items-center gap-2 mb-4 relative z-10">
                         <span class="material-symbols-outlined text-sm">terminal</span> Mission Parameters
                     </h3>
-                    
+
                     <div class="grid grid-cols-1 md:grid-cols-4 gap-5 relative z-10">
                         <div class="col-span-1 md:col-span-2">
-                            <label class="text-[9px] font-mono text-slate-500 uppercase tracking-widest block mb-1">Directive / Instructions</label>
-                            <input id="newTaskDesc" type="text" class="w-full bg-[#02050A] border border-blue-500/20 rounded-xl px-4 py-2.5 text-sm text-cyan-50 font-mono focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all placeholder:text-slate-700 shadow-inner" placeholder="> Insira a diretiva global do agente...">
+                            <label
+                                class="text-[9px] font-mono text-slate-500 uppercase tracking-widest block mb-1">Directive
+                                / Instructions</label>
+                            <input id="newTaskDesc" type="text"
+                                class="w-full bg-[#02050A] border border-blue-500/20 rounded-xl px-4 py-2.5 text-sm text-cyan-50 font-mono focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all placeholder:text-slate-700 shadow-inner"
+                                placeholder="> Insira a diretiva global do agente...">
                         </div>
                         <div>
-                            <label class="text-[9px] font-mono text-slate-500 uppercase tracking-widest block mb-1">Execution Mode</label>
-                            <select id="newTaskType" class="w-full bg-[#02050A] border border-blue-500/20 rounded-xl px-4 py-2.5 text-sm text-cyan-50 font-mono focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all shadow-inner">
+                            <label
+                                class="text-[9px] font-mono text-slate-500 uppercase tracking-widest block mb-1">Execution
+                                Mode</label>
+                            <select id="newTaskType"
+                                class="w-full bg-[#02050A] border border-blue-500/20 rounded-xl px-4 py-2.5 text-sm text-cyan-50 font-mono focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all shadow-inner">
                                 <option value="interval">Recorrente (Infinity)</option>
                             </select>
                         </div>
                         <div>
-                            <label class="text-[9px] font-mono text-slate-500 uppercase tracking-widest block mb-1">Cooldown (Seconds)</label>
-                            <input id="newTaskInterval" type="number" value="300" class="w-full bg-[#02050A] border border-blue-500/20 rounded-xl px-4 py-2.5 text-sm text-cyan-50 font-mono focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all shadow-inner">
+                            <label
+                                class="text-[9px] font-mono text-slate-500 uppercase tracking-widest block mb-1">Cooldown
+                                (Seconds)</label>
+                            <input id="newTaskInterval" type="number" value="300"
+                                class="w-full bg-[#02050A] border border-blue-500/20 rounded-xl px-4 py-2.5 text-sm text-cyan-50 font-mono focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all shadow-inner">
                         </div>
                         <div class="col-span-1 md:col-span-2">
-                            <label class="text-[9px] font-mono text-slate-500 uppercase tracking-widest block mb-1">HALT CONDITION (OPTIONAL)</label>
-                            <input id="newTaskCondition" type="text" class="w-full bg-[#02050A] border border-blue-500/20 rounded-xl px-4 py-2.5 text-sm text-cyan-50 font-mono focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all placeholder:text-slate-700 shadow-inner" placeholder="> Quando parar a matriz?">
+                            <label class="text-[9px] font-mono text-slate-500 uppercase tracking-widest block mb-1">HALT
+                                CONDITION (OPTIONAL)</label>
+                            <input id="newTaskCondition" type="text"
+                                class="w-full bg-[#02050A] border border-blue-500/20 rounded-xl px-4 py-2.5 text-sm text-cyan-50 font-mono focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all placeholder:text-slate-700 shadow-inner"
+                                placeholder="> Quando parar a matriz?">
                         </div>
                         <div class="col-span-1 md:col-span-1">
-                            <label class="text-[9px] font-mono text-slate-500 uppercase tracking-widest block mb-1">Parent Goal</label>
-                            <select id="newTaskGoalId" class="w-full bg-[#02050A] border border-blue-500/20 rounded-xl px-4 py-2.5 text-sm text-cyan-50 font-mono focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all shadow-inner">
+                            <label
+                                class="text-[9px] font-mono text-slate-500 uppercase tracking-widest block mb-1">Parent
+                                Goal</label>
+                            <select id="newTaskGoalId"
+                                class="w-full bg-[#02050A] border border-blue-500/20 rounded-xl px-4 py-2.5 text-sm text-cyan-50 font-mono focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all shadow-inner">
                                 <option value="">Nenhum Objetivo Vinculado</option>
                             </select>
                         </div>
                         <div class="col-span-1 flex items-end">
-                            <button id="createTaskBtn" class="w-full bg-blue-600 hover:bg-blue-500 text-white h-10 rounded-xl font-bold text-[11px] uppercase tracking-widest transition-all shadow-[0_0_20px_rgba(37,99,235,0.3)] flex items-center justify-center gap-2">
+                            <button id="createTaskBtn"
+                                class="w-full bg-blue-600 hover:bg-blue-500 text-white h-10 rounded-xl font-bold text-[11px] uppercase tracking-widest transition-all shadow-[0_0_20px_rgba(37,99,235,0.3)] flex items-center justify-center gap-2">
                                 <span class="material-symbols-outlined text-sm">power_settings_new</span> Initialize
                             </button>
                         </div>
@@ -487,12 +626,14 @@
                         <!-- Loaded by JS renderTasks -->
                     </div>
                 </div>
-                
+
                 <!-- Goals -->
                 <div class="space-y-4 pt-10 border-t border-white/5">
                     <h3 class="text-[11px] font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2">
                         <span class="material-symbols-outlined text-sm">flag</span> Top-Level Goals
-                        <button id="showCreateGoalModalBtn" class="ml-2 bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 px-3 py-1 rounded text-[10px] transition-colors border border-blue-500/20">Criar Novo</button>
+                        <button id="showCreateGoalModalBtn"
+                            class="ml-2 bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 px-3 py-1 rounded text-[10px] transition-colors border border-blue-500/20">Criar
+                            Novo</button>
                     </h3>
                     <div id="goalsListContainer" class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                         <!-- Loaded by JS renderGoals -->
@@ -509,26 +650,32 @@
                 <div class="flex items-center justify-between">
                     <div>
                         <h2 class="text-3xl font-headline font-extrabold text-on-surface">Agent Control Center</h2>
-                        <p class="text-on-surface-variant text-sm mt-1">Monitore, controle e crie agentes em tempo real.</p>
+                        <p class="text-on-surface-variant text-sm mt-1">Monitore, controle e crie agentes em tempo real.
+                        </p>
                     </div>
                     <div class="flex items-center gap-3">
-                        <div class="flex items-center gap-2 px-3 py-1.5 bg-emerald-500/10 border border-emerald-500/20 rounded-full">
+                        <div
+                            class="flex items-center gap-2 px-3 py-1.5 bg-emerald-500/10 border border-emerald-500/20 rounded-full">
                             <span class="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></span>
                             <span class="text-[10px] font-bold text-emerald-400">Live</span>
                         </div>
-                        <button id="openCreateAgentModal" class="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-xl text-xs font-bold transition-all shadow-lg shadow-blue-600/20">
+                        <button id="openCreateAgentModal"
+                            class="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-xl text-xs font-bold transition-all shadow-lg shadow-blue-600/20">
                             <span class="material-symbols-outlined text-sm">add</span> Novo Agente
                         </button>
-                        <button id="refreshObservabilityBtn" class="flex items-center gap-2 bg-slate-800 hover:bg-slate-700 text-slate-300 px-4 py-2 rounded-xl text-xs font-bold transition-all">
+                        <button id="refreshObservabilityBtn"
+                            class="flex items-center gap-2 bg-slate-800 hover:bg-slate-700 text-slate-300 px-4 py-2 rounded-xl text-xs font-bold transition-all">
                             <span class="material-symbols-outlined text-sm">cached</span> Atualizar
                         </button>
                     </div>
                 </div>
 
                 <!-- Neural Map Section -->
-                <div class="bg-slate-950/60 border border-blue-500/10 rounded-2xl p-6 relative overflow-hidden h-[400px]">
+                <div
+                    class="bg-slate-950/60 border border-blue-500/10 rounded-2xl p-6 relative overflow-hidden h-[400px]">
                     <div class="absolute top-4 left-6 z-10">
-                        <h3 class="text-[11px] font-bold text-blue-400 uppercase tracking-widest flex items-center gap-2">
+                        <h3
+                            class="text-[11px] font-bold text-blue-400 uppercase tracking-widest flex items-center gap-2">
                             <span class="material-symbols-outlined text-sm">hub</span> Neural Map (Live)
                         </h3>
                         <p class="text-[9px] text-slate-500 uppercase font-bold">Fluxo de Comunicação entre Agentes</p>
@@ -567,29 +714,36 @@
                     <!-- Column 1 & 2: System Terminal -->
                     <div class="lg:col-span-2 space-y-4">
                         <div class="flex items-center justify-between">
-                            <h3 class="text-[11px] font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2">
+                            <h3
+                                class="text-[11px] font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2">
                                 <span class="material-symbols-outlined text-sm">terminal</span> Master Control Console
                             </h3>
                             <div class="flex items-center gap-2">
-                                <span class="text-[8px] font-bold text-emerald-500 animate-pulse uppercase">Read Only</span>
+                                <span class="text-[8px] font-bold text-emerald-500 animate-pulse uppercase">Read
+                                    Only</span>
                                 <div class="w-1.5 h-1.5 rounded-full bg-emerald-500"></div>
                             </div>
                         </div>
-                        <div class="bg-black/80 border border-white/5 rounded-2xl p-5 h-[320px] overflow-y-auto custom-scrollbar font-mono text-[11px] relative shadow-inner">
-                             <div id="systemTerminalLogs" class="space-y-1">
-                                 <div class="text-slate-500 italic">Inicializando console mestre...</div>
-                                 <div class="text-blue-400">Arkanis V3.1 Console Protocol (Ready)</div>
-                             </div>
-                             <div class="absolute bottom-2 right-4 opacity-10 pointer-events-none select-none text-2xl font-black">ARKANIS OS</div>
+                        <div
+                            class="bg-black/80 border border-white/5 rounded-2xl p-5 h-[320px] overflow-y-auto custom-scrollbar font-mono text-[11px] relative shadow-inner">
+                            <div id="systemTerminalLogs" class="space-y-1">
+                                <div class="text-slate-500 italic">Inicializando console mestre...</div>
+                                <div class="text-blue-400">Arkanis V3.1 Console Protocol (Ready)</div>
+                            </div>
+                            <div
+                                class="absolute bottom-2 right-4 opacity-10 pointer-events-none select-none text-2xl font-black">
+                                ARKANIS OS</div>
                         </div>
                     </div>
 
                     <!-- Column 3: Auto-Heal Timeline -->
                     <div class="space-y-4">
-                        <h3 class="text-[11px] font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2">
+                        <h3
+                            class="text-[11px] font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2">
                             <span class="material-symbols-outlined text-sm">history_edu</span> Auto-Heal Timeline
                         </h3>
-                        <div id="autoHealTimeline" class="bg-slate-900/40 border border-white/5 rounded-2xl p-5 h-[320px] overflow-y-auto custom-scrollbar relative">
+                        <div id="autoHealTimeline"
+                            class="bg-slate-900/40 border border-white/5 rounded-2xl p-5 h-[320px] overflow-y-auto custom-scrollbar relative">
                             <!-- Timeline items injected here -->
                             <div class="flex flex-col items-center justify-center h-full text-slate-600 opacity-50">
                                 <span class="material-symbols-outlined text-2xl mb-2">construction</span>
@@ -612,11 +766,13 @@
                 <!-- Event Details (AgentBus stream) -->
                 <div class="space-y-4">
                     <h3 class="text-[11px] font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2">
-                        <span class="material-symbols-outlined text-sm">analytics</span> Barramento de Eventos (AgentBus)
+                        <span class="material-symbols-outlined text-sm">analytics</span> Barramento de Eventos
+                        (AgentBus)
                     </h3>
                     <div class="bg-slate-900/40 border border-white/5 rounded-2xl overflow-hidden shadow-2xl">
                         <table class="w-full text-left text-[11px]">
-                            <thead class="bg-black/30 text-slate-500 font-bold border-b border-white/5 uppercase tracking-tighter">
+                            <thead
+                                class="bg-black/30 text-slate-500 font-bold border-b border-white/5 uppercase tracking-tighter">
                                 <tr>
                                     <th class="px-6 py-4">Hora</th>
                                     <th class="px-6 py-4">Agente</th>
@@ -636,23 +792,28 @@
         <!-- Dev Center Panel (System Evolution) -->
         <section id="devCenterPanel" class="hidden flex-1 overflow-y-auto p-8 lg:p-12 custom-scrollbar bg-black/20">
             <div class="max-w-7xl mx-auto space-y-12 pb-96">
-                
+
                 <!-- Evolution Hero Dashboard -->
                 <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 items-stretch">
                     <!-- Column 1: Analysis Radar (WOW Factor) -->
-                    <div class="lg:col-span-1 bg-slate-900/60 border border-white/5 rounded-3xl p-8 flex flex-col items-center justify-center relative overflow-hidden backdrop-blur-xl transition-all hover:border-blue-500/30">
-                        <div class="absolute inset-0 bg-gradient-to-br from-blue-500/5 to-purple-500/5 pointer-events-none"></div>
+                    <div
+                        class="lg:col-span-1 bg-slate-900/60 border border-white/5 rounded-3xl p-8 flex flex-col items-center justify-center relative overflow-hidden backdrop-blur-xl transition-all hover:border-blue-500/30">
+                        <div
+                            class="absolute inset-0 bg-gradient-to-br from-blue-500/5 to-purple-500/5 pointer-events-none">
+                        </div>
                         <div class="analysis-radar-container relative w-48 h-48 mb-6">
                             <!-- SVG Radar Animation Overlay -->
                             <div class="radar-pulse absolute inset-0 rounded-full border border-blue-500/20"></div>
                             <div class="radar-sweep absolute inset-0 rounded-full bg-conic-radar"></div>
                             <div class="absolute inset-0 flex items-center justify-center">
-                                <span class="material-symbols-outlined text-4xl text-blue-400 drop-shadow-[0_0_15px_rgba(59,130,246,0.6)]">radar</span>
+                                <span
+                                    class="material-symbols-outlined text-4xl text-blue-400 drop-shadow-[0_0_15px_rgba(59,130,246,0.6)]">radar</span>
                             </div>
                         </div>
                         <div class="text-center relative z-10">
                             <h4 class="text-sm font-bold text-white uppercase tracking-widest mb-1">Análise Ativa</h4>
-                            <p id="devLiveAction" class="text-[11px] text-blue-400 font-mono animate-pulse">Iniciando escaneamento...</p>
+                            <p id="devLiveAction" class="text-[11px] text-blue-400 font-mono animate-pulse">Iniciando
+                                escaneamento...</p>
                         </div>
                     </div>
 
@@ -660,17 +821,24 @@
                     <div class="lg:col-span-2 space-y-6">
                         <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
                             <div>
-                                <h2 class="text-4xl font-headline font-black text-white tracking-tight">System <span class="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-500 text-glow-blue">Evolution</span></h2>
-                                <p class="text-slate-400 text-sm mt-1 uppercase tracking-tighter font-bold opacity-60">Arquitetura de Adaptação Autônoma</p>
+                                <h2 class="text-4xl font-headline font-black text-white tracking-tight">System <span
+                                        class="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-500 text-glow-blue">Evolution</span>
+                                </h2>
+                                <p class="text-slate-400 text-sm mt-1 uppercase tracking-tighter font-bold opacity-60">
+                                    Arquitetura de Adaptação Autônoma</p>
                             </div>
                             <!-- Live Toggle Control Center -->
-                            <div class="flex items-center gap-3 bg-white/5 border border-white/5 rounded-2xl p-2 px-4 backdrop-blur-md">
-                                <span class="text-[10px] font-black text-slate-500 uppercase tracking-widest">DevAgent Status</span>
-                                <div class="px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[10px] font-bold flex items-center gap-2">
+                            <div
+                                class="flex items-center gap-3 bg-white/5 border border-white/5 rounded-2xl p-2 px-4 backdrop-blur-md">
+                                <span class="text-[10px] font-black text-slate-500 uppercase tracking-widest">DevAgent
+                                    Status</span>
+                                <div
+                                    class="px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[10px] font-bold flex items-center gap-2">
                                     <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
                                     ONLINE
                                 </div>
-                                <button onclick="agentToggle('dev_agent')" class="w-8 h-8 rounded-lg bg-white/5 hover:bg-white/10 flex items-center justify-center text-slate-400 transition-all border border-white/5">
+                                <button onclick="agentToggle('dev_agent')"
+                                    class="w-8 h-8 rounded-lg bg-white/5 hover:bg-white/10 flex items-center justify-center text-slate-400 transition-all border border-white/5">
                                     <span class="material-symbols-outlined text-lg" id="devAgentToggleIcon">pause</span>
                                 </button>
                             </div>
@@ -678,30 +846,37 @@
 
                         <!-- Mini Health Stats Grid -->
                         <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-                            <div class="bg-white/5 border border-white/5 p-4 rounded-2xl hover:bg-white/10 transition-colors group">
+                            <div
+                                class="bg-white/5 border border-white/5 p-4 rounded-2xl hover:bg-white/10 transition-colors group">
                                 <p class="text-[10px] font-bold text-slate-500 uppercase mb-1">Integridade</p>
                                 <div class="flex items-baseline gap-1">
                                     <span class="text-2xl font-black text-white" id="devHealthPct">98.4</span>
                                     <span class="text-[10px] text-emerald-400 font-bold">%</span>
                                 </div>
                                 <div class="w-full bg-white/5 h-1 rounded-full mt-2 overflow-hidden">
-                                     <div class="bg-emerald-500 h-full w-[98.4%]" id="devHealthBar"></div>
+                                    <div class="bg-emerald-500 h-full w-[98.4%]" id="devHealthBar"></div>
                                 </div>
                             </div>
-                            <div class="bg-white/5 border border-white/5 p-4 rounded-2xl hover:bg-white/10 transition-colors">
+                            <div
+                                class="bg-white/5 border border-white/5 p-4 rounded-2xl hover:bg-white/10 transition-colors">
                                 <p class="text-[10px] font-bold text-slate-500 uppercase mb-1">Melhorias</p>
                                 <span class="text-2xl font-black text-white" id="devTotalImprovements">0</span>
-                                <p class="text-[9px] text-blue-400 mt-1 uppercase tracking-tighter font-bold">Applied Today</p>
+                                <p class="text-[9px] text-blue-400 mt-1 uppercase tracking-tighter font-bold">Applied
+                                    Today</p>
                             </div>
-                            <div class="bg-white/5 border border-white/5 p-4 rounded-2xl hover:bg-white/10 transition-colors">
+                            <div
+                                class="bg-white/5 border border-white/5 p-4 rounded-2xl hover:bg-white/10 transition-colors">
                                 <p class="text-[10px] font-bold text-slate-500 uppercase mb-1">Análises</p>
                                 <span class="text-2xl font-black text-white" id="devAnalysesCount">...</span>
-                                <p class="text-[9px] text-purple-400 mt-1 uppercase tracking-tighter font-bold">Files Audited</p>
+                                <p class="text-[9px] text-purple-400 mt-1 uppercase tracking-tighter font-bold">Files
+                                    Audited</p>
                             </div>
-                            <div class="bg-white/5 border border-white/5 p-4 rounded-2xl hover:bg-white/10 transition-colors">
+                            <div
+                                class="bg-white/5 border border-white/5 p-4 rounded-2xl hover:bg-white/10 transition-colors">
                                 <p class="text-[10px] font-bold text-slate-500 uppercase mb-1">Impacto</p>
                                 <span class="text-2xl font-black text-white" id="devTimeSaved">--</span>
-                                <p class="text-[9px] text-amber-400 mt-1 uppercase tracking-tighter font-bold">Estimated Optimization</p>
+                                <p class="text-[9px] text-amber-400 mt-1 uppercase tracking-tighter font-bold">Estimated
+                                    Optimization</p>
                             </div>
                         </div>
                     </div>
@@ -710,17 +885,20 @@
                 <!-- Suggestions Section -->
                 <div class="space-y-6">
                     <div class="flex items-center justify-between border-b border-white/5 pb-4">
-                        <h3 class="text-[11px] font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2">
-                             <span class="material-symbols-outlined text-sm">auto_awesome</span> Sugestões de Melhoria
+                        <h3
+                            class="text-[11px] font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2">
+                            <span class="material-symbols-outlined text-sm">auto_awesome</span> Sugestões de Melhoria
                         </h3>
-                        <button onclick="loadSuggestions()" class="flex items-center gap-2 text-[10px] font-bold text-blue-400 hover:text-blue-300 transition-colors uppercase tracking-widest">
-                             <span class="material-symbols-outlined text-xs">sync</span> Sincronizar
+                        <button onclick="loadSuggestions()"
+                            class="flex items-center gap-2 text-[10px] font-bold text-blue-400 hover:text-blue-300 transition-colors uppercase tracking-widest">
+                            <span class="material-symbols-outlined text-xs">sync</span> Sincronizar
                         </button>
                     </div>
 
                     <div id="suggestionsGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                         <!-- Suggestions will be injected here -->
-                        <div class="col-span-full py-20 text-center text-slate-600 italic flex flex-col items-center gap-4">
+                        <div
+                            class="col-span-full py-20 text-center text-slate-600 italic flex flex-col items-center gap-4">
                             <span class="material-symbols-outlined text-3xl animate-spin opacity-20">cloud_sync</span>
                             O DevAgent está analisando seu código em busca de melhorias...
                         </div>
@@ -730,8 +908,10 @@
         </section>
 
         <!-- Create Agent Modal -->
-        <div id="createAgentModal" class="fixed inset-0 z-[60] hidden items-center justify-center bg-black/60 backdrop-blur-sm">
-            <div class="bg-slate-900 border border-white/10 rounded-2xl p-8 w-full max-w-lg shadow-2xl mx-4 max-h-[80vh] overflow-y-auto custom-scrollbar">
+        <div id="createAgentModal"
+            class="fixed inset-0 z-[60] hidden items-center justify-center bg-black/60 backdrop-blur-sm">
+            <div
+                class="bg-slate-900 border border-white/10 rounded-2xl p-8 w-full max-w-lg shadow-2xl mx-4 max-h-[80vh] overflow-y-auto custom-scrollbar">
                 <div class="flex items-center justify-between mb-6">
                     <h3 class="text-xl font-headline font-extrabold text-white">Criar Novo Agente</h3>
                     <button id="closeCreateAgentModal" class="text-slate-500 hover:text-white transition-colors">
@@ -740,25 +920,39 @@
                 </div>
                 <div class="space-y-5">
                     <div>
-                        <label class="text-[10px] font-bold text-slate-500 uppercase tracking-widest block mb-1.5">ID do Agente</label>
-                        <input id="newAgentId" type="text" placeholder="ex: pesquisador_web" class="w-full bg-slate-800 border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder-slate-500 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none" />
+                        <label class="text-[10px] font-bold text-slate-500 uppercase tracking-widest block mb-1.5">ID do
+                            Agente</label>
+                        <input id="newAgentId" type="text" placeholder="ex: pesquisador_web"
+                            class="w-full bg-slate-800 border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder-slate-500 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none" />
                     </div>
                     <div>
-                        <label class="text-[10px] font-bold text-slate-500 uppercase tracking-widest block mb-1.5">Função / Especialização</label>
-                        <input id="newAgentRole" type="text" placeholder="ex: Pesquisador Web, Dev Python, Analista de Dados" class="w-full bg-slate-800 border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder-slate-500 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none" />
+                        <label
+                            class="text-[10px] font-bold text-slate-500 uppercase tracking-widest block mb-1.5">Função /
+                            Especialização</label>
+                        <input id="newAgentRole" type="text"
+                            placeholder="ex: Pesquisador Web, Dev Python, Analista de Dados"
+                            class="w-full bg-slate-800 border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder-slate-500 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none" />
                     </div>
                     <div>
-                        <label class="text-[10px] font-bold text-slate-500 uppercase tracking-widest block mb-1.5">Persona / Instruções</label>
-                        <textarea id="newAgentPersona" rows="3" placeholder="Descreva o comportamento e as regras deste agente..." class="w-full bg-slate-800 border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder-slate-500 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none resize-none"></textarea>
+                        <label
+                            class="text-[10px] font-bold text-slate-500 uppercase tracking-widest block mb-1.5">Persona
+                            / Instruções</label>
+                        <textarea id="newAgentPersona" rows="3"
+                            placeholder="Descreva o comportamento e as regras deste agente..."
+                            class="w-full bg-slate-800 border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder-slate-500 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none resize-none"></textarea>
                     </div>
                     <div>
-                        <label class="text-[10px] font-bold text-slate-500 uppercase tracking-widest block mb-2">Ferramentas Permitidas</label>
-                        <div id="toolCheckboxes" class="grid grid-cols-2 gap-2 max-h-40 overflow-y-auto custom-scrollbar bg-slate-800/50 rounded-xl p-3 border border-white/5">
+                        <label
+                            class="text-[10px] font-bold text-slate-500 uppercase tracking-widest block mb-2">Ferramentas
+                            Permitidas</label>
+                        <div id="toolCheckboxes"
+                            class="grid grid-cols-2 gap-2 max-h-40 overflow-y-auto custom-scrollbar bg-slate-800/50 rounded-xl p-3 border border-white/5">
                             <!-- Tool checkboxes injected by JS -->
                             <p class="text-slate-500 text-xs italic col-span-2">Carregando ferramentas...</p>
                         </div>
                     </div>
-                    <button id="submitCreateAgent" class="w-full bg-blue-600 hover:bg-blue-500 text-white py-3 rounded-xl font-bold text-sm transition-all shadow-lg shadow-blue-600/20 flex items-center justify-center gap-2">
+                    <button id="submitCreateAgent"
+                        class="w-full bg-blue-600 hover:bg-blue-500 text-white py-3 rounded-xl font-bold text-sm transition-all shadow-lg shadow-blue-600/20 flex items-center justify-center gap-2">
                         <span class="material-symbols-outlined text-sm">rocket_launch</span> Criar e Ativar
                     </button>
                     <p id="createAgentError" class="text-rose-400 text-xs text-center hidden"></p>
@@ -770,23 +964,34 @@
         <section id="systemLogsPanel" class="hidden flex-1 overflow-y-auto p-8 lg:p-12 custom-scrollbar bg-black/20">
             <div class="max-w-7xl mx-auto space-y-8 pb-32">
                 <!-- Header -->
-                <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 border-b border-white/5 pb-6">
+                <div
+                    class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 border-b border-white/5 pb-6">
                     <div>
-                        <h2 class="text-4xl font-headline font-black text-white tracking-tight">Audit <span class="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-cyan-500 drop-shadow-[0_0_10px_rgba(16,185,129,0.4)]">Terminal</span></h2>
-                        <p class="text-slate-400 text-sm mt-1 uppercase tracking-tighter font-bold opacity-60">Log Global de Sistema & Eventos Autônomos</p>
+                        <h2 class="text-4xl font-headline font-black text-white tracking-tight">Audit <span
+                                class="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-cyan-500 drop-shadow-[0_0_10px_rgba(16,185,129,0.4)]">Terminal</span>
+                        </h2>
+                        <p class="text-slate-400 text-sm mt-1 uppercase tracking-tighter font-bold opacity-60">Log
+                            Global de Sistema & Eventos Autônomos</p>
                     </div>
                     <div class="flex items-center gap-2 bg-slate-950 border border-white/10 rounded-xl p-1.5">
-                        <button class="sys-log-filter active px-4 py-1.5 rounded-lg text-[10px] font-bold text-white bg-blue-600 shadow-md shadow-blue-500/20 w-fit" data-filter="all">ALL</button>
-                        <button class="sys-log-filter px-4 py-1.5 rounded-lg text-[10px] font-bold text-slate-400 hover:text-white transition-colors w-fit" data-filter="error">ERRORS</button>
-                        <button class="sys-log-filter px-4 py-1.5 rounded-lg text-[10px] font-bold text-slate-400 hover:text-white transition-colors w-fit" data-filter="system">SYSTEM</button>
+                        <button
+                            class="sys-log-filter active px-4 py-1.5 rounded-lg text-[10px] font-bold text-white bg-blue-600 shadow-md shadow-blue-500/20 w-fit"
+                            data-filter="all">ALL</button>
+                        <button
+                            class="sys-log-filter px-4 py-1.5 rounded-lg text-[10px] font-bold text-slate-400 hover:text-white transition-colors w-fit"
+                            data-filter="error">ERRORS</button>
+                        <button
+                            class="sys-log-filter px-4 py-1.5 rounded-lg text-[10px] font-bold text-slate-400 hover:text-white transition-colors w-fit"
+                            data-filter="system">SYSTEM</button>
                     </div>
                 </div>
 
                 <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
                     <!-- Left: Audit Trail / Evolution Audit (Col-span 1) -->
                     <div class="col-span-1 space-y-4">
-                        <h3 class="text-[11px] font-bold text-emerald-500 uppercase tracking-widest flex items-center gap-2">
-                             <span class="material-symbols-outlined text-sm">verified_user</span> Security & Audit
+                        <h3
+                            class="text-[11px] font-bold text-emerald-500 uppercase tracking-widest flex items-center gap-2">
+                            <span class="material-symbols-outlined text-sm">verified_user</span> Security & Audit
                         </h3>
                         <div class="bg-slate-900/60 border border-white/5 rounded-2xl p-4 space-y-4 backdrop-blur-md">
                             <div class="flex items-center justify-between">
@@ -796,17 +1001,21 @@
                             <div class="grid grid-cols-2 gap-2">
                                 <div class="bg-black/30 rounded-xl p-3 border border-white/5 text-center">
                                     <span class="block text-xl font-black text-rose-400" id="sysLogErrCount">0</span>
-                                    <span class="text-[8px] uppercase tracking-widest text-slate-500 font-bold">Falhas</span>
+                                    <span
+                                        class="text-[8px] uppercase tracking-widest text-slate-500 font-bold">Falhas</span>
                                 </div>
                                 <div class="bg-black/30 rounded-xl p-3 border border-white/5 text-center">
                                     <span class="block text-xl font-black text-blue-400" id="sysLogTotalCount">0</span>
-                                    <span class="text-[8px] uppercase tracking-widest text-slate-500 font-bold">Eventos</span>
+                                    <span
+                                        class="text-[8px] uppercase tracking-widest text-slate-500 font-bold">Eventos</span>
                                 </div>
                             </div>
                             <hr class="border-white/5 my-2">
                             <div class="space-y-2">
-                                <p class="text-[9px] text-slate-500 uppercase font-bold mb-2">Insight Crítico Recente</p>
-                                <div id="sysLogCriticalEvents" class="space-y-2 h-[400px] overflow-y-auto custom-scrollbar pr-2">
+                                <p class="text-[9px] text-slate-500 uppercase font-bold mb-2">Insight Crítico Recente
+                                </p>
+                                <div id="sysLogCriticalEvents"
+                                    class="space-y-2 h-[400px] overflow-y-auto custom-scrollbar pr-2">
                                     <div class="p-3 rounded-lg bg-black/40 border border-white/5">
                                         <div class="text-[10px] text-slate-500 italic">Aguardando auditoria...</div>
                                     </div>
@@ -817,33 +1026,41 @@
 
                     <!-- Right: Main Terminal (Col-span 3) -->
                     <div class="lg:col-span-3 space-y-4">
-                        <h3 class="text-[11px] font-bold text-blue-400 uppercase tracking-widest flex items-center gap-2">
-                             <span class="material-symbols-outlined text-sm">monitor</span> Live Data Stream
+                        <h3
+                            class="text-[11px] font-bold text-blue-400 uppercase tracking-widest flex items-center gap-2">
+                            <span class="material-symbols-outlined text-sm">monitor</span> Live Data Stream
                         </h3>
-                        <div class="relative bg-[#050B14] rounded-2xl border border-blue-500/10 shadow-[0_0_50px_-15px_rgba(59,130,246,0.15)] overflow-hidden h-[600px] flex flex-col group">
+                        <div
+                            class="relative bg-[#050B14] rounded-2xl border border-blue-500/10 shadow-[0_0_50px_-15px_rgba(59,130,246,0.15)] overflow-hidden h-[600px] flex flex-col group">
                             <!-- Terminal Header -->
-                            <div class="h-8 bg-[#02050A] border-b border-white/5 flex items-center px-4 justify-between select-none shrink-0 z-20 relative">
+                            <div
+                                class="h-8 bg-[#02050A] border-b border-white/5 flex items-center px-4 justify-between select-none shrink-0 z-20 relative">
                                 <div class="flex gap-1.5">
                                     <div class="w-2.5 h-2.5 rounded-full bg-rose-500/50"></div>
                                     <div class="w-2.5 h-2.5 rounded-full bg-amber-500/50"></div>
                                     <div class="w-2.5 h-2.5 rounded-full bg-emerald-500/50"></div>
                                 </div>
-                                <span class="text-[9px] font-mono text-slate-600 uppercase tracking-widest">root@arkanis-core:~</span>
-                                <button onclick="clearSystemLogs()" class="text-[9px] text-slate-600 hover:text-white uppercase font-bold transition-colors">Clear</button>
+                                <span
+                                    class="text-[9px] font-mono text-slate-600 uppercase tracking-widest">root@arkanis-core:~</span>
+                                <button onclick="clearSystemLogs()"
+                                    class="text-[9px] text-slate-600 hover:text-white uppercase font-bold transition-colors">Clear</button>
                             </div>
-                            
+
                             <!-- Terminal Background Pattern -->
-                            <div class="absolute inset-0 z-0 pointer-events-none opacity-[0.03] mix-blend-screen overflow-hidden" 
+                            <div class="absolute inset-0 z-0 pointer-events-none opacity-[0.03] mix-blend-screen overflow-hidden"
                                 style="background-image: repeating-linear-gradient(transparent, transparent 2px, #3b82f6 2px, #3b82f6 4px);">
                             </div>
 
                             <!-- Lines stream -->
-                            <div id="sysLogFeed" class="flex-1 overflow-y-auto custom-scrollbar p-6 space-y-1.5 font-mono text-[11px] leading-relaxed relative z-10 scroll-smooth">
+                            <div id="sysLogFeed"
+                                class="flex-1 overflow-y-auto custom-scrollbar p-6 space-y-1.5 font-mono text-[11px] leading-relaxed relative z-10 scroll-smooth">
                                 <!-- Logs will stream here -->
                             </div>
-                            
+
                             <!-- Terminal Bottom Gradient -->
-                            <div class="absolute bottom-0 left-0 right-0 h-10 bg-gradient-to-t from-[#050B14] to-transparent z-20 pointer-events-none"></div>
+                            <div
+                                class="absolute bottom-0 left-0 right-0 h-10 bg-gradient-to-t from-[#050B14] to-transparent z-20 pointer-events-none">
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -853,10 +1070,14 @@
         <!-- Arsenal Panel (Tools Manager) -->
         <section id="arsenalPanel" class="hidden flex-1 overflow-y-auto p-10 custom-scrollbar relative">
             <div class="max-w-7xl mx-auto space-y-8 pb-32 relative z-10">
-                <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 border-b border-white/5 pb-6">
+                <div
+                    class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 border-b border-white/5 pb-6">
                     <div>
-                        <h2 class="text-4xl font-headline font-black text-white tracking-tight">System <span class="text-transparent bg-clip-text bg-gradient-to-r from-amber-400 to-orange-500 drop-shadow-[0_0_10px_rgba(245,158,11,0.4)]">Arsenal</span></h2>
-                        <p class="text-slate-400 text-sm mt-1 uppercase tracking-tighter font-bold opacity-60">Plugins, Ferramentas & Capacidades Ofensivas/Defensivas</p>
+                        <h2 class="text-4xl font-headline font-black text-white tracking-tight">System <span
+                                class="text-transparent bg-clip-text bg-gradient-to-r from-amber-400 to-orange-500 drop-shadow-[0_0_10px_rgba(245,158,11,0.4)]">Arsenal</span>
+                        </h2>
+                        <p class="text-slate-400 text-sm mt-1 uppercase tracking-tighter font-bold opacity-60">Plugins,
+                            Ferramentas & Capacidades Ofensivas/Defensivas</p>
                     </div>
                 </div>
 
@@ -864,9 +1085,9 @@
                     <!-- Tool cards will be populated here via JS -->
                 </div>
             </div>
-            
+
             <!-- Cyber Background Effect -->
-            <div class="absolute inset-0 z-0 pointer-events-none opacity-5" 
+            <div class="absolute inset-0 z-0 pointer-events-none opacity-5"
                 style="background-image: radial-gradient(#f59e0b 1px, transparent 1px); background-size: 30px 30px;">
             </div>
         </section>
@@ -874,10 +1095,14 @@
         <!-- Memory Vault Panel -->
         <section id="memoryPanel" class="hidden flex-1 overflow-y-auto p-10 custom-scrollbar relative">
             <div class="max-w-7xl mx-auto space-y-8 pb-32 relative z-10">
-                <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 border-b border-white/5 pb-6">
+                <div
+                    class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 border-b border-white/5 pb-6">
                     <div>
-                        <h2 class="text-4xl font-headline font-black text-white tracking-tight">Memory <span class="text-transparent bg-clip-text bg-gradient-to-r from-pink-400 to-purple-500 drop-shadow-[0_0_10px_rgba(236,72,153,0.4)]">Vault</span></h2>
-                        <p class="text-slate-400 text-sm mt-1 uppercase tracking-tighter font-bold opacity-60">Visualização de Memória Neural e Contexto de Longo Prazo</p>
+                        <h2 class="text-4xl font-headline font-black text-white tracking-tight">Memory <span
+                                class="text-transparent bg-clip-text bg-gradient-to-r from-pink-400 to-purple-500 drop-shadow-[0_0_10px_rgba(236,72,153,0.4)]">Vault</span>
+                        </h2>
+                        <p class="text-slate-400 text-sm mt-1 uppercase tracking-tighter font-bold opacity-60">
+                            Visualização de Memória Neural e Contexto de Longo Prazo</p>
                     </div>
                 </div>
 
@@ -885,9 +1110,9 @@
                     <!-- Memory categories will be populated here via JS -->
                 </div>
             </div>
-            
+
             <!-- Synapse Background Effect -->
-            <div class="absolute inset-0 z-0 pointer-events-none opacity-10" 
+            <div class="absolute inset-0 z-0 pointer-events-none opacity-10"
                 style="background-image: radial-gradient(circle at center, #ec4899 1px, transparent 1px); background-size: 40px 40px;">
             </div>
         </section>
@@ -897,24 +1122,35 @@
             <div class="max-w-4xl mx-auto pointer-events-auto">
                 <div class="relative group">
                     <!-- Activity Ticker (Futuristic mini-display) -->
-                    <div id="activityTickerContainer" class="flex items-center justify-between gap-4 mb-3 px-5 py-2 bg-slate-900/60 backdrop-blur-md rounded-full border border-white/5 shadow-2xl">
+                    <div id="activityTickerContainer"
+                        class="flex items-center justify-between gap-4 mb-3 px-5 py-2 bg-slate-900/60 backdrop-blur-md rounded-full border border-white/5 shadow-2xl">
                         <div class="flex items-center gap-3 overflow-hidden flex-1">
-                            <span class="material-symbols-outlined text-blue-500 text-[14px] animate-pulse">monitoring</span>
-                            <div id="activityTickerText" class="text-[10px] text-blue-400 font-bold uppercase tracking-[0.1em] whitespace-nowrap overflow-hidden transition-all duration-500">Sistemas Operacionais: Prontidão Total</div>
+                            <span
+                                class="material-symbols-outlined text-blue-500 text-[14px] animate-pulse">monitoring</span>
+                            <div id="activityTickerText"
+                                class="text-[10px] text-blue-400 font-bold uppercase tracking-[0.1em] whitespace-nowrap overflow-hidden transition-all duration-500">
+                                Sistemas Operacionais: Prontidão Total</div>
                         </div>
                     </div>
 
                     <!-- Floating Command Capsule -->
-                    <div class="command-capsule rounded-[28px] overflow-hidden p-2 flex items-end gap-3 px-5 group-focus-within:border-blue-500/40 transition-all">
+                    <div
+                        class="command-capsule rounded-[28px] overflow-hidden p-2 flex items-end gap-3 px-5 group-focus-within:border-blue-500/40 transition-all">
                         <!-- Tool Actions -->
                         <div class="flex items-center gap-1.5 mb-2">
-                            <button id="attachBtn" class="p-2.5 rounded-xl hover:bg-white/5 text-slate-400 hover:text-blue-400 transition-all" title="Anexar Arquivos" type="button">
+                            <button id="attachBtn"
+                                class="p-2.5 rounded-xl hover:bg-white/5 text-slate-400 hover:text-blue-400 transition-all"
+                                title="Anexar Arquivos" type="button">
                                 <span class="material-symbols-outlined text-[20px]">attach_file</span>
                             </button>
-                            <button id="imageBtn" class="p-2.5 rounded-xl hover:bg-white/5 text-slate-400 hover:text-indigo-400 transition-all" title="Enviar Imagem" type="button">
+                            <button id="imageBtn"
+                                class="p-2.5 rounded-xl hover:bg-white/5 text-slate-400 hover:text-indigo-400 transition-all"
+                                title="Enviar Imagem" type="button">
                                 <span class="material-symbols-outlined text-[20px]">image</span>
                             </button>
-                            <button id="voiceBtn" class="p-2.5 rounded-xl hover:bg-white/5 text-slate-400 hover:text-emerald-400 transition-all" title="Comando de Voz" type="button">
+                            <button id="voiceBtn"
+                                class="p-2.5 rounded-xl hover:bg-white/5 text-slate-400 hover:text-emerald-400 transition-all"
+                                title="Comando de Voz" type="button">
                                 <span class="material-symbols-outlined text-[20px]">mic</span>
                             </button>
                         </div>
@@ -927,29 +1163,37 @@
                             <!-- Attachment previews inside the capsule -->
                             <div id="imagePreviews" class="hidden flex-wrap gap-2 py-2 mb-1"></div>
                             <div id="filePreviews" class="hidden flex-wrap gap-2 py-2 mb-1"></div>
-                            
-                            <textarea id="userInput" 
-                                class="w-full bg-transparent border-none focus:ring-0 text-slate-100 placeholder-slate-500 font-body py-3.5 resize-none max-h-48 text-[15px] leading-relaxed overflow-y-hidden" 
+
+                            <textarea id="userInput"
+                                class="w-full bg-transparent border-none focus:ring-0 text-slate-100 placeholder-slate-500 font-body py-3.5 resize-none max-h-48 text-[15px] leading-relaxed overflow-y-hidden"
                                 placeholder="Insira seu comando à Elite Arkanis..." rows="1"></textarea>
-                            
+
                             <!-- Voice visualizer (Elite style) -->
                             <div id="voiceIndicator" class="hidden items-center gap-3 py-4">
                                 <div class="flex gap-1">
-                                    <div class="w-1 h-3 bg-emerald-500/80 rounded-full animate-bounce" style="animation-delay: 0.1s"></div>
-                                    <div class="w-1 h-5 bg-emerald-500/80 rounded-full animate-bounce" style="animation-delay: 0.2s"></div>
-                                    <div class="w-1 h-3 bg-emerald-500/80 rounded-full animate-bounce" style="animation-delay: 0.3s"></div>
+                                    <div class="w-1 h-3 bg-emerald-500/80 rounded-full animate-bounce"
+                                        style="animation-delay: 0.1s"></div>
+                                    <div class="w-1 h-5 bg-emerald-500/80 rounded-full animate-bounce"
+                                        style="animation-delay: 0.2s"></div>
+                                    <div class="w-1 h-3 bg-emerald-500/80 rounded-full animate-bounce"
+                                        style="animation-delay: 0.3s"></div>
                                 </div>
-                                <span class="text-[10px] font-extrabold text-emerald-400 uppercase tracking-[0.2em]">Sincronização Vocal Ativa...</span>
+                                <span
+                                    class="text-[10px] font-extrabold text-emerald-400 uppercase tracking-[0.2em]">Sincronização
+                                    Vocal Ativa...</span>
                             </div>
                         </div>
 
                         <!-- Send Button -->
-                        <button id="sendBtn" class="mb-1.5 p-3.5 rounded-2xl bg-blue-600 hover:bg-blue-500 text-white shadow-xl shadow-blue-600/30 transition-all transform hover:scale-105 active:scale-95 disabled:opacity-30 disabled:grayscale" disabled>
-                            <span class="material-symbols-outlined text-[22px]" style="font-variation-settings: 'FILL' 1;">send</span>
+                        <button id="sendBtn"
+                            class="mb-1.5 p-3.5 rounded-2xl bg-blue-600 hover:bg-blue-500 text-white shadow-xl shadow-blue-600/30 transition-all transform hover:scale-105 active:scale-95 disabled:opacity-30 disabled:grayscale"
+                            disabled>
+                            <span class="material-symbols-outlined text-[22px]"
+                                style="font-variation-settings: 'FILL' 1;">send</span>
                         </button>
                     </div>
                 </div>
-                
+
                 <p class="text-[9px] text-center text-slate-600 mt-4 font-bold uppercase tracking-[0.3em] opacity-40">
                     Arkanis V3.1 — Interface Neural Autônoma
                 </p>
@@ -958,49 +1202,68 @@
     </main>
 
     <!-- Floating UI decoration -->
-    <div class="fixed -bottom-48 -right-48 w-96 h-96 bg-primary/10 blur-[120px] rounded-full pointer-events-none z-0"></div>
+    <div class="fixed -bottom-48 -right-48 w-96 h-96 bg-primary/10 blur-[120px] rounded-full pointer-events-none z-0">
+    </div>
     <div class="fixed top-24 -left-24 w-64 h-64 bg-blue-500/5 blur-[100px] rounded-full pointer-events-none z-0"></div>
 
     <!-- Agent Forge Modal -->
-    <div id="agentForgeModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-[100] hidden flex items-center justify-center pointer-events-none opacity-0 transition-all duration-300">
-        <div class="bg-[#050B14] border border-purple-500/20 rounded-3xl p-8 max-w-lg w-full shadow-[0_0_50px_rgba(147,51,234,0.15)] relative pointer-events-auto transform scale-95 transition-transform duration-300" id="agentForgeModalContent">
+    <div id="agentForgeModal"
+        class="fixed inset-0 bg-black/80 backdrop-blur-sm z-[100] hidden flex items-center justify-center pointer-events-none opacity-0 transition-all duration-300">
+        <div class="bg-[#050B14] border border-purple-500/20 rounded-3xl p-8 max-w-lg w-full shadow-[0_0_50px_rgba(147,51,234,0.15)] relative pointer-events-auto transform scale-95 transition-transform duration-300"
+            id="agentForgeModalContent">
             <!-- Cyber Background Effect -->
-            <div class="absolute inset-0 z-0 pointer-events-none opacity-[0.03] mix-blend-screen overflow-hidden" 
+            <div class="absolute inset-0 z-0 pointer-events-none opacity-[0.03] mix-blend-screen overflow-hidden"
                 style="background-image: repeating-linear-gradient(transparent, transparent 2px, #a855f7 2px, #a855f7 4px);">
             </div>
-            
+
             <div class="relative z-10 flex justify-between items-start mb-6">
                 <div>
-                    <h2 class="text-2xl font-headline font-black text-white">Agent <span class="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-500">Forge</span></h2>
-                    <p class="text-xs text-slate-400 mt-1 uppercase tracking-widest font-bold">Criação de Especialista Autônomo</p>
+                    <h2 class="text-2xl font-headline font-black text-white">Agent <span
+                            class="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-500">Forge</span>
+                    </h2>
+                    <p class="text-xs text-slate-400 mt-1 uppercase tracking-widest font-bold">Criação de Especialista
+                        Autônomo</p>
                 </div>
                 <button id="closeAgentForgeModalBtn" class="text-slate-500 hover:text-white transition-colors">
                     <span class="material-symbols-outlined">close</span>
                 </button>
             </div>
-            
+
             <form id="agentForgeForm" class="space-y-4 relative z-10">
                 <div>
-                    <label class="block text-[10px] text-slate-400 font-bold uppercase tracking-widest mb-1.5">ID do Agente (Ex: sec_agent)</label>
-                    <input type="text" id="forgeAgentId" required class="w-full bg-[#02050A] border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:border-purple-500 outline-none transition-all shadow-inner" placeholder="Nome interno...">
+                    <label class="block text-[10px] text-slate-400 font-bold uppercase tracking-widest mb-1.5">ID do
+                        Agente (Ex: sec_agent)</label>
+                    <input type="text" id="forgeAgentId" required
+                        class="w-full bg-[#02050A] border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:border-purple-500 outline-none transition-all shadow-inner"
+                        placeholder="Nome interno...">
                 </div>
                 <div>
-                    <label class="block text-[10px] text-slate-400 font-bold uppercase tracking-widest mb-1.5">Papel (Role)</label>
-                    <input type="text" id="forgeAgentRole" required class="w-full bg-[#02050A] border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:border-purple-500 outline-none transition-all shadow-inner" placeholder="Ex: Engenheiro de Segurança Sênior">
+                    <label class="block text-[10px] text-slate-400 font-bold uppercase tracking-widest mb-1.5">Papel
+                        (Role)</label>
+                    <input type="text" id="forgeAgentRole" required
+                        class="w-full bg-[#02050A] border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:border-purple-500 outline-none transition-all shadow-inner"
+                        placeholder="Ex: Engenheiro de Segurança Sênior">
                 </div>
                 <div>
-                    <label class="block text-[10px] text-slate-400 font-bold uppercase tracking-widest mb-1.5">Regras de Comportamento (Persona)</label>
-                    <textarea id="forgeAgentPersona" rows="3" class="w-full bg-[#02050A] border border-white/10 rounded-xl px-4 py-2 text-sm text-white focus:border-purple-500 outline-none transition-all shadow-inner custom-scrollbar" placeholder="Descreva as instruções fundamentais e personalidade..."></textarea>
+                    <label class="block text-[10px] text-slate-400 font-bold uppercase tracking-widest mb-1.5">Regras de
+                        Comportamento (Persona)</label>
+                    <textarea id="forgeAgentPersona" rows="3"
+                        class="w-full bg-[#02050A] border border-white/10 rounded-xl px-4 py-2 text-sm text-white focus:border-purple-500 outline-none transition-all shadow-inner custom-scrollbar"
+                        placeholder="Descreva as instruções fundamentais e personalidade..."></textarea>
                 </div>
                 <div>
-                    <label class="block text-[10px] text-slate-400 font-bold uppercase tracking-widest mb-1.5">Ferramentas Permitidas</label>
-                    <div id="forgeAgentToolsList" class="max-h-32 overflow-y-auto bg-[#02050A] border border-white/10 rounded-xl p-3 flex flex-wrap gap-2 custom-scrollbar">
+                    <label
+                        class="block text-[10px] text-slate-400 font-bold uppercase tracking-widest mb-1.5">Ferramentas
+                        Permitidas</label>
+                    <div id="forgeAgentToolsList"
+                        class="max-h-32 overflow-y-auto bg-[#02050A] border border-white/10 rounded-xl p-3 flex flex-wrap gap-2 custom-scrollbar">
                         <span class="text-xs text-slate-600">Carregando arsenal...</span>
                     </div>
                 </div>
-                
+
                 <div class="pt-4 flex justify-end">
-                    <button type="submit" class="bg-purple-600 hover:bg-purple-500 text-white px-6 py-2.5 rounded-xl text-[11px] font-bold uppercase tracking-widest transition-all shadow-[0_0_15px_rgba(147,51,234,0.3)]">
+                    <button type="submit"
+                        class="bg-purple-600 hover:bg-purple-500 text-white px-6 py-2.5 rounded-xl text-[11px] font-bold uppercase tracking-widest transition-all shadow-[0_0_15px_rgba(147,51,234,0.3)]">
                         Inicializar (Forge)
                     </button>
                 </div>
@@ -1010,4 +1273,5 @@
 
     <script src="script.js"></script>
 </body>
+
 </html>

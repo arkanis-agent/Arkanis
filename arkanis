@@ -1,0 +1,118 @@
+#!/bin/bash
+# Arkanis Elite CLI Menu
+
+PYTHON_CMD="python3"
+if [ -d ".venv" ]; then
+    PYTHON_CMD="./.venv/bin/python3"
+fi
+
+PID_FILE="logs/arkanis.pid"
+LOG_FILE="logs/web_server.log"
+
+mkdir -p logs
+
+function check_status {
+    if [ -f "$PID_FILE" ]; then
+        PID=$(cat "$PID_FILE")
+        if ps -p $PID > /dev/null; then
+            return 0
+        fi
+    fi
+    # fallback to searching by name
+    if pgrep -f "main.py --web" > /dev/null; then
+        return 0
+    fi
+    return 1
+}
+
+function stop_arkanis {
+    echo "[*] Encerrando processos do Arkanis..."
+    if [ -f "$PID_FILE" ]; then
+        PID=$(cat "$PID_FILE")
+        kill -15 $PID 2>/dev/null || true
+        rm -f "$PID_FILE"
+    fi
+    pkill -f "main.py --web" 2>/dev/null || true
+    # Garante que a porta 8000 seja liberada no ubuntu limitando a fuser
+    fuser -k 8000/tcp 2>/dev/null || true
+    echo "[✓] Processos encerrados com sucesso e porta 8000 liberada."
+}
+
+function start_arkanis {
+    if check_status; then
+        echo "[!] Arkanis já está rodando. Use './arkanis restart' ou acesse http://localhost:8000"
+        exit 1
+    fi
+    echo "[*] Inicializando Arkanis V3.1 em modo daemon..."
+    nohup $PYTHON_CMD main.py --web > "$LOG_FILE" 2>&1 &
+    PID=$!
+    echo $PID > "$PID_FILE"
+    echo "[✓] Sistema online! PID: $PID"
+    echo "[➡] Acesse: http://localhost:8000"
+}
+
+function doctor {
+    echo "=================================================="
+    echo "    ARKANIS DOCTOR — SYSTEM DIAGNOSTICS          "
+    echo "=================================================="
+    echo ""
+    
+    # Check Python version
+    echo -n "[1] Dependências e Python: "
+    if command -v $PYTHON_CMD &> /dev/null; then
+        PYVER=$($PYTHON_CMD --version)
+        echo "OK ($PYVER)"
+    else
+        echo "ERRO (Python3 não encontrado)"
+    fi
+    
+    # Check Environment
+    echo -n "[2] Secrets e .env: "
+    if [ -f ".env" ]; then
+        echo "OK (Arquivo existe)"
+    else
+        echo "ALERTA (.env não encontrado. Agente pode falhar. Rode bash install.sh)"
+    fi
+    
+    # Check if port 8000 is open/occupied
+    echo -n "[3] Porta 8000: "
+    if lsof -Pi :8000 -sTCP:LISTEN -t >/dev/null ; then
+        if check_status; then
+            echo "OCUPADA (Pelo Arkanis - Tudo certo!)"
+        else
+            echo "OCUPADA (Alerta! Outra aplicação está usando a porta)"
+        fi
+    else
+        echo "LIVRE (Pronto para o Start)"
+    fi
+    
+    echo ""
+}
+
+case "$1" in
+    start)
+        start_arkanis
+        ;;
+    stop)
+        stop_arkanis
+        ;;
+    restart)
+        stop_arkanis
+        sleep 2
+        start_arkanis
+        ;;
+    doctor)
+        doctor
+        ;;
+    status)
+        if check_status; then
+            echo "[✓] Arkanis está ONLINE (Acesse: http://localhost:8000)."
+        else
+            echo "[x] Arkanis está OFFLINE."
+        fi
+        ;;
+    *)
+        echo "Uso: ./arkanis {start|stop|restart|doctor|status}"
+        exit 1
+        ;;
+esac
