@@ -1431,6 +1431,24 @@ async function toggleHandsFree() {
     }
 }
 
+async function addMemoryPrompt() {
+    const category = prompt("Selecione a Categoria (preferences, facts, recurrent_tasks):", "preferences");
+    if (!['preferences', 'facts', 'recurrent_tasks'].includes(category)) return alert("Categoria inválida.");
+    const content = prompt("Digite o conteúdo da memória:");
+    if (!content) return;
+    
+    try {
+        const res = await fetch('/memory/add', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ category, content })
+        });
+        if (res.ok) fetchMemoryVault();
+    } catch (e) {
+        console.error("Falha ao adicionar memória:", e);
+    }
+}
+
 function startRecording(stream) {
     // Correct mimeType for most browsers supporting Opus
     const options = { mimeType: 'audio/webm;codecs=opus' };
