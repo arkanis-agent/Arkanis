@@ -3255,6 +3255,7 @@ async function loadChatHistory() {
 pollStatus();
 pollLogs();
 fetchModels();
+fetchOpenRouterModels();
 loadGoals();
 loadGovernorState();
 loadChatHistory();
