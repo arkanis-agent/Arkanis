@@ -11,6 +11,7 @@ from rich.panel import Panel
 from core.agent_bus import agent_bus
 from core.goal_manager import goal_manager
 from modules.memory.long_term import long_term_memory
+from modules.memory.vector import chronos_memory # New: Neural Hive Context
 import time
 import threading
 import uuid
@@ -360,7 +361,10 @@ Se NÃO houver dados factuais e o usuário fez uma pergunta específica, admita 
         # 5. Salvar Interação Histórica Completa na Memória
         self.memory.add_interaction(user_input=user_input, plan=final_plan, result=response)
         
-        # 6. Mark as Awakened if first time
+        # 6. Chronos Auto-Embedding (Neural Hive)
+        chronos_memory.add_interaction(user_input=user_input, response=response, task_hint=task_hint)
+        
+        # 7. Mark as Awakened if first time
         if is_first_interaction:
             os.makedirs(data_dir, exist_ok=True)
             with open(awakened_file, "w") as f:

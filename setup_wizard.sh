@@ -23,6 +23,7 @@ source .venv/bin/activate
 echo "[3/5] Syncing Python dependencies..."
 pip install --upgrade pip
 pip install -r requirements.txt
+playwright install chromium
 
 # 4. Whisper.cpp Setup (Voice Engine)
 echo "[4/5] Calibrating Voice Engine (Whisper.cpp)..."

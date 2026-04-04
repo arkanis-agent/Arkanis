@@ -9,8 +9,14 @@ class AgentBus:
         self._lock = threading.Lock()
         self.message_history: List[Dict[str, Any]] = []
         self.connections: List[Dict[str, Any]] = [] # Track unique connections
+        self.current_task_holder: Optional[str] = None # Arkanis Swarm: Token Holder
         self.max_history = 500
         self.max_connections = 100
+
+    def set_task_token(self, agent_id: str):
+        """ARKANIS SWARM: Designate the current agent holding the user's task token."""
+        with self._lock:
+            self.current_task_holder = agent_id
 
     def register_agent(self, agent_id: str, agent_instance: Any):
         with self._lock:
@@ -176,7 +182,8 @@ class AgentBus:
                 "agents": agents_snapshot,
                 "graph": {
                     "nodes": graph_nodes,
-                    "links": self.connections
+                    "links": self.connections,
+                    "task_holder": self.current_task_holder
                 },
                 "history": self.message_history[-20:],
                 "stats": {

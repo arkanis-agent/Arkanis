@@ -4,6 +4,7 @@ import os
 from typing import List, Dict, Any, Optional
 from tools.registry import registry
 from core.llm_client import LLMClient
+from modules.memory.vector import chronos_memory
 from rich import print as rprint
 
 class Planner:
@@ -45,16 +46,16 @@ WEB INTELLIGENCE — ROTEAMENTO OBRIGATÓRIO (CONTEXTO ATUAL: ANO 2026):
    - Se a busca retornar "Nenhum resultado", NÃO INVENTE notícias. Diga que não encontrou.
    - Lembre-se: Estamos em 2026. Se não houver dados de 2026 na busca, não use dados de 2022 (como Biden presidente) como se fossem atuais.
 9. LEITURA DE PÁGINA (conteúdo estático, artigos, APIs): Use 'fetch_url'. Funciona com headers reais de Chrome.
-10. ACESSO A SITES COM JAVASCRIPT / LOGIN / FORMULÁRIOS: Use a sequência correta:
-    a. 'browser_open' para abrir a página (SEMPRE primeiro)
-    b. 'browser_wait' para aguardar conteúdo carregar
-    c. 'browser_fill' para preencher campos
-    d. 'browser_click' para clicar botões
-    e. 'browser_submit' para submeter formulários (Enter)
-    f. 'browser_extract' para ler o resultado
-    - Use 'browser_screenshot' para confirmar o estado visual se necessário.
-    - NUNCA use browser_ sem chamar 'browser_open' primeiro.
-11. MONITORAMENTO CONTÍNUO: Para monitorar se uma página mudou, use 'page_monitor'. Ideal para verificar agenda de consultório, disponibilidade de produto, etc.
+10. ACESSO A SITES COM JAVASCRIPT / LOGIN / FORMULÁRIOS: Use 'autonomous_browser'. 
+    - Ele suporta navegar, clicar, digitar e tirar print em um único comando ou múltiplos. 
+    - Use principalmente para sites complexos que o fetch_url não resolve.
+11. CIÊNCIA DE DADOS & MATEMÁTICA / ANALYTICS: Use 'python_executor'.
+    - Use para: cálculos complexos, análise de CSV/Excel, criação de gráficos (matplotlib) e processamento de arquivos.
+    - O Arkanis tem 'built-in' matplotlib.use('Agg') e builtins.save_plot(), facilitando a geração de imagens.
+12. SAÚDE & MONITORAMENTO DO SISTEMA: Use 'system_monitor'.
+    - Use para verificar telemetria em tempo real (CPU, RAM, Disco) se o usuário perguntar "como está o sistema?" ou se você precisar diagnosticar lentidão.
+13. MONITORAMENTO CONTÍNUO: Para tarefas persistentes, use 'page_monitor'.
+14. CHRONOS NEURAL HIVE: Você tem acesso a contextos históricos recuperados semanticamente. Use-os para manter consistência com decisões passadas, preferências do usuário e dados técnicos discutidos anteriormente. Se encontrar discrepâncias, prefira o contexto mais recente.
 
 REGRAS DE FORMATO:
 1. Responda APENAS em JSON no formato: [{{"tool": "nome_ferramenta", "args": {{"arg": "valor"}}}}]
@@ -229,11 +230,19 @@ FORMATO EXIGIDO:
                 "  * **Tipografia**: Use títulos com `font-display`, peso `font-bold` ou `font-extrabold`, e gradientes de texto (`bg-clip-text text-transparent bg-gradient-to-r`).\n" + \
                 "- **CONTEÚDO FINAL**: Não deixe o HTML vazio com 'Lorem Ipsum'. Gere dados fictícios que pareçam um sistema real operando na produção.\n"
 
+        # --- PASSO 0: CHRONOS NEURAL HIVE (RETRIEVAL) ---
+        # Busca por contextos semânticos relevantes no banco de dados vetorial
+        semantic_context = chronos_memory.query(user_input, n_results=5)
+        if semantic_context:
+            context_prompt = f"\n\n[CONTEXTO HISTÓRICO RECUPERADO (CHRONOS)]:\n{semantic_context}\n"
+        else:
+            context_prompt = ""
+
         system_prompt = self.SYSTEM_PROMPT.format(
             agent_identity=self.agent_identity,
             tool_inventory=inventory,
             recent_context=recent_context
-        ) + premium_directive
+        ) + context_prompt + premium_directive
         
         try:
             raw_response = self._call_llm(system_prompt, user_input, task_hint=task_hint)

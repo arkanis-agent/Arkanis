@@ -3,7 +3,8 @@ import sys
 import anyio
 import logging
 from typing import Dict, Any, Optional, List
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import FastAPI, HTTPException, Request, WebSocket, WebSocketDisconnect
+from api.terminal_manager import TerminalManager
 
 # Load .env before any module imports so singletons (router, config_manager) pick up env vars
 _env_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), ".env")
@@ -598,6 +599,16 @@ async def finalize_onboarding(request: OnboardingFinalizeRequest):
             
     with open(env_path, "w") as f:
         f.writelines(new_lines)
+
+@app.get("/system/metrics")
+async def get_system_metrics():
+    """Fetch real-time metrics for the System Watch panel."""
+    from tools.registry import registry
+    tool = registry.get_tool("system_monitor")
+    if tool:
+        # Get detailed metrics
+        return tool.execute(detailed=True)
+    return {"status": "degraded", "error": "System Monitor Tool not found."}
         
     # Update runtime env
     for k, v in updated_keys.items():
@@ -748,6 +759,51 @@ async def handle_suggestion_action(sug_id: str, action: str):
     
     return {"status": "success", "suggestion_id": sug_id, "new_status": action}
 
+
+@app.websocket("/terminal/ws")
+async def terminal_websocket(websocket: WebSocket):
+    """
+    ARKANIS NERVE: Interactive Pseudo-Terminal Bridge.
+    Syncs the WebUI Xterm.js with the local bash shell.
+    """
+    await websocket.accept()
+    
+    # Callback to send terminal output to front-end
+    async def send_to_frontend(data: bytes):
+        try:
+            # We must use anyio/base-task to handle sending from background thread
+            text = data.decode("utf-8", errors="replace")
+            await websocket.send_text(text)
+        except Exception:
+            pass
+
+    # Wrap the async send for the sync manager
+    import asyncio
+    loop = asyncio.get_event_loop()
+    def sync_send(data):
+        asyncio.run_coroutine_threadsafe(websocket.send_text(data.decode("utf-8", errors="replace")), loop)
+
+    terminal = TerminalManager(on_output=sync_send)
+    terminal.start()
+    
+    try:
+        while True:
+            # Wait for data from frontend
+            data = await websocket.receive_text()
+            try:
+                import json
+                msg = json.loads(data)
+                if msg.get("type") == "input":
+                    terminal.write(msg["data"])
+                elif msg.get("type") == "resize":
+                    terminal.resize(msg["rows"], msg["cols"])
+            except:
+                # If not JSON, it's raw input
+                terminal.write(data)
+    except WebSocketDisconnect:
+        logger.info("Nerve: Terminal WebSocket disconnected.")
+    finally:
+        terminal.stop()
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000)

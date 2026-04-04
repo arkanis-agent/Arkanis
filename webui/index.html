@@ -4,8 +4,11 @@
 <head>
     <meta charset="utf-8" />
     <meta content="width=device-width, initial-scale=1.0" name="viewport" />
-    <title>ARKANIS AI | Inteligência de Elite</title>
-    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <title>ARKANIS V3.1 - ELITE OS</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/xterm@5.3.0/css/xterm.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/xterm@5.3.0/lib/xterm.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xterm-addon-fit@0.8.0/lib/xterm-addon-fit.min.js"></script>
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
     <link
         href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;700;800&family=Inter:wght@300;400;500;600&display=swap"
@@ -811,26 +814,74 @@
                             </button>
                         </div>
 
-                        <!-- System Load (Visual fluff) -->
-                        <div class="bg-slate-900/40 border border-white/5 rounded-3xl p-6">
-                            <h3 class="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-4">Neural Resource distribution</h3>
-                            <div class="space-y-4">
-                                <div class="space-y-1.5">
-                                    <div class="flex justify-between text-[8px] font-bold uppercase">
-                                        <span class="text-slate-400">Processing Power</span>
-                                        <span class="text-blue-400">72%</span>
+                        <!-- System Guardian HUD (Real Metrics) -->
+                        <div class="bg-slate-900/40 border border-white/10 rounded-3xl p-6 shadow-2xl shadow-blue-500/5 relative overflow-hidden group">
+                            <div class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+                                <span class="material-symbols-outlined text-4xl text-blue-400">monitoring</span>
+                            </div>
+                            <h3 class="text-[10px] font-black text-slate-300 uppercase tracking-widest mb-6 flex items-center gap-2">
+                                <span class="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></span>
+                                SYSTEM GUARDIAN HUD
+                            </h3>
+                            
+                            <div class="space-y-6">
+                                <!-- CPU Usage -->
+                                <div class="space-y-2">
+                                    <div class="flex justify-between items-end">
+                                        <div class="flex flex-col">
+                                            <span class="text-[8px] font-black text-slate-500 uppercase tracking-widest">CPU Processor Power</span>
+                                            <span id="guardianCpuModel" class="text-[9px] text-slate-400 font-bold">Unified Core Matrix</span>
+                                        </div>
+                                        <span id="guardianCpuPercent" class="text-xs font-black text-blue-400 tabular-nums">0%</span>
                                     </div>
-                                    <div class="w-full h-1 bg-white/5 rounded-full overflow-hidden">
-                                        <div class="h-full bg-blue-500 w-[72%]"></div>
+                                    <div class="w-full h-1.5 bg-white/5 rounded-full overflow-hidden p-[1px]">
+                                        <div id="guardianCpuBar" class="h-full bg-gradient-to-r from-blue-600 to-cyan-400 rounded-full transition-all duration-500" style="width: 0%"></div>
                                     </div>
                                 </div>
-                                <div class="space-y-1.5">
-                                    <div class="flex justify-between text-[8px] font-bold uppercase">
-                                        <span class="text-slate-400">Memory Latency</span>
-                                        <span class="text-emerald-400">Optimum</span>
+
+                                <!-- RAM Usage -->
+                                <div class="space-y-2">
+                                    <div class="flex justify-between items-end">
+                                        <div class="flex flex-col">
+                                            <span class="text-[8px] font-black text-slate-500 uppercase tracking-widest">Neural Memory Bank (RAM)</span>
+                                            <span id="guardianRamText" class="text-[9px] text-slate-400 font-bold">0.0 GB / 0.0 GB</span>
+                                        </div>
+                                        <span id="guardianRamPercent" class="text-xs font-black text-purple-400 tabular-nums">0%</span>
                                     </div>
-                                    <div class="w-full h-1 bg-white/5 rounded-full overflow-hidden">
-                                        <div class="h-full bg-emerald-500 w-[12%]"></div>
+                                    <div class="w-full h-1.5 bg-white/5 rounded-full overflow-hidden p-[1px]">
+                                        <div id="guardianRamBar" class="h-full bg-gradient-to-r from-purple-600 to-pink-400 rounded-full transition-all duration-700" style="width: 0%"></div>
+                                    </div>
+                                </div>
+
+                                <!-- Disk Health -->
+                                <div class="space-y-2">
+                                    <div class="flex justify-between items-end">
+                                        <div class="flex flex-col">
+                                            <span class="text-[8px] font-black text-slate-500 uppercase tracking-widest">Persistent Data Vault (Disk)</span>
+                                            <span id="guardianDiskText" class="text-[9px] text-slate-400 font-bold">0.0 GB Free</span>
+                                        </div>
+                                        <span id="guardianDiskPercent" class="text-xs font-black text-emerald-400 tabular-nums">0%</span>
+                                    </div>
+                                    <div class="w-full h-1.5 bg-white/5 rounded-full overflow-hidden p-[1px]">
+                                        <div id="guardianDiskBar" class="h-full bg-gradient-to-r from-emerald-600 to-teal-400 rounded-full transition-all duration-1000" style="width: 0%"></div>
+                                    </div>
+                                </div>
+
+                                <!-- Network Activity (Minimal) -->
+                                <div class="pt-2 flex items-center justify-between border-t border-white/5">
+                                    <div class="flex items-center gap-3">
+                                        <div class="flex flex-col">
+                                            <span class="text-[7px] font-black text-slate-500 uppercase">Input</span>
+                                            <span id="guardianNetIn" class="text-[10px] font-bold text-white tabular-nums">0 MB</span>
+                                        </div>
+                                        <div class="flex flex-col">
+                                            <span class="text-[7px] font-black text-slate-500 uppercase">Output</span>
+                                            <span id="guardianNetOut" class="text-[10px] font-bold text-white tabular-nums">0 MB</span>
+                                        </div>
+                                    </div>
+                                    <div class="text-right">
+                                        <span class="text-[7px] font-black text-slate-500 uppercase">Architecture</span>
+                                        <p id="guardianOsInfo" class="text-[9px] font-bold text-slate-300">Linux-64</p>
                                     </div>
                                 </div>
                             </div>
@@ -882,8 +933,71 @@
         </section>
 
 
-        <!-- Dev Center Panel (System Evolution) -->
-        <section id="devCenterPanel" class="hidden flex-1 overflow-y-auto p-8 lg:p-12 custom-scrollbar bg-black/20">
+        <!-- Nerve Fusion Panel (Interactive Terminal) -->
+        <section id="nerveFusionPanel" class="hidden flex-1 flex flex-col p-8 lg:p-12 bg-black/20 overflow-hidden">
+            <div class="max-w-7xl mx-auto w-full h-full flex flex-col space-y-8">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-4">
+                        <div class="w-12 h-12 rounded-2xl bg-slate-900 border border-white/10 flex items-center justify-center shadow-2xl">
+                            <span class="material-symbols-outlined text-blue-500 text-3xl">terminal</span>
+                        </div>
+                        <div>
+                            <h2 class="text-3xl font-headline font-black text-white tracking-tight">Nerve Center</h2>
+                            <p class="text-slate-500 text-xs font-bold uppercase tracking-widest">Universal Terminal Interconnect v1.0</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <div class="flex flex-col items-end">
+                            <span class="text-[10px] font-black text-slate-500 uppercase">Connection Status</span>
+                            <div class="flex items-center gap-2">
+                                <span id="terminalStatusBadge" class="w-2 h-2 bg-slate-500 rounded-full"></span>
+                                <span id="terminalStatusText" class="text-[11px] font-bold text-slate-300">DISCONNECTED</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Terminal Container -->
+                <div class="flex-1 bg-[#020617] border border-white/10 rounded-3xl overflow-hidden shadow-2xl relative group">
+                    <div class="absolute inset-0 bg-gradient-to-br from-blue-500/5 to-transparent pointer-events-none"></div>
+                    <div id="terminalContainer" class="w-full h-full p-4"></div>
+                    
+                    <!-- Terminal Loader Overlay -->
+                    <div id="terminalLoader" class="absolute inset-0 bg-slate-950/80 backdrop-blur-md flex flex-center flex-col items-center justify-center z-50 transition-all duration-500">
+                        <div class="w-16 h-16 border-4 border-blue-500/20 border-t-blue-500 rounded-full animate-spin mb-4"></div>
+                        <p class="text-slate-400 font-bold text-sm tracking-widest uppercase animate-pulse">Initializing Nerve Interconnect...</p>
+                    </div>
+                </div>
+
+                <!-- Quick Commands Bar -->
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <button onclick="sendTerminalCommand('ls -la')" class="bg-white/5 border border-white/10 p-3 rounded-xl hover:bg-white/10 transition-all group">
+                        <div class="flex items-center justify-between">
+                            <span class="text-[10px] font-bold text-slate-300">LIST FILES</span>
+                            <span class="material-symbols-outlined text-slate-600 text-xs group-hover:text-blue-500 transition-colors">folder_open</span>
+                        </div>
+                    </button>
+                    <button onclick="sendTerminalCommand('python3 main.py --doctor')" class="bg-white/5 border border-white/10 p-3 rounded-xl hover:bg-white/10 transition-all group">
+                        <div class="flex items-center justify-between">
+                            <span class="text-[10px] font-bold text-slate-300">CORE DIAGNOSTIC</span>
+                            <span class="material-symbols-outlined text-slate-600 text-xs group-hover:text-emerald-500 transition-colors">medical_services</span>
+                        </div>
+                    </button>
+                    <button onclick="sendTerminalCommand('htop')" class="bg-white/5 border border-white/10 p-3 rounded-xl hover:bg-white/10 transition-all group">
+                        <div class="flex items-center justify-between">
+                            <span class="text-[10px] font-bold text-slate-300">SYSTEM MONITOR</span>
+                            <span class="material-symbols-outlined text-slate-600 text-xs group-hover:text-amber-500 transition-colors">analytics</span>
+                        </div>
+                    </button>
+                    <button onclick="clearTerminal()" class="bg-white/5 border border-white/10 p-3 rounded-xl hover:bg-white/10 transition-all group">
+                        <div class="flex items-center justify-between">
+                            <span class="text-[10px] font-bold text-slate-300">CLEAN BUFFER</span>
+                            <span class="material-symbols-outlined text-slate-600 text-xs group-hover:text-red-500 transition-colors">delete_sweep</span>
+                        </div>
+                    </button>
+                </div>
+            </div>
+        </section>
             <div class="max-w-7xl mx-auto space-y-12 pb-96">
 
                 <!-- Evolution Hero Dashboard -->

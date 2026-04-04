@@ -99,6 +99,9 @@ let isHandsFree = false;
 let mediaRecorder = null; // High-level MediaRecorder instance for both modes
 let audioChunks = [];
 let isRecording = false;
+let terminal = null;
+let terminalWs = null;
+let terminalFitAddon = null;
 
 // Model picker state
 let allModelsList = [];      // all models (local + cloud + OR fetched)
@@ -2158,7 +2161,7 @@ const sidebarLinks = [
     { id: 'navTasks', action: () => setActivePanel('tasks'), topNav: null },
     { id: 'navMemory', action: () => setActivePanel('memory'), topNav: null },
     { id: 'navArsenal', action: () => setActivePanel('arsenal'), topNav: null },
-    { id: 'navLogs', action: () => setActivePanel('systemLogs'), topNav: null },
+    { id: 'navLogs', action: () => setActivePanel('nerveFusion'), topNav: null },
     { id: 'navDevCenter', action: () => setActivePanel('devCenter'), topNav: null },
     { id: 'navProviders', action: () => setActivePanel('providers'), topNav: 'integrations' }
 ];
@@ -2281,6 +2284,7 @@ async function fetchObservabilityData() {
         const response = await fetch('/observability');
         const data = await response.json();
         renderObservability(data);
+        fetchSystemMetrics(); // Get real hardware metrics
         
         // Update Dev Center Hero if elements exist
         const devLiveAction = document.getElementById('devLiveAction');
@@ -2328,6 +2332,38 @@ async function fetchSystemLogs() {
         const data = await response.json();
         renderSystemLogs(data.logs);
     } catch (e) { console.error("Logs error:", e); }
+}
+
+async function fetchSystemMetrics() {
+    try {
+        const response = await fetch('/system/metrics');
+        const metrics = await response.json();
+        if (metrics.status === 'degraded') return;
+
+        // Update CPU
+        const cpuPct = metrics.cpu.usage_percent || 0;
+        document.getElementById('guardianCpuPercent').textContent = `${cpuPct}%`;
+        document.getElementById('guardianCpuBar').style.width = `${cpuPct}%`;
+        document.getElementById('guardianCpuModel').textContent = `${metrics.cpu.cores} Cores @ ${metrics.cpu.frequency}MHz`;
+
+        // Update RAM
+        const ramPct = metrics.memory.used_percent || 0;
+        document.getElementById('guardianRamPercent').textContent = `${ramPct}%`;
+        document.getElementById('guardianRamBar').style.width = `${ramPct}%`;
+        document.getElementById('guardianRamText').textContent = `${metrics.memory.available_gb}GB / ${metrics.memory.total_gb}GB Avail`;
+
+        // Update Disk
+        const diskPct = metrics.disk.used_percent || 0;
+        document.getElementById('guardianDiskPercent').textContent = `${diskPct}%`;
+        document.getElementById('guardianDiskBar').style.width = `${diskPct}%`;
+        document.getElementById('guardianDiskText').textContent = `${metrics.disk.free_gb}GB Free Space`;
+
+        // Update Network & OS
+        document.getElementById('guardianNetIn').textContent = `${metrics.network.recv_mb} MB`;
+        document.getElementById('guardianNetOut').textContent = `${metrics.network.sent_mb} MB`;
+        document.getElementById('guardianOsInfo').textContent = `${metrics.os.system} ${metrics.os.machine}`;
+
+    } catch (e) { console.error("Metrics error:", e); }
 }
 
 async function fetchTimeline() {
@@ -3169,6 +3205,15 @@ function updateNeuralMap(graphData) {
         .attr("stroke-width", 2)
         .attr("class", "node-circle");
 
+    // ARKANIS SWARM: Active Token Pulse
+    nodeEnter.append("circle")
+        .attr("r", 15)
+        .attr("fill", "none")
+        .attr("stroke", "#3b82f6")
+        .attr("stroke-width", 0)
+        .attr("class", "swarm-token-pulse")
+        .style("pointer-events", "none");
+
     nodeEnter.append("text")
         .attr("dy", "0.35em")
         .attr("text-anchor", "middle")
@@ -3187,9 +3232,29 @@ function updateNeuralMap(graphData) {
 
     // UPDATE: refresh colors only, no structural rebuild
     const nodeMerged = nodeEnter.merge(nodeUpdate);
-    nodeMerged.select("circle")
+    nodeMerged.select(".node-circle")
         .attr("fill", d => d.id === 'ALL' ? '#8b5cf6' : (d.status === 'running' ? '#3b82f6' : '#1e293b'))
         .attr("stroke", d => d.status === 'running' ? '#60a5fa' : '#334155');
+
+    // ARKANIS SWARM: Update Task Holder Animation
+    const taskHolder = graphData.task_holder;
+    nodeMerged.select(".swarm-token-pulse")
+        .transition().duration(500)
+        .attr("stroke-width", d => d.id === taskHolder ? 4 : 0)
+        .attr("r", d => d.id === taskHolder ? 22 : 15)
+        .style("opacity", d => d.id === taskHolder ? 1 : 0)
+        .on("end", function repeat() {
+            if (d3.select(this).datum().id === taskHolder) {
+                d3.select(this)
+                    .transition().duration(1000)
+                    .attr("r", 30)
+                    .style("opacity", 0)
+                    .transition().duration(0)
+                    .attr("r", 15)
+                    .style("opacity", 1)
+                    .on("end", repeat);
+            }
+        });
 
     // 4. Pulse active links
     newLinks.forEach(l => {
