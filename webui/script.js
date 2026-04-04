@@ -1305,7 +1305,19 @@ async function fetchMemoryVault() {
         categories.forEach(cat => {
             const items = mem[cat.id] || [];
             let itemsHtml = items.length > 0 
-                ? items.map(text => `<li class="flex items-start gap-3 p-3 bg-slate-800/20 rounded-xl border border-white/5 text-xs text-slate-300 font-body mb-3 transition-all hover:bg-slate-800/40"><span class="material-symbols-outlined text-[16px] ${cat.color} shrink-0 mt-0.5">adjust</span><span class="flex-1">${text}</span></li>`).join('')
+                ? items.map((text, idx) => `
+                    <li class="flex items-start gap-3 p-3 bg-slate-800/20 rounded-xl border border-white/5 text-xs text-slate-300 font-body mb-3 transition-all hover:bg-slate-800/40 group/item">
+                        <span class="material-symbols-outlined text-[16px] ${cat.color} shrink-0 mt-0.5">adjust</span>
+                        <span class="flex-1">${text}</span>
+                        <div class="flex gap-2 opacity-0 group-hover/item:opacity-100 transition-opacity">
+                            <button onclick="editMemory('${cat.id}', ${idx}, '${text.replace(/'/g, "\\'")}')" class="text-slate-500 hover:text-blue-400 transition-colors">
+                                <span class="material-symbols-outlined text-sm">edit</span>
+                            </button>
+                            <button onclick="removeMemory('${cat.id}', ${idx})" class="text-slate-500 hover:text-rose-500 transition-colors">
+                                <span class="material-symbols-outlined text-sm">delete</span>
+                            </button>
+                        </div>
+                    </li>`).join('')
                 : `<li class="text-xs text-slate-600 italic px-2">Este setor da rede neural está vazio.</li>`;
             
             html += `
@@ -1333,10 +1345,42 @@ async function fetchMemoryVault() {
                 <span class="material-symbols-outlined text-rose-500 text-6xl">cloud_off</span>
                 <span class="absolute top-0 right-0 w-3 h-3 bg-rose-500 rounded-full animate-ping"></span>
             </div>
-            <div class="text-rose-400 font-black text-lg tracking-tight uppercase">Neural Vault Offline</div>
+            <div class="text-rose-400 font-black text-lg tracking-tight uppercase">Memory Vault Offline</div>
             <div class="text-rose-500/60 text-xs mt-2 font-mono">${e.message}</div>
-            <button onclick="fetchMemoryVault()" class="mt-6 px-6 py-2.5 bg-rose-500/20 hover:bg-rose-500/30 text-rose-400 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all border border-rose-500/30">Re-Sync Neural Base</button>
+            <button onclick="fetchMemoryVault()" class="mt-6 px-6 py-2.5 bg-rose-500/20 hover:bg-rose-500/30 text-rose-400 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all border border-rose-500/30">Re-Sync Memory Base</button>
         </div>`;
+    }
+}
+
+// --- Memory CRUD Logic ---
+async function editMemory(category, index, oldText) {
+    const newText = prompt(`Editar memória (${category}):`, oldText);
+    if (newText === null || newText === oldText) return;
+    
+    try {
+        const res = await fetch('/memory/update', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ category, index, content: newText })
+        });
+        if (res.ok) fetchMemoryVault();
+    } catch (e) {
+        console.error("Falha ao editar memória:", e);
+    }
+}
+
+async function removeMemory(category, index) {
+    if (!confirm("Tem certeza que deseja remover esta memória? Ela será deletada permanentemente da rede neural.")) return;
+    
+    try {
+        const res = await fetch('/memory/delete', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ category, index })
+        });
+        if (res.ok) fetchMemoryVault();
+    } catch (e) {
+        console.error("Falha ao remover memória:", e);
     }
 }
 
@@ -1347,16 +1391,16 @@ async function toggleHandsFree() {
     const indicator = document.getElementById('voiceIndicator');
     
     if (isHandsFree) {
-        stopRecording();
         isHandsFree = false;
+        stopRecording();
         btn.classList.remove('bg-amber-500/30', 'border-amber-500/50', 'animate-pulse');
         status.classList.replace('bg-emerald-500', 'bg-slate-500');
         indicator.classList.add('hidden');
     } else {
         try {
             const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-            startRecording(stream);
             isHandsFree = true;
+            startRecording(stream);
             btn.classList.add('bg-amber-500/30', 'border-amber-500/50', 'animate-pulse');
             status.classList.replace('bg-slate-500', 'bg-emerald-500');
             indicator.classList.remove('hidden');
@@ -1368,19 +1412,32 @@ async function toggleHandsFree() {
 }
 
 function startRecording(stream) {
-    mediaRecorder = new MediaRecorder(stream);
+    // Correct mimeType for most browsers supporting Opus
+    const options = { mimeType: 'audio/webm;codecs=opus' };
+    if (!MediaRecorder.isTypeSupported(options.mimeType)) {
+        options.mimeType = 'audio/webm';
+    }
+    
+    mediaRecorder = new MediaRecorder(stream, options);
     audioChunks = [];
     
     mediaRecorder.ondataavailable = (event) => {
-        audioChunks.push(event.data);
+        if (event.data.size > 0) {
+            audioChunks.push(event.data);
+        }
     };
     
     mediaRecorder.onstop = async () => {
+        if (audioChunks.length === 0) return;
         const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
         sendVoiceMessage(audioBlob);
+        
+        // Stop all tracks to release the microphone after recording stops
+        stream.getTracks().forEach(track => track.stop());
     };
     
-    mediaRecorder.start();
+    // Start with a timeslice to ensure dataavailable fires often and fills audioChunks
+    mediaRecorder.start(1000); 
 }
 
 function stopRecording() {
@@ -1390,22 +1447,33 @@ function stopRecording() {
 }
 
 async function sendVoiceMessage(blob) {
-    const formData = new FormData();
-    formData.append('file', blob);
+    if (!blob || blob.size === 0) return;
+    
+    // UI Visual feedback
+    const btn = document.getElementById('voiceControl');
+    const originalContent = btn.innerHTML;
+    btn.innerHTML = '<span class="material-symbols-outlined animate-spin text-amber-400">sync</span>';
     
     try {
         const res = await fetch('/voice_message', {
             method: 'POST',
-            body: blob // The backend expects the raw body at /voice_message based on previous view
+            headers: { 'Content-Type': 'application/octet-stream' }, // Send as binary stream
+            body: blob 
         });
+        
         const data = await res.json();
         if (data.transcription) {
             userInput.value = data.transcription;
-            // Optionally auto-send if text is long enough
+            // Pulse the input to show it received text
+            userInput.classList.add('ring-2', 'ring-blue-500');
+            setTimeout(() => userInput.classList.remove('ring-2', 'ring-blue-500'), 1000);
+            
             if (data.transcription.length > 5) sendMessage();
         }
     } catch (e) {
         console.error("Voice sync failed:", e);
+    } finally {
+        btn.innerHTML = originalContent;
     }
 }
 
