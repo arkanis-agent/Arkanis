@@ -29,6 +29,10 @@ run.sh
 # Config with secrets (populated at runtime via WebUI/install)
 # config/ is included — providers.json is a safe template
 
+# Data and Persistent Memory
+data/*
+!data/.gitkeep
+
 # Logs
 logs/
 *.log
