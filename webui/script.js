@@ -3341,7 +3341,7 @@ function renderSuggestions(suggestions) {
                 </div>
 
                 <div class="flex items-center gap-3 mt-2">
-                    <button onclick="applyImprovement('${s.id}')" class="flex-[2] bg-white text-slate-950 text-[11px] font-black py-2.5 rounded-xl transition-all hover:bg-blue-400 hover:text-white shadow-lg active:scale-95 flex items-center justify-center gap-2">
+                    <button onclick="applyImprovement(event, '${s.id}')" class="flex-[2] bg-white text-slate-950 text-[11px] font-black py-2.5 rounded-xl transition-all hover:bg-blue-400 hover:text-white shadow-lg active:scale-95 flex items-center justify-center gap-2">
                         <span class="material-symbols-outlined text-sm">auto_fix_high</span>
                         APLICAR EVOLUÇÃO
                     </button>
@@ -3355,9 +3355,27 @@ function renderSuggestions(suggestions) {
 }
 
 // Wrapper for extra feedback
-async function applyImprovement(id) {
+async function applyImprovement(event, id) {
+    const btn = event.currentTarget;
+    if (btn.disabled) return;
+    
+    const originalHTML = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = `<span class="material-symbols-outlined text-sm animate-spin">sync</span> PROCESSANDO...`;
+    btn.classList.add('opacity-50', 'cursor-not-allowed');
+
     showToast('Iniciando Evolução de Sistema...', 'blue');
-    await suggestionAction(id, 'approve');
+    
+    try {
+        await suggestionAction(id, 'approve');
+    } finally {
+        // Only restore if it's still in the DOM (though loadSuggestions usually replaces it)
+        if (document.body.contains(btn)) {
+            btn.disabled = false;
+            btn.innerHTML = originalHTML;
+            btn.classList.remove('opacity-50', 'cursor-not-allowed');
+        }
+    }
 }
 
 async function suggestionAction(id, action) {
@@ -3369,8 +3387,10 @@ async function suggestionAction(id, action) {
         });
         const data = await response.json();
         if (data.status === 'success') {
-            showToast(action === 'approve' ? 'Melhoria aprovada! Aplicando...' : 'Sugestão ignorada.', action === 'approve' ? 'emerald' : 'slate');
-            loadSuggestions();
+            showToast(action === 'approve' ? 'Melhoria aplicada com sucesso!' : 'Sugestão ignorada.', action === 'approve' ? 'emerald' : 'slate');
+            setTimeout(loadSuggestions, 500); // Small delay for visual comfort
+        } else {
+            showToast('Erro: ' + (data.detail || 'Falha na operação'), 'rose');
         }
     } catch (e) {
         console.error('Failed to act on suggestion', e);
