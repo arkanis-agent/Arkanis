@@ -87,6 +87,7 @@ class AgentBus:
             "timestamp": datetime.now().strftime("%H:%M:%S")
         }
         self._record_history(msg)
+        self._record_connection(from_aid, "ALL")
         self.save_state()
         
         for aid, target in self.agents.items():
@@ -157,12 +158,21 @@ class AgentBus:
                 "current_action": getattr(instance, "current_action", "Standby")
             })
         
+        # Inject the central "ALL" hub node for the Neural Map so broadcasts have a valid target node
+        graph_nodes = list(agent_data)
+        graph_nodes.append({
+            "id": "ALL",
+            "role": "Agent Bus Multiplexer",
+            "status": "running",
+            "current_action": "Roteando conexões..."
+        })
+        
         return {
             "agents": agent_data,
             "stats": stats, # REQUIRED by script.js
             "connections": self.connections,
             "graph": {
-                "nodes": agent_data,
+                "nodes": graph_nodes,
                 "links": self.connections
             },
             "history": self.message_history[-30:] # Last 30 for quick view
