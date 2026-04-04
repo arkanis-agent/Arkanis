@@ -117,6 +117,9 @@ class GoalUpdateData(BaseModel):
     goal_id: str
     status: str
 
+class SuggestionActionRequest(BaseModel):
+    action: str
+
 
 class StrategyToggleRequest(BaseModel):
     enabled: bool
@@ -730,8 +733,9 @@ async def get_dev_suggestions():
     return {"suggestions": agent_instance.get_suggestions()}
 
 @app.post("/suggestions/{sug_id}/action")
-async def handle_suggestion_action(sug_id: str, action: str):
+async def handle_suggestion_action(sug_id: str, req: SuggestionActionRequest):
     """Approve or reject a suggestion. If approved, applies the code changes."""
+    action = req.action
     # Find in either dev_agent or architect_agent (they share the file)
     agent_instance = agent_bus.get_agent("architect_agent") or agent_bus.get_agent("dev_agent")
     

@@ -19,7 +19,8 @@ modules = [
     "tools.monitoring_tools",
     "tools.dev_tools",
     "tools.telegram_tools",
-    "tools.research_tools"
+    "tools.research_tools",
+    "tools.swarm_tool"
 ]
 
 for mod in modules:
