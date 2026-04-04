@@ -700,9 +700,6 @@ async def get_history_timeline():
     timeline = [s for s in all_suggestions if s.get("status") == "applied"]
     return {"timeline": timeline}
 
-webui_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "webui")
-if os.path.exists(webui_path):
-    app.mount("/", StaticFiles(directory=webui_path, html=True), name="webui")
 
 # --- Multi-Channel Background Services ---
 def start_telegram():
@@ -766,7 +763,9 @@ async def terminal_websocket(websocket: WebSocket):
     ARKANIS NERVE: Interactive Pseudo-Terminal Bridge.
     Syncs the WebUI Xterm.js with the local bash shell.
     """
+    logger.info("Nerve: Incoming terminal WebSocket connection...")
     await websocket.accept()
+    logger.info("Nerve: Terminal WebSocket accepted.")
     
     # Callback to send terminal output to front-end
     async def send_to_frontend(data: bytes):
@@ -804,6 +803,10 @@ async def terminal_websocket(websocket: WebSocket):
         logger.info("Nerve: Terminal WebSocket disconnected.")
     finally:
         terminal.stop()
+
+webui_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "webui")
+if os.path.exists(webui_path):
+    app.mount("/", StaticFiles(directory=webui_path, html=True), name="webui")
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000)

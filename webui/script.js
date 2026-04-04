@@ -1375,9 +1375,15 @@ function initNerveFusion() {
     });
 
     // FitAddon for responsive sizing
-    if (typeof FitAddon !== 'undefined') {
-        terminalFitAddon = new FitAddon.FitAddon();
-        terminal.loadAddon(terminalFitAddon);
+    // The CDN xterm-addon-fit exports FitAddon directly (not FitAddon.FitAddon)
+    try {
+        if (typeof FitAddon !== 'undefined') {
+            const AddonClass = typeof FitAddon.FitAddon !== 'undefined' ? FitAddon.FitAddon : FitAddon;
+            terminalFitAddon = new AddonClass();
+            terminal.loadAddon(terminalFitAddon);
+        }
+    } catch(e) {
+        console.warn('[NerveFusion] FitAddon not available:', e);
     }
 
     terminal.open(container);
@@ -1730,26 +1736,24 @@ function showTasks() {
 }
 function showObservability() { 
     setActivePanel('observability'); 
-    // Ensure Map is initialized with correct dimensions when shown
+    // Ensure Map is initialized with correct dimensions when shown,
+    // then immediately populate with live data (or seed fallback).
     setTimeout(() => {
         initNeuralMap();
-        // Seed with default nodes so map always renders something
-        const seedData = {
-            nodes: [
-                { id: 'Arkanis', status: 'running' },
-                { id: 'Orchestrator', status: 'idle' },
-                { id: 'Dev Agent', status: 'idle' },
-                { id: 'Researcher', status: 'idle' },
-            ],
-            links: [
-                { source: 'Arkanis', target: 'Orchestrator', last_interaction: 'boot', last_interaction_ms: Date.now() },
-                { source: 'Orchestrator', target: 'Dev Agent', last_interaction: 'boot', last_interaction_ms: Date.now() - 5000 },
-                { source: 'Orchestrator', target: 'Researcher', last_interaction: 'boot', last_interaction_ms: Date.now() - 8000 },
-            ],
-            task_holder: 'Arkanis'
-        };
-        updateNeuralMap(seedData);
-    }, 80); 
+        fetch('/observability')
+            .then(r => r.json())
+            .then(data => {
+                if (data.graph && data.graph.nodes && data.graph.nodes.length > 0) {
+                    updateNeuralMap(data.graph);
+                } else {
+                    updateNeuralMap({ nodes: [{ id: 'Arkanis', status: 'running' }, { id: 'Orchestrator', status: 'idle' }], links: [{ source: 'Arkanis', target: 'Orchestrator', last_interaction: 'boot', last_interaction_ms: Date.now() }], task_holder: 'Arkanis' });
+                }
+            })
+            .catch(() => {
+                updateNeuralMap({ nodes: [{ id: 'Arkanis', status: 'running' }], links: [], task_holder: 'Arkanis' });
+            });
+    }, 120);
+
     fetchObservabilityData();
     fetchSystemLogs();
     fetchTimeline();
@@ -2880,8 +2884,8 @@ function renderObservability(data) {
         });
     }
 
-    // Update Neural Map
-    if (data.graph) {
+    // Update Neural Map — only if simulation is ready
+    if (data.graph && neuralGraph.simulation) {
         updateNeuralMap(data.graph);
     }
 }
@@ -3343,8 +3347,10 @@ function initNeuralMap() {
     const container = document.getElementById('neuralMapContainer');
     if (!container) return;
 
-    const width = container.clientWidth || 800;
-    const height = container.clientHeight || 400;
+    // getBoundingClientRect is more reliable than clientWidth during CSS transitions
+    const rect = container.getBoundingClientRect();
+    const width = rect.width > 0 ? rect.width : (container.offsetWidth || 900);
+    const height = rect.height > 0 ? rect.height : (container.offsetHeight || 450);
 
     // Reset container to avoid duplication
     container.innerHTML = '';
