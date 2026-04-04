@@ -342,7 +342,7 @@
                 <div class="icon-box w-10 h-10 rounded-xl bg-pink-500/10 border border-pink-500/20 flex items-center justify-center group-hover:bg-pink-500/20 transition-all">
                     <span class="material-symbols-outlined text-pink-400 group-hover:scale-110 transition-transform">insights</span>
                 </div>
-                <span>Neural Vault</span>
+                <span>Memory Vault</span>
             </a>
 
             <div class="h-px bg-white/5 my-6 mx-4"></div>
@@ -371,24 +371,20 @@
                 <span>APIs & Engine</span>
             </a>
         </nav>
-        <div class="mt-auto pt-6 space-y-2">
-            <div id="statusPanel" class="bg-slate-800/50 rounded-xl p-3 mb-2 border border-blue-500/10">
+            <!-- Status Panel moved to bottom -->
+            <div id="statusPanel" class="bg-slate-800/10 rounded-xl p-3 mb-2 border border-white/5 backdrop-blur-sm">
                 <div class="flex items-center gap-2 mb-1">
-                    <span id="statusBadge" class="w-2 h-2 bg-green-500 rounded-full"></span>
-                    <span id="statusText" class="text-[10px] text-slate-400 font-bold uppercase">IDLE</span>
+                    <span id="statusBadge" class="w-2 h-2 bg-green-500 rounded-full shadow-[0_0_8px_#22c55e]"></span>
+                    <span id="statusText" class="text-[10px] text-slate-400 font-black uppercase tracking-widest">IDLE</span>
                 </div>
-                <p id="agentModeText" class="text-[9px] text-slate-500 font-medium">MODE: MANUAL</p>
-                <p id="agentCycleText" class="text-[9px] text-slate-500 font-medium">CYCLE: 0/5</p>
+                <div class="flex justify-between items-end mt-2">
+                    <div class="space-y-0.5">
+                        <p id="agentModeText" class="text-[8px] text-slate-500 font-bold uppercase">MODE: MANUAL</p>
+                        <p id="agentCycleText" class="text-[8px] text-slate-500 font-bold uppercase">CYCLE: 0/5</p>
+                    </div>
+                    <div class="text-[8px] text-blue-500/40 font-mono">SYS.OK</div>
+                </div>
             </div>
-            <div class="bg-primary/10 rounded-2xl p-4 mb-4">
-                <p class="text-xs text-blue-400 font-bold uppercase tracking-wider mb-2">Upgrade para Pro</p>
-                <p class="text-xs text-slate-400 leading-relaxed mb-3">Tenha acesso aos modelos GPT-4 e Claude 3 Opus.
-                </p>
-                <button
-                    class="w-full bg-primary text-white text-xs font-bold py-2 rounded-lg hover:bg-primary-dim transition-colors">Assinar
-                    Agora</button>
-            </div>
-        </div>
     </aside>
 
     <!-- Main Content -->

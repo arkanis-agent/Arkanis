@@ -62,6 +62,30 @@ class LongTermMemory:
                 self.data[category].pop(0)
                 
         self._save()
+    def update_memory(self, category: str, index: int, new_content: str) -> bool:
+        """Update an existing memory at a specific index."""
+        if category not in self.data or index < 0 or index >= len(self.data[category]):
+            return False
+        
+        content_clean = new_content.strip()
+        if not content_clean:
+            return self.delete_memory(category, index)
+            
+        with self._lock:
+            self.data[category][index] = content_clean
+            
+        self._save()
+        return True
+
+    def delete_memory(self, category: str, index: int) -> bool:
+        """Delete a memory at a specific index."""
+        if category not in self.data or index < 0 or index >= len(self.data[category]):
+            return False
+            
+        with self._lock:
+            self.data[category].pop(index)
+            
+        self._save()
         return True
 
     def get_formatted_memory(self) -> str:

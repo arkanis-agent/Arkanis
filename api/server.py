@@ -273,6 +273,37 @@ async def get_long_term_memory():
     from modules.memory.long_term import long_term_memory
     return {"memory": long_term_memory.data}
 
+@app.post("/memory/update")
+async def update_long_term_memory(request: Request):
+    """Updates a specific memory entry."""
+    from modules.memory.long_term import long_term_memory
+    try:
+        body = await request.json()
+        category = body.get("category")
+        index = body.get("index")
+        content = body.get("content")
+        
+        if success := long_term_memory.update_memory(category, index, content):
+            return {"status": "success"}
+        raise HTTPException(status_code=400, detail="Failed to update memory.")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/memory/delete")
+async def delete_long_term_memory(request: Request):
+    """Deletes a specific memory entry."""
+    from modules.memory.long_term import long_term_memory
+    try:
+        body = await request.json()
+        category = body.get("category")
+        index = body.get("index")
+        
+        if success := long_term_memory.delete_memory(category, index):
+            return {"status": "success"}
+        raise HTTPException(status_code=400, detail="Failed to delete memory.")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 @app.post("/strategy/toggle")
 async def toggle_strategy(request: StrategyToggleRequest):
     """Enable or disable Auto Model Strategy."""
