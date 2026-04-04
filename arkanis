@@ -44,7 +44,8 @@ function start_arkanis {
         exit 1
     fi
     echo "[*] Inicializando Arkanis V3.1 em modo daemon..."
-    nohup $PYTHON_CMD main.py --web > "$LOG_FILE" 2>&1 &
+    # Quote $PYTHON_CMD to handle spaces in virtualenv path
+    nohup "$PYTHON_CMD" main.py --web > "$LOG_FILE" 2>&1 &
     PID=$!
     echo $PID > "$PID_FILE"
     echo "[✓] Sistema online! PID: $PID"

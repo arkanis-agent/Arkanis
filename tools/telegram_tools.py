@@ -13,11 +13,10 @@ class TelegramMessageTool(BaseTool):
     @property
     def description(self) -> str:
         return (
-            "Envia uma mensagem de texto ao usuário no Telegram. "
+            "INTEGRAÇÃO OFICIAL COM TELEGRAM. Envia uma mensagem de texto ao usuário no Telegram. "
             "Use isso quando você estiver trabalhando em background/continuous tasks e "
             "precisar notificar o usuário ativamente sobre novas descobertas ou erros críticos. "
-            "Só envie mensagens no Telegram se a tarefa atual ou as rotinas definirem que é o objetivo, "
-            "ou se for uma novidade muito urgente ou se o usuário pediu especificamente."
+            "Sempre que o usuário pedir para 'mandar no telegram' ou 'enviar notificação', use esta ferramenta."
         )
 
     @property

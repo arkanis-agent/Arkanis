@@ -1171,16 +1171,16 @@ function setActivePanel(panelId) {
         if (id === panelId) {
             if (p.element) p.element.classList.remove('hidden');
             if (p.nav) {
-                p.nav.classList.replace('text-slate-500', 'text-blue-400');
-                p.nav.classList.replace('dark:text-slate-400', 'dark:text-blue-400');
-                p.nav.classList.add('bg-slate-800/80');
+                p.nav.classList.add('active');
+                // Ensure text colors transition correctly for the active state
+                p.nav.classList.remove('text-slate-400', 'text-slate-500');
+                p.nav.classList.add('text-white');
             }
         } else {
             if (p.element) p.element.classList.add('hidden');
             if (p.nav) {
-                p.nav.classList.replace('text-blue-400', 'text-slate-500');
-                p.nav.classList.replace('dark:text-blue-400', 'dark:text-slate-400');
-                p.nav.classList.remove('bg-slate-800/80');
+                p.nav.classList.remove('active', 'text-white');
+                p.nav.classList.add(id === 'systemLogs' || id === 'devCenter' || id === 'providers' ? 'text-slate-500' : 'text-slate-400');
             }
         }
     });
@@ -1284,32 +1284,37 @@ async function fetchMemoryVault() {
     try {
         grid.innerHTML = '<div class="col-span-3 text-center py-10 text-slate-500">Acessando Rede Neural... <span class="material-symbols-outlined animate-spin text-sm ml-2">sync</span></div>';
         const res = await fetch('/memory/long-term');
-        if(!res.ok) throw new Error("Erro ao acessar memória.");
+        if(!res.ok) throw new Error("Erro de conexão com o Kernel.");
         const data = await res.json();
+        
+        // Handle case where memory object might be nested or empty
         const mem = data.memory || {};
         
         const categories = [
-            { id: 'preferences', label: 'Preferências do Usuário', icon: 'favorite', color: 'text-pink-400', bg: 'bg-pink-500/10 border-pink-500/20' },
-            { id: 'facts', label: 'Fatos Importantes', icon: 'lightbulb', color: 'text-amber-400', bg: 'bg-amber-500/10 border-amber-500/20' },
-            { id: 'recurrent_tasks', label: 'Tarefas Recorrentes', icon: 'update', color: 'text-blue-400', bg: 'bg-blue-500/10 border-blue-500/20' }
+            { id: 'preferences', label: 'Preferências', icon: 'favorite', color: 'text-pink-400', bg: 'bg-pink-500/10 border-pink-500/20' },
+            { id: 'facts', label: 'Fatos & Rede Neural', icon: 'lightbulb', color: 'text-amber-400', bg: 'bg-amber-500/10 border-amber-500/20' },
+            { id: 'recurrent_tasks', label: 'Rotinas Ativas', icon: 'update', color: 'text-blue-400', bg: 'bg-blue-500/10 border-blue-500/20' }
         ];
 
         let html = '';
         categories.forEach(cat => {
             const items = mem[cat.id] || [];
             let itemsHtml = items.length > 0 
-                ? items.map(text => `<li class="flex items-start gap-2 text-xs text-slate-300 font-body mb-2"><span class="material-symbols-outlined text-[14px] ${cat.color} shrink-0 mt-0.5">adjust</span><span class="flex-1">${text}</span></li>`).join('')
-                : `<li class="text-xs text-slate-600 italic">Rede neural vazia neste setor.</li>`;
+                ? items.map(text => `<li class="flex items-start gap-3 p-3 bg-slate-800/20 rounded-xl border border-white/5 text-xs text-slate-300 font-body mb-3 transition-all hover:bg-slate-800/40"><span class="material-symbols-outlined text-[16px] ${cat.color} shrink-0 mt-0.5">adjust</span><span class="flex-1">${text}</span></li>`).join('')
+                : `<li class="text-xs text-slate-600 italic px-2">Este setor da rede neural está vazio.</li>`;
             
             html += `
-                <div class="p-6 bg-slate-900/40 rounded-2xl border border-white/5 backdrop-blur-sm shadow-xl flex flex-col max-h-[400px]">
-                    <div class="flex items-center gap-3 mb-4 border-b border-white/5 pb-4">
-                        <div class="w-10 h-10 rounded-xl ${cat.bg} flex items-center justify-center border">
-                            <span class="material-symbols-outlined ${cat.color} text-lg">${cat.icon}</span>
+                <div class="p-6 bg-slate-900/40 rounded-2xl border border-white/5 backdrop-blur-md shadow-2xl flex flex-col max-h-[500px] group transition-all hover:border-white/10">
+                    <div class="flex items-center gap-4 mb-5 border-b border-white/5 pb-4">
+                        <div class="w-12 h-12 rounded-2xl ${cat.bg} flex items-center justify-center border shadow-inner transition-transform group-hover:scale-110">
+                            <span class="material-symbols-outlined ${cat.color} text-xl">${cat.icon}</span>
                         </div>
-                        <h3 class="text-white font-bold tracking-wide">${cat.label}</h3>
+                        <div>
+                            <h3 class="text-white font-bold tracking-wide text-sm">${cat.label}</h3>
+                            <p class="text-[10px] text-slate-500 uppercase font-black tracking-tighter">Sector Active</p>
+                        </div>
                     </div>
-                    <ul class="flex-1 overflow-y-auto custom-scrollbar pr-2 space-y-1">
+                    <ul class="flex-1 overflow-y-auto custom-scrollbar pr-3 space-y-1">
                         ${itemsHtml}
                     </ul>
                 </div>
@@ -1318,7 +1323,12 @@ async function fetchMemoryVault() {
         
         grid.innerHTML = html;
     } catch(e) {
-        grid.innerHTML = `<div class="col-span-3 text-center py-10 text-rose-500">Falha ao carregar Memória: ${e.message}</div>`;
+        grid.innerHTML = `<div class="col-span-3 text-center py-16 bg-rose-500/10 border border-rose-500/20 rounded-2xl">
+            <span class="material-symbols-outlined text-rose-500 text-5xl mb-4">cloud_off</span>
+            <div class="text-rose-400 font-bold">Neural Vault Offline</div>
+            <div class="text-rose-500/60 text-xs mt-1">${e.message}</div>
+            <button onclick="fetchMemoryVault()" class="mt-4 px-4 py-2 bg-rose-500/20 hover:bg-rose-500/30 text-rose-400 text-xs rounded-lg transition-all border border-rose-500/30">Tentar Novamente</button>
+        </div>`;
     }
 }
 function showHistory() { setActivePanel('history'); }

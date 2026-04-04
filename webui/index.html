@@ -80,63 +80,55 @@
             },
         }
     </script>
-    <style>
-        body {
-            background-color: #060e20;
-            color: #f1f5f9;
-            font-family: 'Inter', sans-serif;
+        .sidebar-item {
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .sidebar-item::before {
+            content: '';
+            position: absolute;
+            left: -2px;
+            top: 20%;
+            bottom: 20%;
+            width: 3px;
+            border-radius: 0 4px 4px 0;
+            background: currentColor;
+            opacity: 0;
+            transition: all 0.3s ease;
         }
 
-        .glass-effect {
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
+        .sidebar-item[data-color="blue"]:hover::before, .sidebar-item[data-color="blue"].active::before { opacity: 1; color: #60a5fa; box-shadow: 0 0 10px #60a5fa; }
+        .sidebar-item[data-color="indigo"]:hover::before, .sidebar-item[data-color="indigo"].active::before { opacity: 1; color: #818cf8; box-shadow: 0 0 10px #818cf8; }
+        .sidebar-item[data-color="emerald"]:hover::before, .sidebar-item[data-color="emerald"].active::before { opacity: 1; color: #34d399; box-shadow: 0 0 10px #34d399; }
+        .sidebar-item[data-color="purple"]:hover::before, .sidebar-item[data-color="purple"].active::before { opacity: 1; color: #a78bfa; box-shadow: 0 0 10px #a78bfa; }
+        .sidebar-item[data-color="amber"]:hover::before, .sidebar-item[data-color="amber"].active::before { opacity: 1; color: #fbbf24; box-shadow: 0 0 10px #fbbf24; }
+        .sidebar-item[data-color="pink"]:hover::before, .sidebar-item[data-color="pink"].active::before { opacity: 1; color: #f472b6; box-shadow: 0 0 10px #f472b6; }
+
+        .sidebar-item.active {
+            background: rgba(255, 255, 255, 0.05);
+            color: white !important;
+        }
+        
+        .sidebar-item.active .icon-box {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: rgba(255, 255, 255, 0.2);
+            transform: scale(1.05);
         }
 
-        .no-line-border {
-            border: none !important;
+        @keyframes pulse-soft {
+            0% { transform: scale(1); opacity: 0.8; }
+            50% { transform: scale(1.05); opacity: 1; }
+            100% { transform: scale(1); opacity: 0.8; }
         }
 
-        .material-symbols-outlined {
-            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        .logo-glow {
+            animation: pulse-soft 3s infinite ease-in-out;
+            filter: drop-shadow(0 0 8px rgba(37, 99, 235, 0.4));
         }
 
-        .custom-scrollbar::-webkit-scrollbar {
-            width: 4px;
-        }
-
-        .custom-scrollbar::-webkit-scrollbar-track {
-            background: transparent;
-        }
-
-        .custom-scrollbar::-webkit-scrollbar-thumb {
-            background: #1e293b;
-            border-radius: 10px;
-        }
-
-        #activityTickerText.fade {
-            animation: fadeText 3s infinite;
-        }
-
-        @keyframes fadeText {
-            0% {
-                opacity: 0;
-                transform: translateY(5px);
-            }
-
-            10% {
-                opacity: 1;
-                transform: translateY(0);
-            }
-
-            90% {
-                opacity: 1;
-                transform: translateY(0);
-            }
-
-            100% {
-                opacity: 0;
-                transform: translateY(-5px);
-            }
+        header {
+            border-bottom: 1px solid rgba(255, 255, 255, 0.03);
         }
     </style>
 </head>
@@ -237,97 +229,97 @@
     <!-- SideNavBar -->
     <aside
         class="flex flex-col h-full py-6 px-4 fixed left-0 top-0 z-40 h-screen w-64 bg-slate-900/50 backdrop-blur-md border-r-0">
-        <div class="flex items-center gap-3 px-4 mb-10">
-            <div class="w-10 h-10 bg-primary rounded-xl flex items-center justify-center">
+        <div class="flex items-center gap-3 px-4 mb-10 logo-glow">
+            <div class="w-10 h-10 bg-gradient-to-br from-blue-600 to-indigo-700 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/20">
                 <span class="material-symbols-outlined text-white text-2xl"
                     style="font-variation-settings: 'FILL' 1;">bolt</span>
             </div>
             <div>
-                <h1 class="font-manrope font-extrabold text-blue-700 dark:text-blue-400 text-xl leading-none">ARKANIS
+                <h1 class="font-manrope font-extrabold text-blue-500 dark:text-blue-400 text-xl tracking-tighter leading-none">ARKANIS
                 </h1>
-                <p class="text-[10px] text-slate-500 uppercase tracking-widest font-bold">Inteligência de Elite</p>
+                <p class="text-[9px] text-slate-500 uppercase tracking-[0.2em] font-black opacity-80">Elite Intelligence</p>
             </div>
         </div>
-        <nav class="flex-1 space-y-2 overflow-y-auto custom-scrollbar px-2">
+        <nav class="flex-1 space-y-3 overflow-y-auto custom-scrollbar px-2">
             <a id="navChat"
-                class="text-slate-400 hover:text-white px-3 py-2.5 flex items-center gap-3 hover:bg-white/5 transition-all rounded-xl font-body text-[13px] font-bold tracking-wide group"
-                href="#">
+                class="sidebar-item group text-slate-400 hover:text-white px-3 py-2.5 flex items-center gap-3 transition-all rounded-xl font-body text-[13px] font-bold tracking-wide"
+                href="#" data-color="blue">
                 <div
-                    class="w-8 h-8 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center group-hover:bg-blue-500/20 transition-all">
-                    <span class="material-symbols-outlined text-blue-400 text-sm">chat</span>
+                    class="icon-box w-9 h-9 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center group-hover:bg-blue-500/30 group-hover:border-blue-500/40 transition-all shadow-lg shadow-blue-500/5">
+                    <span class="material-symbols-outlined text-blue-400 text-sm group-hover:scale-110 transition-transform">chat</span>
                 </div>
-                Chat & Comandos
+                <span class="item-text">Chat & Comandos</span>
             </a>
             <a id="navHistory"
-                class="text-slate-400 hover:text-white px-3 py-2.5 flex items-center gap-3 hover:bg-white/5 transition-all rounded-xl font-body text-[13px] font-bold tracking-wide group"
-                href="#">
+                class="sidebar-item group text-slate-400 hover:text-white px-3 py-2.5 flex items-center gap-3 transition-all rounded-xl font-body text-[13px] font-bold tracking-wide"
+                href="#" data-color="indigo">
                 <div
-                    class="w-8 h-8 rounded-lg bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center group-hover:bg-indigo-500/20 transition-all">
-                    <span class="material-symbols-outlined text-indigo-400 text-sm">history</span>
+                    class="icon-box w-9 h-9 rounded-lg bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center group-hover:bg-indigo-500/30 group-hover:border-indigo-500/40 transition-all shadow-lg shadow-indigo-500/5">
+                    <span class="material-symbols-outlined text-indigo-400 text-sm group-hover:scale-110 transition-transform">history</span>
                 </div>
-                Histórico de Memória
+                <span class="item-text">Histórico</span>
             </a>
             <a id="navObservability"
-                class="text-slate-400 hover:text-white px-3 py-2.5 flex items-center gap-3 hover:bg-white/5 transition-all rounded-xl font-body text-[13px] font-bold tracking-wide group"
-                href="#">
+                class="sidebar-item group text-slate-400 hover:text-white px-3 py-2.5 flex items-center gap-3 transition-all rounded-xl font-body text-[13px] font-bold tracking-wide"
+                href="#" data-color="emerald">
                 <div
-                    class="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center group-hover:bg-emerald-500/20 transition-all">
-                    <span class="material-symbols-outlined text-emerald-400 text-sm">monitoring</span>
+                    class="icon-box w-9 h-9 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center group-hover:bg-emerald-500/30 group-hover:border-emerald-500/40 transition-all shadow-lg shadow-emerald-500/5">
+                    <span class="material-symbols-outlined text-emerald-400 text-sm group-hover:scale-110 transition-transform">monitoring</span>
                 </div>
-                System Watch
+                <span class="item-text">System Watch</span>
             </a>
             <a id="navTasks"
-                class="text-slate-400 hover:text-white px-3 py-2.5 flex items-center gap-3 hover:bg-white/5 transition-all rounded-xl font-body text-[13px] font-bold tracking-wide group"
-                href="#">
+                class="sidebar-item group text-slate-400 hover:text-white px-3 py-2.5 flex items-center gap-3 transition-all rounded-xl font-body text-[13px] font-bold tracking-wide"
+                href="#" data-color="purple">
                 <div
-                    class="w-8 h-8 rounded-lg bg-purple-500/10 border border-purple-500/20 flex items-center justify-center group-hover:bg-purple-500/20 transition-all">
-                    <span class="material-symbols-outlined text-purple-400 text-sm">account_tree</span>
+                    class="icon-box w-9 h-9 rounded-lg bg-purple-500/10 border border-purple-500/20 flex items-center justify-center group-hover:bg-purple-500/30 group-hover:border-purple-500/40 transition-all shadow-lg shadow-purple-500/5">
+                    <span class="material-symbols-outlined text-purple-400 text-sm group-hover:scale-110 transition-transform">account_tree</span>
                 </div>
-                Agent Orchestrator
+                <span class="item-text">Orchestrator</span>
             </a>
             <a id="navArsenal"
-                class="text-slate-400 hover:text-white px-3 py-2.5 flex items-center gap-3 hover:bg-white/5 transition-all rounded-xl font-body text-[13px] font-bold tracking-wide group"
-                href="#">
+                class="sidebar-item group text-slate-400 hover:text-white px-3 py-2.5 flex items-center gap-3 transition-all rounded-xl font-body text-[13px] font-bold tracking-wide"
+                href="#" data-color="amber">
                 <div
-                    class="w-8 h-8 rounded-lg bg-amber-500/10 border border-amber-500/20 flex items-center justify-center group-hover:bg-amber-500/20 transition-all">
-                    <span class="material-symbols-outlined text-amber-400 text-sm">construction</span>
+                    class="icon-box w-9 h-9 rounded-lg bg-amber-500/10 border border-amber-500/20 flex items-center justify-center group-hover:bg-amber-500/30 group-hover:border-amber-500/40 transition-all shadow-lg shadow-amber-500/5">
+                    <span class="material-symbols-outlined text-amber-400 text-sm group-hover:scale-110 transition-transform">construction</span>
                 </div>
-                System Arsenal
+                <span class="item-text">Arsenal</span>
             </a>
             <a id="navMemory"
-                class="text-slate-400 hover:text-white px-3 py-2.5 flex items-center gap-3 hover:bg-white/5 transition-all rounded-xl font-body text-[13px] font-bold tracking-wide group"
-                href="#">
+                class="sidebar-item group text-slate-400 hover:text-white px-3 py-2.5 flex items-center gap-3 transition-all rounded-xl font-body text-[13px] font-bold tracking-wide"
+                href="#" data-color="pink">
                 <div
-                    class="w-8 h-8 rounded-lg bg-pink-500/10 border border-pink-500/20 flex items-center justify-center group-hover:bg-pink-500/20 transition-all">
-                    <span class="material-symbols-outlined text-pink-400 text-sm">psychology</span>
+                    class="icon-box w-9 h-9 rounded-lg bg-pink-500/10 border border-pink-500/20 flex items-center justify-center group-hover:bg-pink-500/30 group-hover:border-pink-500/40 transition-all shadow-lg shadow-pink-500/5">
+                    <span class="material-symbols-outlined text-pink-400 text-sm group-hover:scale-110 transition-transform">psychology</span>
                 </div>
-                Memory Vault
+                <span class="item-text">Memory Vault</span>
             </a>
 
-            <div class="pt-4 pb-2">
-                <hr class="border-white/5 mx-4">
+            <div class="pt-4 pb-1">
+                <div class="h-px bg-gradient-to-r from-transparent via-white/10 to-transparent mx-4"></div>
             </div>
 
             <a id="navLogs"
-                class="text-slate-500 hover:text-slate-300 px-3 py-2 flex items-center gap-3 hover:bg-white/5 transition-all rounded-xl font-body text-[12px] font-bold tracking-wide group"
-                href="#">
+                class="sidebar-item group text-slate-500 hover:text-slate-300 px-3 py-2 flex items-center gap-3 transition-all rounded-xl font-body text-[12px] font-bold tracking-wide"
+                href="#" data-color="slate">
                 <span
-                    class="material-symbols-outlined text-slate-500 text-sm ml-1 group-hover:text-slate-300">terminal</span>
-                Log do Terminal
+                    class="material-symbols-outlined text-slate-500 text-sm ml-1 group-hover:text-white group-hover:rotate-12 transition-all">terminal</span>
+                Terminal
             </a>
             <a id="navDevCenter"
-                class="text-slate-500 hover:text-slate-300 px-3 py-2 flex items-center gap-3 hover:bg-white/5 transition-all rounded-xl font-body text-[12px] font-bold tracking-wide group"
-                href="#">
+                class="sidebar-item group text-slate-500 hover:text-slate-300 px-3 py-2 flex items-center gap-3 transition-all rounded-xl font-body text-[12px] font-bold tracking-wide"
+                href="#" data-color="slate">
                 <span
-                    class="material-symbols-outlined text-slate-500 text-sm ml-1 group-hover:text-slate-300">rocket_launch</span>
+                    class="material-symbols-outlined text-slate-500 text-sm ml-1 group-hover:text-white group-hover:-translate-y-0.5 transition-all">rocket_launch</span>
                 Dev Center
             </a>
             <a id="navProviders"
-                class="text-slate-500 hover:text-slate-300 px-3 py-2 flex items-center gap-3 hover:bg-white/5 transition-all rounded-xl font-body text-[12px] font-bold tracking-wide group"
-                href="#">
+                class="sidebar-item group text-slate-500 hover:text-slate-300 px-3 py-2 flex items-center gap-3 transition-all rounded-xl font-body text-[12px] font-bold tracking-wide"
+                href="#" data-color="slate">
                 <span
-                    class="material-symbols-outlined text-slate-500 text-sm ml-1 group-hover:text-slate-300">api</span>
-                APIs & Chaves
+                    class="material-symbols-outlined text-slate-500 text-sm ml-1 group-hover:text-white group-hover:scale-110 transition-all">api</span>
+                APIs & Keys
             </a>
         </nav>
         <div class="mt-auto pt-6 space-y-2">
