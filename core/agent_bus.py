@@ -1,114 +1,67 @@
-import threading
-from typing import Dict, List, Any, Optional
+import time
 from datetime import datetime
-
+from typing import Dict, Any, List, Optional
 
 class AgentBus:
+    """
+    ARKANIS AGENT BUS: The central nervous system for multi-agent communication.
+    Handles message passing, status tracking, and observability for the Control Center.
+    """
     def __init__(self):
-        self._agents: Dict[str, Any] = {}
-        self._lock = threading.Lock()
-        self.message_history: List[Dict[str, Any]] = []
-        self.connections: List[Dict[str, Any]] = [] # Track unique connections
-        self.current_task_holder: Optional[str] = None # Arkanis Swarm: Token Holder
+        self.agents = {}
+        self.message_history = []
+        self.connections = []
         self.max_history = 500
         self.max_connections = 100
 
-    def set_task_token(self, agent_id: str):
-        """ARKANIS SWARM: Designate the current agent holding the user's task token."""
-        with self._lock:
-            self.current_task_holder = agent_id
-
-    def register_agent(self, agent_id: str, agent_instance: Any):
-        with self._lock:
-            self._agents[agent_id] = agent_instance
+    def register_agent(self, agent_id: str, instance: Any):
+        self.agents[agent_id] = instance
+        # Record registration as a system message
+        self._record_history({
+            "from": "SYSTEM",
+            "to": "ALL",
+            "type": "registration",
+            "content": f"Agent '{agent_id}' registered to the bus.",
+            "timestamp": datetime.now().strftime("%H:%M:%S")
+        })
 
     def unregister_agent(self, agent_id: str):
-        with self._lock:
-            if agent_id in self._agents:
-                del self._agents[agent_id]
+        if agent_id in self.agents:
+            del self.agents[agent_id]
 
     def get_agent(self, agent_id: str) -> Optional[Any]:
-        with self._lock:
-            return self._agents.get(agent_id)
+        return self.agents.get(agent_id)
 
-    def list_agent_ids(self) -> List[str]:
-        with self._lock:
-            return list(self._agents.keys())
+    def send_message(self, from_aid: str, to_aid: str, content: str):
+        """Direct message between agents."""
+        msg = {
+            "from": from_aid,
+            "to": to_aid,
+            "type": "direct",
+            "content": content,
+            "timestamp": datetime.now().strftime("%H:%M:%S")
+        }
+        self._record_history(msg)
+        self._record_connection(from_aid, to_aid)
+        
+        target = self.agents.get(to_aid)
+        if target and hasattr(target, "inbox"):
+            target.inbox.append(msg)
 
-    def pause_agent(self, agent_id: str) -> bool:
-        """Signal an agent to pause between cycles."""
-        with self._lock:
-            agent = self._agents.get(agent_id)
-            if agent and hasattr(agent, "pause_requested"):
-                agent.status = "paused"
-                agent.pause_requested.set()
-                return True
-            return False
-
-    def resume_agent(self, agent_id: str) -> bool:
-        """Signal a paused agent to resume."""
-        with self._lock:
-            agent = self._agents.get(agent_id)
-            if agent and hasattr(agent, "pause_requested"):
-                agent.status = "idle"
-                agent.pause_requested.clear()
-                if hasattr(agent, "resume_requested"):
-                    agent.resume_requested.set()
-                return True
-            return False
-
-    def stop_agent(self, agent_id: str) -> bool:
-        """Signal an agent to stop and unregister it (only for custom agents)."""
-        with self._lock:
-            agent = self._agents.get(agent_id)
-            if not agent:
-                return False
-            # Signal stop if possible
-            if hasattr(agent, "stop_requested"):
-                agent.stop_requested.set()
-            if hasattr(agent, "pause_requested"):
-                agent.resume_requested.set()  # Unblock if paused
-            # Only remove non-core agents from registry
-            if getattr(agent, "is_custom", False):
-                del self._agents[agent_id]
-            else:
-                agent.status = "idle"
-            return True
-
-    def send_message(self, from_agent: str, to_agent: str, content: str) -> bool:
-        with self._lock:
-            if to_agent in self._agents:
-                target = self._agents[to_agent]
-                msg = {
-                    "id": len(self.message_history),
-                    "timestamp": datetime.now().strftime("%H:%M:%S"),
-                    "from": from_agent,
-                    "to": to_agent,
-                    "content": content,
-                    "type": "direct"
-                }
-                if hasattr(target, "inbox"):
-                    target.inbox.append(msg)
-                self._record_history(msg)
-                self._record_connection(from_agent, to_agent)
-                return True
-            return False
-
-    def broadcast_message(self, from_agent: str, content: str):
-        with self._lock:
-            msg = {
-                "id": len(self.message_history),
-                "timestamp": datetime.now().strftime("%H:%M:%S"),
-                "from": from_agent,
-                "to": "ALL",
-                "content": content,
-                "type": "broadcast"
-            }
-            for aid, target in self._agents.items():
-                if aid != from_agent and hasattr(target, "inbox"):
-                    target.inbox.append(msg)
-            self._record_history(msg)
-            self._record_connection(from_agent, "ALL")
+    def broadcast_message(self, from_aid: str, content: str):
+        """Message to all registered agents."""
+        msg = {
+            "from": from_aid,
+            "to": "ALL",
+            "type": "broadcast",
+            "content": content,
+            "timestamp": datetime.now().strftime("%H:%M:%S")
+        }
+        self._record_history(msg)
+        
+        for aid, target in self.agents.items():
+            if aid != from_aid and hasattr(target, "inbox"):
+                target.inbox.append(msg)
 
     def _record_history(self, msg: Dict[str, Any]):
         self.message_history.append(msg)
@@ -116,9 +69,8 @@ class AgentBus:
             self.message_history.pop(0)
 
     def _record_connection(self, from_aid: str, to_aid: str):
-        """Track communication edges for the graph visualization with high-precision timestamps."""
-        import time
-        now_ts = time.time_ns() // 1_000_000 # Milliseconds
+        """Track communication edges for the graph visualization."""
+        now_ts = time.time_ns() // 1_000_000 
         now_str = datetime.now().strftime("%H:%M:%S")
         
         conn = {
@@ -138,63 +90,58 @@ class AgentBus:
         if len(self.connections) > self.max_connections:
             self.connections.pop(0)
 
-    def get_agent_detail(self, agent_id: str) -> Optional[Dict[str, Any]]:
-        """Return full detail snapshot of a single agent for the Control Center."""
-        with self._lock:
-            instance = self._agents.get(agent_id)
-            if not instance:
-                return None
-            return self._build_agent_snapshot(agent_id, instance)
-
-    def _build_agent_snapshot(self, aid: str, instance: Any) -> Dict[str, Any]:
-        """Build a rich status snapshot from any agent instance."""
-        status = getattr(instance, "status", "idle")
-        recent_logs = getattr(instance, "logs", [])
-        mini_logs = recent_logs[-5:] if recent_logs else []
-
+    def get_observability_data(self) -> Dict[str, Any]:
+        """Returns the full state of all agents for the Control Center UI."""
+        agent_data = []
+        for aid, instance in self.agents.items():
+            # Extract standard fields or use defaults
+            agent_data.append({
+                "id": aid,
+                "role": getattr(instance, "role", "Worker Agent"),
+                "status": getattr(instance, "status", "idle"),
+                "mode": getattr(instance, "mode", "MANUAL"),
+                "current_cycle": getattr(instance, "current_cycle", 0),
+                "is_custom": getattr(instance, "is_custom", False)
+            })
+        
         return {
-            "id": aid,
-            "status": status.lower() if isinstance(status, str) else "idle",
-            "mode": getattr(instance, "mode", "manual").upper(),
-            "cycle": getattr(instance, "current_cycle", 0),
-            "current_action": getattr(instance, "current_action", "Idle"),
-            "role": getattr(instance, "role", "Agente Principal"),
-            "allowed_tools": getattr(instance, "allowed_tools", []),
-            "is_custom": getattr(instance, "is_custom", False),
-            "logs": mini_logs,
-            "last_seen": datetime.now().strftime("%H:%M:%S"),
+            "agents": agent_data,
+            "connections": self.connections,
+            "history": self.message_history[-20:] # Last 20 for quick view
         }
 
-    def get_observability_data(self) -> Dict[str, Any]:
-        """Provides a real-time snapshot of the system state for the WebUI."""
-        with self._lock:
-            agents_snapshot = [
-                self._build_agent_snapshot(aid, inst)
-                for aid, inst in self._agents.items()
-            ]
+    def pause_agent(self, agent_id: str) -> bool:
+        agent = self.agents.get(agent_id)
+        if agent and hasattr(agent, "pause_requested"):
+            agent.pause_requested.set()
+            return True
+        return False
 
-            # Ensure virtual nodes (system, ALL) are present in the graph nodes
-            graph_nodes = [{"id": a["id"], "role": a["role"], "status": a["status"]} for a in agents_snapshot]
-            graph_nodes.append({"id": "ALL", "role": "Broadcast", "status": "idle"})
-            graph_nodes.append({"id": "system", "role": "ARKANIS OS", "status": "running"})
+    def resume_agent(self, agent_id: str) -> bool:
+        agent = self.agents.get(agent_id)
+        if agent and hasattr(agent, "resume_requested"):
+            agent.resume_requested.set()
+            agent.pause_requested.clear()
+            return True
+        return False
 
-            return {
-                "agents": agents_snapshot,
-                "graph": {
-                    "nodes": graph_nodes,
-                    "links": self.connections,
-                    "task_holder": self.current_task_holder
-                },
-                "history": self.message_history[-20:],
-                "stats": {
-                    "total": len(agents_snapshot),
-                    "active": len([a for a in agents_snapshot if a["status"] == "running"]),
-                    "idle": len([a for a in agents_snapshot if a["status"] == "idle"]),
-                    "paused": len([a for a in agents_snapshot if a["status"] == "paused"]),
-                    "errors": len([a for a in agents_snapshot if a["status"] == "error"]),
-                }
-            }
+    def stop_agent(self, agent_id: str) -> bool:
+        agent = self.agents.get(agent_id)
+        if agent:
+            if hasattr(agent, "stop_requested"):
+                agent.stop_requested.set()
+            if hasattr(agent, "stop_loop"):
+                agent.stop_loop()
+            return True
+        return False
 
+    def get_agent_detail(self, agent_id: str) -> Optional[Dict]:
+        agent = self.agents.get(agent_id)
+        if not agent: return None
+        return {
+            "id": agent_id,
+            "logs": getattr(agent, "logs", [])
+        }
 
-# Singleton global instance
+# Singleton instance
 agent_bus = AgentBus()

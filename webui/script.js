@@ -58,6 +58,7 @@ const tasksPanel = document.getElementById('tasksPanel');
 const createTaskBtn = document.getElementById('createTaskBtn');
 const tasksListContainer = document.getElementById('tasksListContainer');
 const newTaskDesc = document.getElementById('newTaskDesc');
+let currentSuggestionFilter = 'pending';
 const governorToggleBtn = document.getElementById('governorToggleBtn');
 const governorBody = document.getElementById('governorBody');
 const governorChevron = document.getElementById('governorChevron');
@@ -3280,22 +3281,35 @@ function renderSuggestions(suggestions) {
         totalImp.textContent = suggestions.filter(s => s.status === 'applied').length;
     }
 
-    const pending = suggestions.filter(s => s.status === 'pending');
+    // Apply Filter logic
+    let filtered = suggestions;
+    if (currentSuggestionFilter === 'pending') {
+        filtered = suggestions.filter(s => s.status === 'pending');
+    } else if (currentSuggestionFilter === 'applied') {
+        filtered = suggestions.filter(s => s.status === 'applied' || s.status === 'approved');
+    } else if (currentSuggestionFilter === 'rejected') {
+        filtered = suggestions.filter(s => s.status === 'rejected');
+    }
     
-    if (pending.length === 0) {
+    if (filtered.length === 0) {
+        const emptyMsg = {
+            'pending': 'Nenhum ponto crítico detectado. O Arkanis está operando em conformidade total de elite.',
+            'applied': 'Nenhuma melhoria aplicada ainda. Comece a evoluir o sistema hoje!',
+            'rejected': 'Nenhuma sugestão foi descartada. O Maestro aprova sua visão.'
+        };
         suggestionsGrid.innerHTML = `
             <div class="col-span-full py-32 text-center text-slate-600 italic flex flex-col items-center gap-6 animate-pulse">
                 <span class="material-symbols-outlined text-6xl opacity-10">smart_toy</span>
                 <div class="max-w-xs">
-                    <p class="text-sm font-bold uppercase tracking-widest text-slate-500 mb-1">Análise Impecável</p>
-                    <p class="text-[11px] opacity-60">Nenhum ponto crítico detectado. O Arkanis está operando em conformidade total de elite.</p>
+                    <p class="text-sm font-bold uppercase tracking-widest text-slate-500 mb-1">Câmara Silenciosa</p>
+                    <p class="text-[11px] opacity-60">${emptyMsg[currentSuggestionFilter] || 'Sem dados nesta categoria.'}</p>
                 </div>
             </div>
         `;
         return;
     }
 
-    suggestionsGrid.innerHTML = pending.map(s => {
+    suggestionsGrid.innerHTML = filtered.map(s => {
         const isArch = s.type === 'arch';
         const typeLabel = isArch ? 'MAESTRO' : 'ELITE DEV';
         const typeColor = isArch ? 'text-blue-400 bg-blue-500/10 border-blue-500/20' : 'text-purple-400 bg-purple-500/10 border-purple-500/20';
@@ -3396,6 +3410,25 @@ async function suggestionAction(id, action) {
         console.error('Failed to act on suggestion', e);
         showToast('Erro ao processar sugestão.', 'rose');
     }
+}
+
+function setSuggestionFilter(filter) {
+    currentSuggestionFilter = filter;
+    
+    // Update active button state
+    ['Pending', 'Applied', 'Rejected'].forEach(f => {
+        const btn = document.getElementById(`filterBtn${f}`);
+        if (!btn) return;
+        if (f.toLowerCase() === filter) {
+            btn.classList.add('bg-blue-500', 'text-white', 'shadow-lg', 'shadow-blue-500/20');
+            btn.classList.remove('text-slate-400', 'hover:text-white', 'hover:bg-white/5');
+        } else {
+            btn.classList.remove('bg-blue-500', 'text-white', 'shadow-lg', 'shadow-blue-500/20');
+            btn.classList.add('text-slate-400', 'hover:text-white', 'hover:bg-white/5');
+        }
+    });
+    
+    loadSuggestions();
 }
 
 // --- 6. Neural Map (D3 Graph Visualization) ---

@@ -1180,6 +1180,12 @@
                         </button>
                     </div>
 
+                    <div class="flex items-center gap-2 mb-6 bg-white/5 p-1 rounded-2xl border border-white/5 w-fit">
+                        <button onclick="setSuggestionFilter('pending')" id="filterBtnPending" class="px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all bg-blue-500 text-white shadow-lg shadow-blue-500/20">Abertas</button>
+                        <button onclick="setSuggestionFilter('applied')" id="filterBtnApplied" class="px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all text-slate-400 hover:text-white hover:bg-white/5">Aplicadas</button>
+                        <button onclick="setSuggestionFilter('rejected')" id="filterBtnRejected" class="px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all text-slate-400 hover:text-white hover:bg-white/5">Descartadas</button>
+                    </div>
+
                     <div id="suggestionsGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                         <!-- Suggestions will be injected here -->
                         <div

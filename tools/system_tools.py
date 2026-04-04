@@ -6,6 +6,8 @@ from typing import Any, Dict
 from tools.base_tool import BaseTool
 from tools.registry import registry
 from core.logger import logger
+import datetime
+import json
 
 class SystemMonitorTool(BaseTool):
     """
@@ -86,5 +88,33 @@ class SystemMonitorTool(BaseTool):
             logger.error(f"System Guardian Error: {str(e)}")
             return {"status": "degraded", "error": str(e)}
 
+
+class GetCurrentDateTimeTool(BaseTool):
+    """A tool to get the current date and time."""
+    
+    @property
+    def name(self) -> str:
+        return "get_current_datetime"
+
+    @property
+    def description(self) -> str:
+        return "Returns the current date and time in a formatted string."
+
+    @property
+    def arguments(self) -> Dict[str, str]:
+        return {}
+
+    def execute(self, **kwargs) -> str:
+        now = datetime.datetime.now()
+        return json.dumps({
+            "datetime": now.strftime("%Y-%m-%d %H:%M:%S"),
+            "date": now.strftime("%Y-%m-%d"),
+            "time": now.strftime("%H:%M:%S")
+        })
+
+# Alias for compatibility with AutoHealAgent
+DiagnosticTool = SystemMonitorTool
+
 # Auto-registration
 registry.register(SystemMonitorTool())
+registry.register(GetCurrentDateTimeTool())
