@@ -78,6 +78,10 @@ const navHistory = document.getElementById('navHistory');
 const navObservability = document.getElementById('navObservability');
 const navDevCenter = document.getElementById('navDevCenter');
 const devCenterPanel = document.getElementById('devCenterPanel');
+const navArsenal = document.getElementById('navArsenal');
+const arsenalPanel = document.getElementById('arsenalPanel');
+const navMemory = document.getElementById('navMemory');
+const memoryPanel = document.getElementById('memoryPanel');
 const suggestionsGrid = document.getElementById('suggestionsGrid');
 
 // Global State
@@ -1153,6 +1157,8 @@ function setActivePanel(panelId) {
         observability: { element: document.getElementById('observabilityPanel'), nav: navObservability, showFooter: false },
         'tasks': { element: tasksPanel, nav: navTasks, showFooter: false },
         'devCenter': { element: devCenterPanel, nav: navDevCenter, showFooter: false },
+        'arsenal': { element: arsenalPanel, nav: navArsenal, showFooter: false },
+        'memory': { element: memoryPanel, nav: navMemory, showFooter: false },
         'integrations': { element: document.getElementById('integrationsPanel'), nav: null, showFooter: false },
         'systemLogs': { element: document.getElementById('systemLogsPanel'), nav: navLogs, showFooter: false }
     };
@@ -1217,6 +1223,104 @@ function showDevCenter() {
     if (observabilityInterval) clearInterval(observabilityInterval);
     observabilityInterval = setInterval(fetchObservabilityData, 3000);
 }
+function showArsenal() {
+    setActivePanel('arsenal');
+    fetchToolsArsenal();
+}
+async function fetchToolsArsenal() {
+    const grid = document.getElementById('arsenalGrid');
+    if (!grid) return;
+    try {
+        grid.innerHTML = '<div class="col-span-3 text-center py-10 text-slate-500">Montando Arsenal... <span class="material-symbols-outlined animate-spin text-sm ml-2">sync</span></div>';
+        const res = await fetch('/tools/available');
+        if(!res.ok) throw new Error("Erro ao buscar ferramentas.");
+        const data = await res.json();
+        
+        if(!data.tools || data.tools.length === 0) {
+            grid.innerHTML = '<div class="col-span-3 text-center py-10 text-slate-500">Nenhuma ferramenta encontrada no Registry.</div>';
+            return;
+        }
+        
+        let html = '';
+        data.tools.forEach(t => {
+            const isOffensive = t.name.includes("bash") || t.name.includes("shell") || t.name.includes("exe");
+            const iconColor = isOffensive ? 'text-amber-500' : 'text-blue-400';
+            const iconBg = isOffensive ? 'bg-amber-500/10 border-amber-500/20' : 'bg-blue-500/10 border-blue-500/20';
+            const iconName = isOffensive ? 'warning' : 'build';
+            
+            html += `
+                <div class="p-6 bg-slate-900/40 rounded-2xl border border-white/5 backdrop-blur-sm shadow-xl hover:bg-slate-800/60 transition-all group relative overflow-hidden">
+                    <div class="absolute top-0 right-0 p-4 opacity-10 pointer-events-none">
+                        <span class="material-symbols-outlined text-8xl ${iconColor}">${iconName}</span>
+                    </div>
+                    <div class="flex items-center gap-4 mb-4 relative z-10">
+                        <div class="w-12 h-12 rounded-xl ${iconBg} flex items-center justify-center border group-hover:scale-110 transition-transform">
+                            <span class="material-symbols-outlined ${iconColor}">${iconName}</span>
+                        </div>
+                        <div>
+                            <h3 class="text-white font-bold text-sm tracking-wide ${iconColor}">${t.name}</h3>
+                            <span class="px-2 py-0.5 rounded text-[8px] font-bold uppercase tracking-widest ${isOffensive ? 'bg-amber-500/20 text-amber-400 border-amber-500/30' : 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30'} border mt-1 inline-block">
+                                ${isOffensive ? 'Restrita' : 'Standard'}
+                            </span>
+                        </div>
+                    </div>
+                    <p class="text-slate-400 text-xs leading-relaxed relative z-10 font-body">${t.description}</p>
+                </div>
+            `;
+        });
+        grid.innerHTML = html;
+        
+    } catch (e) {
+        grid.innerHTML = `<div class="col-span-3 text-center py-10 text-rose-500">Falha ao carregar Arsenal: ${e.message}</div>`;
+    }
+}
+function showMemory() {
+    setActivePanel('memory');
+    fetchMemoryVault();
+}
+async function fetchMemoryVault() {
+    const grid = document.getElementById('memoryGrid');
+    if (!grid) return;
+    try {
+        grid.innerHTML = '<div class="col-span-3 text-center py-10 text-slate-500">Acessando Rede Neural... <span class="material-symbols-outlined animate-spin text-sm ml-2">sync</span></div>';
+        const res = await fetch('/memory/long-term');
+        if(!res.ok) throw new Error("Erro ao acessar memória.");
+        const data = await res.json();
+        const mem = data.memory || {};
+        
+        const categories = [
+            { id: 'preferences', label: 'Preferências do Usuário', icon: 'favorite', color: 'text-pink-400', bg: 'bg-pink-500/10 border-pink-500/20' },
+            { id: 'facts', label: 'Fatos Importantes', icon: 'lightbulb', color: 'text-amber-400', bg: 'bg-amber-500/10 border-amber-500/20' },
+            { id: 'recurrent_tasks', label: 'Tarefas Recorrentes', icon: 'update', color: 'text-blue-400', bg: 'bg-blue-500/10 border-blue-500/20' }
+        ];
+
+        let html = '';
+        categories.forEach(cat => {
+            const items = mem[cat.id] || [];
+            let itemsHtml = items.length > 0 
+                ? items.map(text => `<li class="flex items-start gap-2 text-xs text-slate-300 font-body mb-2"><span class="material-symbols-outlined text-[14px] ${cat.color} shrink-0 mt-0.5">adjust</span><span class="flex-1">${text}</span></li>`).join('')
+                : `<li class="text-xs text-slate-600 italic">Rede neural vazia neste setor.</li>`;
+            
+            html += `
+                <div class="p-6 bg-slate-900/40 rounded-2xl border border-white/5 backdrop-blur-sm shadow-xl flex flex-col max-h-[400px]">
+                    <div class="flex items-center gap-3 mb-4 border-b border-white/5 pb-4">
+                        <div class="w-10 h-10 rounded-xl ${cat.bg} flex items-center justify-center border">
+                            <span class="material-symbols-outlined ${cat.color} text-lg">${cat.icon}</span>
+                        </div>
+                        <h3 class="text-white font-bold tracking-wide">${cat.label}</h3>
+                    </div>
+                    <ul class="flex-1 overflow-y-auto custom-scrollbar pr-2 space-y-1">
+                        ${itemsHtml}
+                    </ul>
+                </div>
+            `;
+        });
+        
+        grid.innerHTML = html;
+    } catch(e) {
+        grid.innerHTML = `<div class="col-span-3 text-center py-10 text-rose-500">Falha ao carregar Memória: ${e.message}</div>`;
+    }
+}
 function showHistory() { setActivePanel('history'); }
 function showProviders() {
     setActivePanel('providers');
@@ -1230,6 +1334,7 @@ function showTasks() {
     setActivePanel('tasks'); 
     loadTasks();
     loadGoals();
+    loadCustomAgents();
 }
 function showObservability() { 
     setActivePanel('observability'); 
@@ -1270,6 +1375,68 @@ async function loadTasks() {
         renderTasks(data.tasks);
     } catch (e) {
         console.error('Failed to load tasks', e);
+    }
+}
+
+async function loadCustomAgents() {
+    try {
+        const response = await fetch('/agents');
+        const data = await response.json();
+        const customAgentsContainer = document.getElementById('customAgentsListContainer');
+        if (!customAgentsContainer) return;
+        
+        // Filter out system agents if you want, or show them visually distinct. 
+        // For now, let's just show all custom created from the registry.
+        const agents = data.agents || {};
+        
+        let html = '';
+        for (let aId in agents) {
+            const a = agents[aId];
+            if (a.id === 'auto_heal_agent' || a.id === 'architect_agent' || a.id === 'dev_agent' || a.id === 'telemetry_agent') continue; // core agents
+            
+            html += `
+                <div class="bg-gradient-to-br from-[#0c051a] to-slate-900/40 p-5 rounded-2xl border border-purple-500/20 shadow-lg relative group overflow-hidden flex flex-col gap-3">
+                    <div class="absolute inset-0 bg-purple-500/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                    <div class="flex items-start justify-between relative z-10">
+                        <div class="w-10 h-10 rounded-xl bg-purple-500/10 border border-purple-500/30 flex items-center justify-center shrink-0">
+                            <span class="material-symbols-outlined text-purple-400">smart_toy</span>
+                        </div>
+                        <div class="flex flex-col items-end">
+                            <span class="px-2 py-0.5 rounded text-[8px] font-bold uppercase tracking-widest ${a.status === 'RUNNING' ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30' : (a.status === 'PAUSED' ? 'bg-amber-500/20 text-amber-400 border-amber-500/30' : 'bg-slate-500/20 text-slate-400 border-slate-500/30')} border inline-block">
+                                ${a.status}
+                            </span>
+                            <div class="flex items-center gap-1 mt-1">
+                                <button onclick="controlCustomAgent('${a.id}', 'pause')" class="text-slate-500 hover:text-amber-400 p-1 transition-colors" title="Pause"><span class="material-symbols-outlined text-[14px]">pause</span></button>
+                                <button onclick="controlCustomAgent('${a.id}', 'resume')" class="text-slate-500 hover:text-emerald-400 p-1 transition-colors" title="Resume"><span class="material-symbols-outlined text-[14px]">play_arrow</span></button>
+                                <button onclick="controlCustomAgent('${a.id}', 'stop')" class="text-slate-500 hover:text-rose-400 p-1 transition-colors" title="Stop"><span class="material-symbols-outlined text-[14px]">stop</span></button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="relative z-10">
+                        <h4 class="text-white font-bold text-sm tracking-wide truncate" title="${a.id}">${a.id}</h4>
+                        <p class="text-purple-300 text-[10px] font-bold uppercase tracking-widest mt-0.5">${a.role || 'Agent'}</p>
+                    </div>
+                </div>
+            `;
+        }
+        
+        if (html === '') {
+            html = '<div class="col-span-3 text-slate-500 text-sm py-4 border border-white/5 rounded-xl text-center border-dashed font-mono">Nenhum agente customizado forjado.</div>';
+        }
+        
+        customAgentsContainer.innerHTML = html;
+        
+    } catch(e) {
+        console.error('Failed to load custom agents', e);
+    }
+}
+
+async function controlCustomAgent(agentId, action) {
+    try {
+        await fetch(`/agents/${agentId}/${action}`, { method: 'POST' });
+        loadCustomAgents();
+    } catch(e) {
+         console.error('Failed to control agent', e);
     }
 }
 
@@ -1706,6 +1873,20 @@ if (navDevCenter) {
     });
 }
 
+if (navArsenal) {
+    navArsenal.addEventListener('click', (e) => {
+        e.preventDefault();
+        showArsenal();
+    });
+}
+
+if (navMemory) {
+    navMemory.addEventListener('click', (e) => {
+        e.preventDefault();
+        showMemory();
+    });
+}
+
 if (createTaskBtn) {
     createTaskBtn.addEventListener('click', startTask);
 }
@@ -1714,7 +1895,92 @@ if (showCreateGoalModalBtn) {
     showCreateGoalModalBtn.addEventListener('click', createGoal);
 }
 
-const saveIntegrationsBtn = document.getElementById('saveIntegrationsBtn');
+const showAgentForgeModalBtn = document.getElementById('showAgentForgeModalBtn');
+const closeAgentForgeModalBtn = document.getElementById('closeAgentForgeModalBtn');
+const agentForgeModal = document.getElementById('agentForgeModal');
+const agentForgeForm = document.getElementById('agentForgeForm');
+
+if (showAgentForgeModalBtn) {
+    showAgentForgeModalBtn.addEventListener('click', async () => {
+        // Load tools list for checkboxes
+        const toolsList = document.getElementById('forgeAgentToolsList');
+        if(toolsList) {
+            toolsList.innerHTML = '<span class="text-xs text-slate-500">Montando...</span>';
+            try {
+                const res = await fetch('/tools/available');
+                const data = await res.json();
+                if(data.tools) {
+                    let html = '';
+                    data.tools.forEach(t => {
+                        html += `
+                            <label class="flex items-center gap-2 bg-black/40 border border-white/5 rounded-lg px-2 py-1.5 cursor-pointer hover:bg-white/5 transition-colors">
+                                <input type="checkbox" value="${t.name}" class="forge-tool-cb rounded text-purple-600 focus:ring-purple-500 focus:ring-1 bg-black border-white/20">
+                                <span class="text-[10px] text-white font-mono">${t.name}</span>
+                            </label>
+                        `;
+                    });
+                    toolsList.innerHTML = html;
+                }
+            } catch(e) {
+                toolsList.innerHTML = `<span class="text-xs text-rose-500">Erro: ${e.message}</span>`;
+            }
+        }
+        
+        agentForgeModal.classList.remove('hidden');
+        setTimeout(() => {
+            agentForgeModal.classList.remove('opacity-0');
+            document.getElementById('agentForgeModalContent').classList.remove('scale-95');
+        }, 10);
+    });
+}
+
+if (closeAgentForgeModalBtn) {
+    closeAgentForgeModalBtn.addEventListener('click', () => {
+        agentForgeModal.classList.add('opacity-0');
+        document.getElementById('agentForgeModalContent').classList.add('scale-95');
+        setTimeout(() => agentForgeModal.classList.add('hidden'), 300);
+    });
+}
+
+if (agentForgeForm) {
+    agentForgeForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        const agent_id = document.getElementById('forgeAgentId').value.trim();
+        const role = document.getElementById('forgeAgentRole').value.trim();
+        const persona = document.getElementById('forgeAgentPersona').value.trim();
+        
+        const cbs = document.querySelectorAll('.forge-tool-cb:checked');
+        const allowed_tools = Array.from(cbs).map(cb => cb.value);
+        
+        const btn = agentForgeForm.querySelector('button[type="submit"]');
+        const origText = btn.innerHTML;
+        btn.innerHTML = '<span class="material-symbols-outlined animate-spin text-[14px]">sync</span>';
+        btn.disabled = true;
+        
+        try {
+            const res = await fetch('/agents/create', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ agent_id, role, persona, allowed_tools })
+            });
+            const data = await res.json();
+            
+            if(!res.ok) throw new Error(data.detail || "Erro desconhecido");
+            
+            agentForgeForm.reset();
+            closeAgentForgeModalBtn.click();
+            loadCustomAgents(); // Refresh the list
+            
+        } catch(err) {
+            alert("Falha: " + err.message);
+        } finally {
+            btn.innerHTML = origText;
+            btn.disabled = false;
+        }
+    });
+}
+
 
 if (saveConfigBtn) {
     saveConfigBtn.addEventListener('click', () => {

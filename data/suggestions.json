@@ -1,5 +1,51 @@
 [
     {
+        "title": "Melhoria de Performance e Seguran\u00e7a no ShortTermMemory",
+        "description": "Proponho melhorias na classe ShortTermMemory: 1) Prote\u00e7\u00e3o contra falhas ao acessar chaves de dicion\u00e1rio 2) Otimiza\u00e7\u00e3o do limite de intera\u00e7\u00f5es usando deque 3) Melhor tratamento de tipos e documenta\u00e7\u00e3o",
+        "type": "refactor",
+        "file_path": "/home/diego/\u00c1rea de trabalho/Arkanis_V3.1/modules/memory/short_term.py",
+        "proposed_code": "from typing import List, Dict, Any, Deque\nfrom collections import deque\n\nclass ShortTermMemory:\n    \"\"\"\n    Manages session-level context for the Arkanis agent.\n    Keeps track of structural interactions: Input, Plan, and Result.\n    Using deque for optimized FIFO operations.\n    \"\"\"\n    def __init__(self, limit: int = 10):\n        if not isinstance(limit, int) or limit < 1:\n            raise ValueError(\"Limit must be a positive integer\")\n        self.limit = limit\n        self.interactions: Deque[Dict[str, Any]] = deque(maxlen=limit)\n\n    def add_interaction(self, user_input: str, plan: List[Dict[str, Any]], result: str):\n        \"\"\"Adds a complete interaction to history.\"\"\"\n        if not user_input or not plan or not result:\n            raise ValueError(\"All parameters must be provided\")\n        interaction = {\n            \"user_input\": str(user_input),\n            \"plan\": list(plan),\n            \"result\": str(result)\n        }\n        self.interactions.append(interaction)\n\n    def get_context(self) -> str:\n        \"\"\"Returns the current history formatted as a string for the LLM prompt.\"\"\"\n        if not self.interactions:\n            return \"Nenhum hist\u00f3rico recente.\"\n            \n        context_lines = []\n        for i, interaction in enumerate(self.interactions, 1):\n            context_lines.append(f\"[Intera\u00e7\u00e3o Anterior {i}]\")\n            context_lines.append(f\"-> Usu\u00e1rio: {interaction.get('user_input', '[entrada desconhecida]')}\")\n            tools_used = [step.get('tool', 'unknown') for step in interaction.get('plan', [])]\n            context_lines.append(f\"-> Ferramentas do Agente: {tools_used}\")\n            context_lines.append(f\"-> Resultado: {interaction.get('result', '[sem resultado]')}\\n\")\n        \n        return \"\\n\".join(context_lines).strip()\n\n    def clear(self):\n        \"\"\"Clears the history.\"\"\"\n        self.interactions.clear()\n\n# Global instance for easy access\nsession_memory = ShortTermMemory(limit=10)",
+        "id": "sug_1775265379",
+        "status": "pending",
+        "timestamp": "2026-04-03 22:16:19"
+    },
+    {
+        "title": "Arquivo Vazio Inicializador de M\u00f3dulos",
+        "description": "O arquivo __init__.py est\u00e1 completamente vazio, perdendo a oportunidade de definir exports expl\u00edcitos e documenta\u00e7\u00e3o do pacote. Isso pode causar confus\u00e3o na estrutura do projeto.",
+        "type": "refactor",
+        "file_path": "/home/diego/\u00c1rea de trabalho/Arkanis_V3.1/modules/__init__.py",
+        "proposed_code": "\"\"\"\nM\u00f3dulos principais do sistema Arkanis V3\n\nEste pacote cont\u00e9m todos os m\u00f3dulos principais do sistema:\n- core: Funcionalidades centrais do sistema\n- utils: Utilit\u00e1rios compartilhados\n- plugins: Sistema de plugins\n\nVers\u00e3o: 3.1.0\n\"\"\"\n\nfrom . import core\nfrom . import utils\nfrom . import plugins\n\n__all__ = ['core', 'utils', 'plugins']\n__version__ = '3.1.0'",
+        "id": "sug_1775265046",
+        "status": "pending",
+        "timestamp": "2026-04-03 22:10:46"
+    },
+    {
+        "title": "Introdu\u00e7\u00e3o do Modulo de Avalia\u00e7\u00e3o Estrat\u00e9gica",
+        "description": "Atualmente, o sistema opera em um ciclo b\u00e1sico de planejamento e execu\u00e7\u00e3o, mas carece de uma camada de avalia\u00e7\u00e3o estrat\u00e9gica que possa revisar e ajustar os objetivos em tempo real com base no desempenho atual e no contexto geral. Isso limita a autonomia e a precis\u00e3o do sistema, especialmente em ambientes din\u00e2micos. Introduzir um m\u00f3dulo de avalia\u00e7\u00e3o estrat\u00e9gica permitiria ao sistema recalibrar suas metas e estrat\u00e9gias com base em feedback cont\u00ednuo e m\u00e9tricas de desempenho.",
+        "type": "arch",
+        "priority": "high",
+        "files_involved": [
+            "core/goal_manager.py",
+            "core/task_engine.py",
+            "core/llm_router.py",
+            "core/model_strategy.py"
+        ],
+        "proposed_code": "# Nova classe StrategicEvaluator no core/strategic_evaluator.py\nclass StrategicEvaluator:\n    def __init__(self, goal_manager, task_engine):\n        self.goal_manager = goal_manager\n        self.task_engine = task_engine\n\n    def evaluate_strategy(self):\n        # Avalia o desempenho atual com base em m\u00e9tricas definidas\n        metrics = self.task_engine.get_performance_metrics()\n        # Revisa e ajusta objetivos com base na avalia\u00e7\u00e3o\n        adjusted_goals = self.goal_manager.adjust_goals_based_on_metrics(metrics)\n        # Recalcula estrat\u00e9gias para objetivos ajustados\n        self.task_engine.replan_tasks(adjusted_goals)",
+        "id": "arch_1775265044",
+        "status": "pending",
+        "timestamp": "2026-04-03 22:10:44"
+    },
+    {
+        "title": "Adicionar documenta\u00e7\u00e3o b\u00e1sica ao arquivo __init__.py",
+        "description": "O arquivo __init__.py est\u00e1 vazio. \u00c9 uma boa pr\u00e1tica adicionar pelo menos uma docstring b\u00e1sica para documentar o prop\u00f3sito do m\u00f3dulo e informa\u00e7\u00f5es importantes sobre o pacote.",
+        "type": "feature",
+        "file_path": "/home/diego/\u00c1rea de trabalho/Arkanis_V3.1/__init__.py",
+        "proposed_code": "\"\"\"Arkanis V3.1 - Sistema Operacional\n\nEste pacote cont\u00e9m as principais fun\u00e7\u00f5es e m\u00f3dulos do sistema operacional Arkanis V3.1.\n\nVers\u00e3o: 3.1\nAutor: Diego\n\"\"\"",
+        "id": "sug_1775264737",
+        "status": "pending",
+        "timestamp": "2026-04-03 22:05:37"
+    },
+    {
         "title": "Improve Error Handling and Logging in the Arkanis V3 Main Script",
         "description": "The current error handling in the Arkanis V3 main script is quite basic, only printing the error message and exiting the program. To improve the overall robustness and debuggability of the system, we can implement a more comprehensive error handling and logging mechanism. This will help provide more useful information when the system encounters an error, making it easier to diagnose and fix issues.",
         "type": "refactor",

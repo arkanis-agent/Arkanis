@@ -267,6 +267,12 @@ async def get_chat_history():
         })
     return {"history": history}
 
+@app.get("/memory/long-term")
+async def get_long_term_memory():
+    """Returns the persistent neural memory vault data."""
+    from modules.memory.long_term import long_term_memory
+    return {"memory": long_term_memory.data}
+
 @app.post("/strategy/toggle")
 async def toggle_strategy(request: StrategyToggleRequest):
     """Enable or disable Auto Model Strategy."""
