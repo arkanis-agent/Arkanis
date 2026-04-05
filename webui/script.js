@@ -3955,33 +3955,37 @@ async function loadEvolutionLogs() {
     }
 }
 
-async function updateEvolutionConfig() {
+async function updateEvolutionConfig(btn) {
     const input = document.getElementById('evolutionIntervalInput');
     if (!input) return;
     const mins = parseInt(input.value);
     if (isNaN(mins) || mins < 1) {
-        alert('Por favor, insira um intervalo válido (mínimo 1 minuto).');
+        showToast('Por favor, insira um intervalo válido (mínimo 1 minuto).', 'rose');
         return;
     }
     
-    const btn = event.currentTarget;
     const oldIcon = btn.innerHTML;
+    btn.disabled = true;
     btn.innerHTML = '<span class="material-symbols-outlined text-sm animate-spin">sync</span>';
     
     try {
-        // We'll create this POST endpoint in server.py
         const response = await fetch('/config/evolution', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ interval_seconds: mins * 60, enabled: true })
         });
         if (response.ok) {
-            btn.innerHTML = '<span class="material-symbols-outlined text-sm text-emerald-400">check</span>';
-            setTimeout(() => btn.innerHTML = oldIcon, 2000);
+            btn.innerHTML = '<span class="material-symbols-outlined text-sm text-emerald-400">check_circle</span>';
+            showToast(`✅ Intervalo salvo: ${mins} minutos!`, 'emerald');
+            setTimeout(() => { btn.innerHTML = oldIcon; btn.disabled = false; }, 2500);
+        } else {
+            throw new Error('Server error: ' + response.status);
         }
     } catch (e) {
         console.error('Failed to update evolution config', e);
-        btn.innerHTML = oldIcon;
+        btn.innerHTML = '<span class="material-symbols-outlined text-sm text-rose-400">error</span>';
+        showToast('Erro ao salvar configuração.', 'rose');
+        setTimeout(() => { btn.innerHTML = oldIcon; btn.disabled = false; }, 2500);
     }
 }
 

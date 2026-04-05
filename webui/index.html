@@ -1127,7 +1127,7 @@
                                     <span class="text-[9px] font-black text-slate-500 uppercase tracking-widest">Intervalo</span>
                                     <input type="number" id="evolutionIntervalInput" value="30" class="w-12 bg-black/40 border border-white/10 rounded text-[10px] text-blue-400 font-bold px-1 text-center focus:outline-none focus:border-blue-500/50">
                                     <span class="text-[9px] font-bold text-slate-600 uppercase tracking-widest">min</span>
-                                    <button onclick="updateEvolutionConfig()" class="text-blue-400 hover:text-blue-300 transition-colors">
+                                    <button onclick="updateEvolutionConfig(this)" class="text-blue-400 hover:text-blue-300 transition-colors">
                                         <span class="material-symbols-outlined text-sm">save</span>
                                     </button>
                                 </div>
@@ -1211,6 +1211,26 @@
 
                     <!-- Evolution Logs Section -->
                     <div class="mt-20 pt-10 border-t border-white/5 space-y-6">
+                        <!-- Live Evolution Status Banner -->
+                        <div id="evolutionActiveBanner" class="hidden items-center gap-4 bg-emerald-500/10 border border-emerald-500/30 rounded-2xl p-4 animate-pulse">
+                            <span class="material-symbols-outlined text-emerald-400 text-2xl">auto_fix_high</span>
+                            <div class="flex-1">
+                                <p class="text-[10px] font-black text-emerald-400 uppercase tracking-widest">APLICANDO AGORA</p>
+                                <p id="evolutionActiveTitle" class="text-sm font-bold text-white mt-0.5">Carregando...</p>
+                            </div>
+                            <div class="text-right">
+                                <p class="text-[9px] text-slate-500 uppercase tracking-widest">Passo</p>
+                                <p id="evolutionActiveStep" class="text-lg font-black text-emerald-400">-/-</p>
+                            </div>
+                        </div>
+
+                        <!-- Next Run Countdown -->
+                        <div id="evolutionNextRunBanner" class="flex items-center gap-3 bg-white/5 border border-white/5 rounded-xl p-3 px-4">
+                            <span class="material-symbols-outlined text-slate-500 text-sm">schedule</span>
+                            <p class="text-[10px] text-slate-500 flex-1">Próximo ciclo de evolução automática em: <span id="evolutionCountdown" class="text-blue-400 font-bold">--:--</span></p>
+                            <span id="evolutionIntervalBadge" class="text-[9px] font-black text-slate-600 uppercase tracking-widest"></span>
+                        </div>
+
                         <div class="flex items-center justify-between">
                             <h3 class="text-[11px] font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2">
                                 <span class="material-symbols-outlined text-sm">history_edu</span> Logs de Evolução Autônoma

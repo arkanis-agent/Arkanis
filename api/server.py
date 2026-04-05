@@ -758,6 +758,37 @@ async def update_evolution_config(config: Dict[str, Any]):
     logger.info(f"Evolution config updated: {current}")
     return {"status": "success", "config": current}
 
+# Global evolution state tracker (written by the worker, read by the API)
+evolution_state = {
+    "active": False,
+    "current_step": 0,
+    "total_steps": 0,
+    "current_title": None,
+    "current_id": None,
+    "next_run_at": None,
+    "interval_seconds": 1800,
+}
+
+@app.get("/evolution/state")
+async def get_evolution_state():
+    """Return the live state of the autonomous evolution worker."""
+    state = dict(evolution_state)
+    if state.get("next_run_at"):
+        import time as _time
+        remaining = max(0, int(state["next_run_at"] - _time.time()))
+        state["next_run_in_seconds"] = remaining
+        state["next_run_in_minutes"] = round(remaining / 60, 1)
+    return state
+
+@app.get("/config/evolution")
+async def get_evolution_config():
+    """Return the current evolution config."""
+    config_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "config", "evolution.json")
+    if os.path.exists(config_path):
+        with open(config_path, "r") as f:
+            return {"config": json.load(f)}
+    return {"config": {"enabled": True, "interval_seconds": 1800, "limit_per_cycle": 3}}
+
 def start_evolution_worker():
     """Background worker that periodically triggers autonomous evolution."""
     config_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "config", "evolution.json")
@@ -778,19 +809,33 @@ def start_evolution_worker():
                         interval = conf.get("interval_seconds", 1800)
                         limit = conf.get("limit_per_cycle", 3)
                         
+                        # Update global state: cycle starting
+                        evolution_state["active"] = True
+                        evolution_state["interval_seconds"] = interval
+                        evolution_state["current_title"] = "Iniciando ciclo de evolução..."
+                        evolution_state["current_step"] = 0
+                        evolution_state["total_steps"] = limit
+                        
                         logger.info(f"Worker: Starting autonomous evolution cycle (limit={limit})...")
-                        # Run the script as a subprocess to ensure it's isolated
                         subprocess.run([sys.executable, script_path, "--limit", str(limit)], check=False)
                         
+                        # Update global state: done, schedule next
+                        evolution_state["active"] = False
+                        evolution_state["current_title"] = None
+                        evolution_state["next_run_at"] = time.time() + interval
+                        evolution_state["interval_seconds"] = interval
+
                         logger.info(f"Worker: Cycle complete. Sleeping for {interval}s")
                         time.sleep(interval)
                     else:
-                        time.sleep(60) # Check config again in a minute
+                        evolution_state["active"] = False
+                        time.sleep(60)
                 else:
                     time.sleep(60)
             except Exception as e:
                 logger.error(f"Evolution Worker Error: {e}")
-                time.sleep(300) # Wait 5m on error
+                evolution_state["active"] = False
+                time.sleep(300)
                 
     threading.Thread(target=worker_loop, daemon=True, name="ArkanisEvolution").start()
 
