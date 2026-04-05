@@ -1168,7 +1168,8 @@ function setActivePanel(panelId) {
         'arsenal': { el: document.getElementById('arsenalPanel'), nav: navArsenal, showFooter: false },
         'nerveFusion': { el: document.getElementById('nerveFusionPanel'), nav: navLogs, showFooter: false },
         'devCenter': { el: document.getElementById('devCenterPanel'), nav: navDevCenter, showFooter: false },
-        'providers': { el: document.getElementById('providersPanel'), nav: navProviders, showFooter: false }
+        'providers': { el: document.getElementById('providersPanel'), nav: navProviders, showFooter: false },
+        'integrations': { el: document.getElementById('integrationsPanel'), nav: document.getElementById('topNavIntegrations'), showFooter: false }
     };
 
     // Reset all panels and nav items
