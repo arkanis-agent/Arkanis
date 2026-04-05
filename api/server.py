@@ -781,7 +781,7 @@ async def get_evolution_state():
     return state
 
 @app.get("/config/evolution")
-async def get_evolution_config():
+async def read_evolution_config():
     """Return the current evolution config."""
     config_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "config", "evolution.json")
     if os.path.exists(config_path):

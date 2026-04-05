@@ -3989,10 +3989,70 @@ async function updateEvolutionConfig(btn) {
     }
 }
 
-// Auto-refresh logs if Dev Center is open
+// --- Evolution State Live Polling ---
+async function pollEvolutionState() {
+    try {
+        const r = await fetch('/evolution/state');
+        const state = await r.json();
+        
+        const banner = document.getElementById('evolutionActiveBanner');
+        const titleEl = document.getElementById('evolutionActiveTitle');
+        const stepEl = document.getElementById('evolutionActiveStep');
+        const countdown = document.getElementById('evolutionCountdown');
+        const badge = document.getElementById('evolutionIntervalBadge');
+        
+        if (!banner) return;
+        
+        if (state.active) {
+            banner.classList.remove('hidden');
+            banner.classList.add('flex');
+            if (titleEl) titleEl.textContent = state.current_title || 'Processando...';
+            if (stepEl && state.total_steps > 0) {
+                stepEl.textContent = `${state.current_step}/${state.total_steps}`;
+            }
+        } else {
+            banner.classList.add('hidden');
+            banner.classList.remove('flex');
+        }
+        
+        // Update countdown
+        if (state.next_run_in_seconds !== undefined && countdown) {
+            const mins = Math.floor(state.next_run_in_seconds / 60);
+            const secs = state.next_run_in_seconds % 60;
+            countdown.textContent = `${mins}m ${String(secs).padStart(2, '0')}s`;
+        } else if (state.active && countdown) {
+            countdown.textContent = 'Em progresso...';
+        }
+        
+        // Update badge with configured interval
+        if (badge && state.interval_seconds) {
+            const intervalMins = Math.round(state.interval_seconds / 60);
+            badge.textContent = `Ciclo: ${intervalMins}min`;
+        }
+    } catch (e) { /* silent */ }
+}
+
+async function loadEvolutionConfig() {
+    try {
+        const r = await fetch('/config/evolution');
+        const data = await r.json();
+        const conf = data.config || {};
+        const input = document.getElementById('evolutionIntervalInput');
+        if (input && conf.interval_seconds) {
+            input.value = Math.round(conf.interval_seconds / 60);
+        }
+    } catch (e) { /* silent */ }
+}
+
+// Auto-refresh logs and state if Dev Center is open
 setInterval(() => {
     if (devCenterPanel && !devCenterPanel.classList.contains('hidden')) {
         loadEvolutionLogs();
         loadSuggestions();
     }
-}, 30000); // 30s
+}, 30000); // 30s for logs
+
+// Poll evolution state every 5 seconds (always, lightweight)
+setInterval(pollEvolutionState, 5000);
+pollEvolutionState(); // initial call
+loadEvolutionConfig(); // pre-fill interval input on page load
