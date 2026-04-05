@@ -1,7 +1,5 @@
 import os
 import sys
-import requests
-import json
 from pathlib import Path
 
 # Add project root to sys.path
@@ -18,7 +16,8 @@ def test_config():
     print("--- 1. Configuration Check ---")
     or_key = os.getenv("OPENROUTER_API_KEY")
     if or_key:
-        print(f"[OK] OPENROUTER_API_KEY found in .env: {or_key[:10]}...{or_key[-5:]}")
+        masked = f"{or_key[:10]}...{or_key[-5:]}" if len(or_key) > 15 else "****"
+        print(f"[OK] OPENROUTER_API_KEY found in .env: {masked}")
     else:
         print("[WARNING] OPENROUTER_API_KEY not found in .env")
 
@@ -29,42 +28,62 @@ def test_config():
 
 def test_providers():
     print("--- 2. Provider Health Check ---")
-    config = config_manager.load_config()
+    failed_providers = []
+    try:
+        config = config_manager.load_config()
+    except Exception as e:
+        print(f"[ERROR] Failed to load configuration: {e}")
+        print("")
+        return False
+
     providers = config.get("providers", {})
-    
     for pid, pcfg in providers.items():
         if not pcfg.get("enabled", False):
             continue
-            
-        ready = config_manager.is_provider_ready(pid, config)
-        health = router.check_provider_health(pid)
-        
-        status = "[OK]" if (ready and health) else "[FAIL]"
-        print(f"{status} {pid.upper()}: Ready={ready}, Healthy={health}")
-        if not health and pid == "ollama":
-            print(f"      (Ollama endpoint {pcfg.get('endpoint')} not reachable)")
-            print(f"      👉 SUGGESTION: Run 'bash scripts/ensure_ollama.sh' to start the service.")
+        try:
+            ready = config_manager.is_provider_ready(pid, config)
+            health = router.check_provider_health(pid)
+            status = "[OK]" if (ready and health) else "[FAIL]"
+            print(f"{status} {pid.upper()}: Ready={ready}, Healthy={health}")
+            if not health and pid == "ollama":
+                print(f"      (Ollama endpoint {pcfg.get('endpoint')} not reachable)")
+                print(f"      👉 SUGGESTION: Run 'bash scripts/ensure_ollama.sh' to start the service.")
+            if status == "[FAIL]":
+                failed_providers.append(pid)
+        except Exception as e:
+            print(f"[ERROR] Exception checking provider {pid.upper()}: {e}")
+            failed_providers.append(pid)
     print("")
+    return len(failed_providers) == 0
 
 def test_generation():
     print("--- 3. Generation Test ---")
     system_prompt = "You are a helpful assistant."
     user_prompt = "Hello! Please respond with a single word: SUCCESS."
-    
+
     print(f"Testing generation with: {router.active_model}...")
     try:
         result = router.generate(system_prompt, user_prompt)
-        if "[Error LLM]" in result:
-            print(f"[FAIL] Generation failed: {result}")
+        if result is None or (isinstance(result, str) and "[Error LLM]" in result):
+            print(f"[FAIL] Generation failed or returned empty/error: {result}")
+            return False
         else:
-            print(f"[OK] Response: {result}")
+            print(f"[OK] Response: {result.strip()}")
+            return True
     except Exception as e:
         print(f"[ERROR] Exception during generation: {str(e)}")
-    print("")
+        return False
 
 if __name__ == "__main__":
     print("ARKANIS V3 - LLM PIPELINE DIAGNOSTIC\n")
     test_config()
-    test_providers()
-    test_generation()
+    providers_ok = test_providers()
+    gen_ok = test_generation()
+
     print("Diagnostic Complete.")
+    if providers_ok and gen_ok:
+        print("[SUCCESS] All checks passed.")
+        sys.exit(0)
+    else:
+        print("[FAILURE] One or more checks failed.")
+        sys.exit(1)
