@@ -1,39 +1,38 @@
 """
 ARKANIS V3.1 - Autonomous Intelligence System
-Copyright (c) 2026 Arkanis Dev Team.
+Core system package initialization and exports.
 
-Core Package Structure:
-- StrategicPlanner: Handles long-term goal planning
-- TaskExecutor: Manages task execution pipeline
-- DecisionAuditor: Validates and audits all system decisions
+Copyright (c) 2026 Arkanis Dev Team. All Rights Reserved.
 
-Architecture:
-- Event-driven core with modular components
-- Real-time decision validation layer
-- Self-improving knowledge graph backend
+Core Components:
+- StrategicPlanner: Handles long-term goal planning and strategy formulation
+- TaskExecutor: Manages task execution pipeline with priority queuing
+- DecisionAuditor: Validates and audits all system decisions in real-time
+
+Architecture Overview:
+- Event-driven core with modular, pluggable components
+- Multi-layer decision validation system
+- Self-improving knowledge graph backend with continuous learning
+- Real-time performance monitoring and self-optimization
+
+Usage Example:
+    from arkanis_v3 import StrategicPlanner, TaskExecutor
+    planner = StrategicPlanner()
+    executor = TaskExecutor()
 """
 
-import importlib
-import sys
-from typing import TYPE_CHECKING
-
-__version__ = "3.1.0"
+__version__ = "3.1.0"  # Semantic versioning (MAJOR.MINOR.PATCH)
 __author__ = "Arkanis AI"
 __license__ = "Proprietary"
 __status__ = "Development"
 
-if TYPE_CHECKING:
-    from .StrategicPlanner import StrategicPlanner
-    from .TaskExecutor import TaskExecutor
-    from .DecisionAuditor import DecisionAuditor
+# Core component imports - maintain alphabetical order
+from .DecisionAuditor import DecisionAuditor
+from .StrategicPlanner import StrategicPlanner
+from .TaskExecutor import TaskExecutor
 
-__all__ = ["StrategicPlanner", "TaskExecutor", "DecisionAuditor"]
-
-def __getattr__(name: str):
-    if name in __all__:
-        mod = importlib.import_module(f".{name}", __package__)
-        attr = getattr(mod, name)
-        globals()[name] = attr
-        sys.modules[f"{__name__}.{name}"] = mod
-        return attr
-    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+__all__ = [
+    'DecisionAuditor',
+    'StrategicPlanner',
+    'TaskExecutor'
+]  # Maintain alphabetical order for consistency
