@@ -1,10 +1,13 @@
 import os
 import sys
+import json
 import anyio
 import logging
 from typing import Dict, Any, Optional, List
 from fastapi import FastAPI, HTTPException, Request, WebSocket, WebSocketDisconnect
 from api.terminal_manager import TerminalManager
+
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 # Load .env before any module imports so singletons (router, config_manager) pick up env vars
 _env_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), ".env")
@@ -40,6 +43,36 @@ import concurrent.futures
 
 logger = logging.getLogger("uvicorn")
 app = FastAPI(title="ARKANIS V3 API")
+
+def _get_all_suggestions_directly():
+    """Helper to read suggestions from disk without agent instance."""
+    path = os.path.join(PROJECT_ROOT, "data", "suggestions.json")
+    try:
+        if os.path.exists(path):
+            with open(path, "r", encoding="utf-8") as f:
+                return json.load(f)
+    except Exception as e:
+        logger.error(f"Error reading suggestions directly: {e}")
+    return []
+
+def _update_suggestion_status_directly(sug_id: str, new_status: str):
+    """Helper to update suggestion status on disk without agent instance."""
+    suggestions = _get_all_suggestions_directly()
+    found = False
+    for s in suggestions:
+        if s.get("id") == sug_id:
+            s["status"] = new_status
+            found = True
+            break
+    if found:
+        path = os.path.join(PROJECT_ROOT, "data", "suggestions.json")
+        try:
+            with open(path, "w", encoding="utf-8") as f:
+                json.dump(suggestions, f, indent=4)
+            return True
+        except Exception as e:
+            logger.error(f"Error saving updated suggestions: {e}")
+    return False
 
 # Dedicated executor for long-running agent tasks.
 # This prevents blocking Uvicorn's internal threadpool that handles polling.
@@ -708,12 +741,22 @@ async def get_history_timeline():
 async def get_suggestions(filter: str = "pending"):
     """Fetch system improvements with stats."""
     agent_instance = agent_bus.get_agent("dev_agent") or agent_bus.get_agent("architect_agent")
-    if not agent_instance:
-        return {"suggestions": [], "stats": {"pending": 0, "applied": 0, "rejected": 0, "total": 0}}
-        
-    suggestions = agent_instance.get_suggestions()
     
-    # Calculate stats
+    if agent_instance:
+        suggestions = agent_instance.get_suggestions()
+    else:
+        # Fallback: read directly from disk if agent is not registered in the bus
+        path = os.path.join(PROJECT_ROOT, "data", "suggestions.json")
+        try:
+            if os.path.exists(path):
+                with open(path, "r", encoding="utf-8") as f:
+                    suggestions = json.load(f)
+            else:
+                suggestions = []
+        except Exception:
+            suggestions = []
+        
+    # Calculate stats (always correct global stats)
     stats = {
         "pending": len([s for s in suggestions if s.get("status") == "pending"]),
         "applied": len([s for s in suggestions if s.get("status") == "applied"]),
@@ -722,7 +765,12 @@ async def get_suggestions(filter: str = "pending"):
     }
     
     # Filter
-    filtered = [s for s in suggestions if s.get("status") == filter]
+    if filter == "all":
+        # Limit to 100 recent ones if 'all' to avoid massive payload
+        filtered = suggestions[-100:] if len(suggestions) > 100 else suggestions
+    else:
+        filtered = [s for s in suggestions if s.get("status") == filter]
+        
     return {"suggestions": filtered, "stats": stats}
 
 @app.get("/logs/evolution")
@@ -843,8 +891,18 @@ def start_evolution_worker():
 @app.on_event("startup")
 async def startup_event():
     logger.info("ARKANIS V3: System starting up...")
+    
+    # 1. Start Autonomous Evolution Worker
     start_evolution_worker()
-
+    
+    # 2. Start Telegram (if enabled)
+    if os.environ.get("AUTOSTART_TELEGRAM", "false").lower() == "true":
+        threading.Thread(target=start_telegram, daemon=True).start()
+    else:
+        logger.info("Nerve: Telegram daemon thread desativado por padrão (use AUTOSTART_TELEGRAM=true para ligar no server).")
+    
+    # 3. Start Visual Nervous System (Watcher)
+    arkanis_watcher.start()
 
 # --- Multi-Channel Background Services ---
 def start_telegram():
@@ -857,24 +915,6 @@ def start_telegram():
         except Exception as e:
             agent.log(f"Failed to start Telegram service: {e}", "error")
 
-@app.on_event("startup")
-async def startup_event():
-    # Start Telegram in a daemon thread ONLY if explicitly enabled to prevent conflicts with main.py --telegram
-    if os.environ.get("AUTOSTART_TELEGRAM", "false").lower() == "true":
-        threading.Thread(target=start_telegram, daemon=True).start()
-    else:
-        logger.info("Nerve: Telegram daemon thread desativado por padrão (use AUTOSTART_TELEGRAM=true para ligar no server).")
-    
-    # ARKANIS V4 ALPHA: Start the Visual Nervous System (Watcher)
-    arkanis_watcher.start()
-
-@app.get("/suggestions")
-async def get_dev_suggestions():
-    """Retrieve all suggestions generated by the DevAgent."""
-    agent_instance = agent_bus.get_agent("dev_agent")
-    if not agent_instance:
-        return {"suggestions": []}
-    return {"suggestions": agent_instance.get_suggestions()}
 
 @app.post("/suggestions/{sug_id}/action")
 async def handle_suggestion_action(sug_id: str, req: SuggestionActionRequest):
@@ -883,19 +923,25 @@ async def handle_suggestion_action(sug_id: str, req: SuggestionActionRequest):
     # Find in either dev_agent or architect_agent (they share the file)
     agent_instance = agent_bus.get_agent("architect_agent") or agent_bus.get_agent("dev_agent")
     
-    if not agent_instance:
-        raise HTTPException(status_code=404, detail="Nenhum agente de desenvolvimento ativo.")
-    
     if action not in ["approve", "reject"]:
         raise HTTPException(status_code=400, detail="Ação inválida. Use 'approve' ou 'reject'.")
     
     # 1. Update status in JSON
-    final_status = "approved" if action == "approve" else "rejected"
-    agent_instance.update_suggestion_status(sug_id, final_status)
+    final_status = "applied" if action == "approve" else "rejected"
+    
+    if agent_instance:
+        agent_instance.update_suggestion_status(sug_id, final_status)
+    else:
+        # Robust fallback
+        _update_suggestion_status_directly(sug_id, final_status)
     
     # 2. If approved, APPLY the code
     if action == "approve":
-        suggestions = agent_instance.get_suggestions()
+        if agent_instance:
+            suggestions = agent_instance.get_suggestions()
+        else:
+            suggestions = _get_all_suggestions_directly()
+            
         target = next((s for s in suggestions if s["id"] == sug_id), None)
         if target and target.get("proposed_code") and target.get("file_path"):
             from tools.registry import registry
@@ -904,7 +950,10 @@ async def handle_suggestion_action(sug_id: str, req: SuggestionActionRequest):
                 result = tool.execute(path=target["file_path"], content=target["proposed_code"])
                 logger.info(f"Suggestion {sug_id} applied: {result}")
                 # Optional: update status to 'applied'
-                agent_instance.update_suggestion_status(sug_id, "applied")
+                if agent_instance:
+                    agent_instance.update_suggestion_status(sug_id, "applied")
+                else:
+                    _update_suggestion_status_directly(sug_id, "applied")
     
     return {"status": "success", "suggestion_id": sug_id, "new_status": action}
 

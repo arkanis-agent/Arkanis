@@ -3156,7 +3156,7 @@ async function loadAuditInsights() {
     const container = document.getElementById('sysLogCriticalEvents');
     if (!container) return;
     try {
-        const response = await fetch('/suggestions');
+        const response = await fetch('/suggestions?filter=all');
         const data = await response.json();
         const suggestions = data.suggestions || [];
         const applied = suggestions.filter(s => s.status !== 'pending').slice(0, 50);
@@ -3277,32 +3277,32 @@ loadChatHistory();
 async function loadSuggestions() {
     if (!suggestionsGrid) return;
     try {
-        const response = await fetch('/suggestions');
+        const filter = window.currentSuggestionFilter || 'pending';
+        const response = await fetch(`/suggestions?filter=${filter}`);
         const data = await response.json();
-        renderSuggestions(data.suggestions || []);
+        renderSuggestions(data.suggestions || [], data.stats || {});
     } catch (e) {
         console.error('Failed to load suggestions', e);
     }
 }
 
-function renderSuggestions(suggestions) {
+function renderSuggestions(suggestions, stats = {}) {
     if (!suggestionsGrid) return;
     
     // Update 'Melhorias' counter in Hero
     const totalImp = document.getElementById('devTotalImprovements');
-    if (totalImp) {
-        totalImp.textContent = suggestions.filter(s => s.status === 'applied').length;
+    if (totalImp && stats.applied !== undefined) {
+        totalImp.textContent = stats.applied;
     }
 
-    // Apply Filter logic
-    const filterState = window.currentSuggestionFilter || 'pending';
-    const filtered = suggestions.filter(s => s.status === filterState);
+    // Suggestions are already filtered by the backend
+    const filtered = suggestions;
     
-    // Update counter badges
+    // Update counter badges using global stats
     ['pending', 'applied', 'rejected'].forEach(f => {
         const span = document.getElementById(`count${f.charAt(0).toUpperCase() + f.slice(1)}`);
-        if (span) {
-            span.textContent = suggestions.filter(s => s.status === f).length;
+        if (span && stats[f] !== undefined) {
+            span.textContent = stats[f];
         }
     });
 
