@@ -84,15 +84,15 @@ class LLMRouter:
                 if config_manager.is_provider_ready(m["provider"], config):
                     self.active_model = model_id
                     self.active_provider = m["provider"]
-                    # Update active tier identification
                     tier = "UNKNOWN"
-                    if m["provider"] in ["ollama", "lm_studio", "vllm"] or ":free" in model_id.lower():
+                    # Prioritize explicit cloud tier mappings before falling back to :free string match
+                    for t_name, m_list in strategy_engine.CLOUD_TIERS.items():
+                        if model_id in m_list:
+                            tier = t_name
+                            break
+                    
+                    if tier == "UNKNOWN" and (m["provider"] in ["ollama", "lm_studio", "vllm"] or ":free" in model_id.lower()):
                         tier = "FREE"
-                    else:
-                        for t_name, m_list in strategy_engine.CLOUD_TIERS.items():
-                            if model_id in m_list:
-                                tier = t_name
-                                break
                     
                     self.active_tier = tier
                     logger.info(f"Roteador: Modelo definido para {model_id} (Tier: {tier})")

@@ -3295,7 +3295,22 @@ function renderSuggestions(suggestions) {
     }
 
     // Apply Filter logic
-                </div>
+    const filterState = window.currentSuggestionFilter || 'pending';
+    const filtered = suggestions.filter(s => s.status === filterState);
+    
+    // Update counter badges
+    ['pending', 'applied', 'rejected'].forEach(f => {
+        const span = document.getElementById(`count${f.charAt(0).toUpperCase() + f.slice(1)}`);
+        if (span) {
+            span.textContent = suggestions.filter(s => s.status === f).length;
+        }
+    });
+
+    if (filtered.length === 0) {
+        suggestionsGrid.innerHTML = `
+            <div class="col-span-full py-20 text-center text-slate-600 italic flex flex-col items-center gap-4">
+                <span class="material-symbols-outlined text-3xl opacity-20">inventory_2</span>
+                Nenhuma sugestão encontrada nesta categoria.
             </div>
         `;
         return;
