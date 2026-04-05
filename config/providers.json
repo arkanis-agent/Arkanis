@@ -238,6 +238,12 @@
       "name": "Qwen 2.5 Coder 7B (Ollama)",
       "provider": "ollama",
       "enabled": true
+    },
+    {
+      "id": "qwen/qwen3.6-plus:free",
+      "name": "Qwen 3.6 Plus (Elite Coding)",
+      "provider": "openrouter",
+      "enabled": true
     }
   ]
 }

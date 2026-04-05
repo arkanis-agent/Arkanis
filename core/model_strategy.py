@@ -74,7 +74,8 @@ class ModelStrategy:
                 "openai/o1-mini",
                 "openai/o3-mini",
                 "x-ai/grok-2",
-                "google/gemini-2.0-pro-exp"
+                "google/gemini-2.0-pro-exp",
+                "qwen/qwen3.6-plus:free"
             ]
         }
 
