@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import argparse
 import sys
 import os
 import threading
@@ -14,7 +15,8 @@ def load_env_safely():
     env_path = os.path.join(PROJECT_ROOT, ".env")
     if not os.path.exists(env_path):
         return
-    with open(env_path, "r") as f:
+    
+    with open(env_path, "r", encoding="utf-8") as f:
         for line_num, line in enumerate(f, 1):
             line = line.strip()
             if not line or line.startswith("#"):
@@ -22,44 +24,63 @@ def load_env_safely():
             if "=" not in line:
                 print(f"[WARNING] Skipping malformed .env line {line_num}: {line}")
                 continue
+                
             key, val = line.split("=", 1)
             key = key.strip()
-            val = val.strip()
             if not key.isidentifier():
                 print(f"[WARNING] Skipping invalid key at line {line_num}: {key}")
                 continue
-            if "$(" in val or "\`" in val:
+                
+            val = val.strip()
+            # Remove aspas duplas ou simples circundantes corretamente
+            if len(val) >= 2 and ((val.startswith('"') and val.endswith('"')) or (val.startswith("'") and val.endswith("'"))):
+                val = val[1:-1]
+                
+            # Checagem de segurança para execução de comandos
+            if "$" in val or "`" in val:
                 print(f"[WARNING] Skipping potentially unsafe .env line {line_num}")
                 continue
+                
             os.environ[key] = val
 
 load_env_safely()
 
 def main():
+    parser = argparse.ArgumentParser(description="Arkanis V3 - AI Agent Orchestrator")
+    parser.add_argument(
+        "mode", 
+        nargs="?", 
+        default="web", 
+        choices=["web", "telegram", "cli"],
+        help="Interface de execução: web (padrão) para API/Frontend, telegram, ou cli"
+    )
+    
     try:
+        args = parser.parse_args()
+        mode = args.mode
+        
         from kernel.planner import Planner
         from kernel.executor import Executor
         from kernel.agent import ArkanisAgent
 
+        print("\n[Boot] Initializing System Core...")
         planner = Planner()
         executor = Executor()
         agent = ArkanisAgent(planner=planner, executor=executor)
 
-        arg = sys.argv[1].lower() if len(sys.argv) > 1 else ""
-
-        if arg == "--telegram":
+        if mode == "telegram":
             from interfaces.telegram import TelegramInterface
-            print("\n[Boot] Initializing Telegram Interface...")
+            print("[Boot] Initializing Telegram Interface...")
             ui = TelegramInterface(agent)
             ui.start_loop()
-        elif arg == "--cli":
+        elif mode == "cli":
             from interfaces.cli import ArkanisCLI
-            print("\n[Boot] Initializing Standard CLI...")
+            print("[Boot] Initializing Standard CLI...")
             ui = ArkanisCLI(agent)
             ui.start_loop()
         else:
             import api.server as api_server
-            print("\n[Boot] Initializing Web Interface (FastAPI)...")
+            print("[Boot] Initializing Web Interface (FastAPI)...")
             print("[INFO] Access ARKANIS at: http://127.0.0.1:8000")
 
             def open_browser():
