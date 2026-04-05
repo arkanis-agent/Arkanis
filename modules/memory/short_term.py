@@ -1,5 +1,6 @@
 from typing import List, Dict, Any, Optional
-from datetime import datetime
+from datetime import datetime, timezone
+from collections import deque
 
 class ShortTermMemory:
     """
@@ -8,19 +9,18 @@ class ShortTermMemory:
     """
     def __init__(self, limit: int = 15):
         self.limit = limit
-        self.interactions: List[Dict[str, Any]] = []
+        # deque com maxlen garante O(1) e descarta automaticamente o item mais antigo
+        self.interactions = deque(maxlen=limit)
 
     def add_interaction(self, user_input: str, plan: Optional[List[Dict[str, Any]]], result: str):
         """Adds a complete interaction to history with timestamp."""
-        now = datetime.now()
+        now = datetime.now(timezone.utc)
         self.interactions.append({
             "timestamp": now.strftime("%H:%M:%S"),
             "user_input": user_input,
-            "plan": plan if plan else [],
+            "plan": plan or [],
             "result": result
         })
-        if len(self.interactions) > self.limit:
-            self.interactions.pop(0)
 
     def get_context(self) -> str:
         """Returns the current history formatted as a temporal string for the LLM prompt."""
@@ -47,7 +47,7 @@ class ShortTermMemory:
 
     def clear(self):
         """Clears the session history."""
-        self.interactions = []
+        self.interactions.clear()
 
 # Global instance for easy access
 session_memory = ShortTermMemory(limit=15)
