@@ -3295,27 +3295,6 @@ function renderSuggestions(suggestions) {
     }
 
     // Apply Filter logic
-    let filtered = suggestions;
-    if (currentSuggestionFilter === 'pending') {
-        filtered = suggestions.filter(s => s.status === 'pending');
-    } else if (currentSuggestionFilter === 'applied') {
-        filtered = suggestions.filter(s => s.status === 'applied' || s.status === 'approved');
-    } else if (currentSuggestionFilter === 'rejected') {
-        filtered = suggestions.filter(s => s.status === 'rejected');
-    }
-    
-    if (filtered.length === 0) {
-        const emptyMsg = {
-            'pending': 'Nenhum ponto crítico detectado. O Arkanis está operando em conformidade total de elite.',
-            'applied': 'Nenhuma melhoria aplicada ainda. Comece a evoluir o sistema hoje!',
-            'rejected': 'Nenhuma sugestão foi descartada. O Maestro aprova sua visão.'
-        };
-        suggestionsGrid.innerHTML = `
-            <div class="col-span-full py-32 text-center text-slate-600 italic flex flex-col items-center gap-6 animate-pulse">
-                <span class="material-symbols-outlined text-6xl opacity-10">smart_toy</span>
-                <div class="max-w-xs">
-                    <p class="text-sm font-bold uppercase tracking-widest text-slate-500 mb-1">Câmara Silenciosa</p>
-                    <p class="text-[11px] opacity-60">${emptyMsg[currentSuggestionFilter] || 'Sem dados nesta categoria.'}</p>
                 </div>
             </div>
         `;
@@ -3904,3 +3883,64 @@ document.addEventListener('paste', (e) => {
         }
     }
 });
+
+// --- 6. Evolution Helper Functions ---
+function updateBadge(id, count) {
+    const badge = document.getElementById(id);
+    if (badge) {
+        badge.textContent = count !== undefined ? count : '0';
+        badge.classList.toggle('bg-blue-500/40', count > 0);
+        badge.classList.toggle('opacity-30', count === 0);
+    }
+}
+
+async function loadEvolutionLogs() {
+    const container = document.getElementById('evolutionLogContent');
+    if (!container) return;
+    try {
+        const response = await fetch('/logs/evolution');
+        const data = await response.json();
+        container.textContent = data.content;
+        container.scrollTop = container.scrollHeight;
+    } catch (e) {
+        console.warn('Failed to load evolution logs', e);
+    }
+}
+
+async function updateEvolutionConfig() {
+    const input = document.getElementById('evolutionIntervalInput');
+    if (!input) return;
+    const mins = parseInt(input.value);
+    if (isNaN(mins) || mins < 1) {
+        alert('Por favor, insira um intervalo válido (mínimo 1 minuto).');
+        return;
+    }
+    
+    const btn = event.currentTarget;
+    const oldIcon = btn.innerHTML;
+    btn.innerHTML = '<span class="material-symbols-outlined text-sm animate-spin">sync</span>';
+    
+    try {
+        // We'll create this POST endpoint in server.py
+        const response = await fetch('/config/evolution', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ interval_seconds: mins * 60, enabled: true })
+        });
+        if (response.ok) {
+            btn.innerHTML = '<span class="material-symbols-outlined text-sm text-emerald-400">check</span>';
+            setTimeout(() => btn.innerHTML = oldIcon, 2000);
+        }
+    } catch (e) {
+        console.error('Failed to update evolution config', e);
+        btn.innerHTML = oldIcon;
+    }
+}
+
+// Auto-refresh logs if Dev Center is open
+setInterval(() => {
+    if (devCenterPanel && !devCenterPanel.classList.contains('hidden')) {
+        loadEvolutionLogs();
+        loadSuggestions();
+    }
+}, 30000); // 30s

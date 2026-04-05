@@ -733,6 +733,27 @@ async def get_evolution_logs():
         content = "".join(lines[-100:])
     return {"content": content}
 
+@app.post("/config/evolution")
+async def update_evolution_config(config: Dict[str, Any]):
+    """Update evolution cycle configuration."""
+    config_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "config", "evolution.json")
+    
+    # Load current
+    current = {}
+    if os.path.exists(config_path):
+        with open(config_path, "r") as f:
+            current = json.load(f)
+            
+    # Update
+    current.update(config)
+    
+    # Persist
+    with open(config_path, "w") as f:
+        json.dump(current, f, indent=4)
+        
+    logger.info(f"Evolution config updated: {current}")
+    return {"status": "success", "config": current}
+
 def start_evolution_worker():
     """Background worker that periodically triggers autonomous evolution."""
     config_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "config", "evolution.json")
