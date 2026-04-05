@@ -1,8 +1,8 @@
-import uuid
-from pathlib import Path
+import os
 import chromadb
+import secrets
 from chromadb.utils import embedding_functions
-from typing import Dict, Any, Optional
+from typing import List, Dict, Any, Optional, Union, Literal
 from core.logger import logger
 
 class VectorMemory:
@@ -13,17 +13,26 @@ class VectorMemory:
     """
     
     def __init__(self, db_path: Optional[str] = None):
-        self._db_path = Path(db_path) if db_path else Path(__file__).resolve().parent.parent.parent / "data" / "vector_db"
-        self._db_path.mkdir(parents=True, exist_ok=True)
+        if not db_path:
+            self.db_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "data", "vector_db")
+        else:
+            self.db_path = db_path
+            
+        os.makedirs(self.db_path, exist_ok=True)
         
-        self.client = chromadb.PersistentClient(path=str(self._db_path))
+        # Initialize Client
+        self.client = chromadb.PersistentClient(path=self.db_path)
+        
+        # Use default embedding function
         self.ef = embedding_functions.DefaultEmbeddingFunction()
         
+        # Collections
         self.interactions = self.client.get_or_create_collection(
             name="interactions",
             embedding_function=self.ef,
             metadata={"hnsw:space": "cosine"}
         )
+        
         self.knowledge = self.client.get_or_create_collection(
             name="knowledge",
             embedding_function=self.ef,
@@ -33,49 +42,51 @@ class VectorMemory:
     def add_interaction(self, user_input: str, response: str, task_hint: str = "general") -> None:
         """Embeds and stores a full interaction cycle."""
         try:
-            doc_id = f"int_{uuid.uuid4().hex[:8]}"
-            content = f"USER: {user_input}\nARKANIS: {response}"
+            doc_id = f"int_{secrets.token_hex(4)}"
+            content = f"USUÁRIO: {user_input}\nARKANIS: {response}"
+            
             self.interactions.add(
                 documents=[content],
                 metadatas=[{"type": "interaction", "task": task_hint}],
                 ids=[doc_id]
             )
         except Exception as e:
-            logger.error(f"Chronos Error (add_interaction): {e}")
+            logger.error(f"Chronos Error (add): {e}")
 
     def add_knowledge(self, source: str, content: str, metadata: Optional[Dict[str, Any]] = None) -> None:
         """Stores snippets of knowledge (files, documentation, etc)."""
         try:
-            doc_id = f"knw_{uuid.uuid4().hex[:8]}"
-            meta = (metadata or {}).copy()
+            doc_id = f"knw_{secrets.token_hex(4)}"
+            meta = metadata or {}
             meta["source"] = source
+            
             self.knowledge.add(
                 documents=[content],
                 metadatas=[meta],
                 ids=[doc_id]
             )
         except Exception as e:
-            logger.error(f"Chronos Error (add_knowledge): {e}")
+            logger.error(f"Chronos Error (knowledge): {e}")
 
-    def query(self, query_text: str, n_results: int = 3, collection_type: str = "interactions") -> str:
+    def query(self, query_text: str, n_results: int = 3, collection_type: Literal["interactions", "knowledge"] = "interactions") -> str:
         """Retrieves semantically relevant context for the current query."""
         try:
             collection = self.interactions if collection_type == "interactions" else self.knowledge
-            results = collection.query(query_texts=[query_text], n_results=n_results)
             
-            if not results or not results.get("documents") or not results["documents"][0]:
+            results = collection.query(
+                query_texts=[query_text],
+                n_results=n_results
+            )
+            
+            if not results or not results['documents'] or not results['documents'][0]:
                 return ""
                 
-            return "\n---\n".join(results["documents"][0])
+            formatted = "\n---\n".join(results['documents'][0])
+            return formatted
+            
         except Exception as e:
             logger.error(f"Chronos Error (query): {e}")
             return ""
 
-_chronos_instance: Optional[VectorMemory] = None
-
-def get_chronos_memory() -> VectorMemory:
-    """Lazy singleton getter to prevent heavy DB initialization at import time."""
-    global _chronos_instance
-    if _chronos_instance is None:
-        _chronos_instance = VectorMemory()
-    return _chronos_instance
+# Global singleton
+chronos_memory = VectorMemory()
