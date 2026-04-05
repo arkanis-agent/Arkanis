@@ -1,57 +1,44 @@
 import os
 import sys
 import json
+import unittest
+import tempfile
 
 # Add V3 to path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from tools.audio_tools import SpeechToTextTool
 
-def test_stt_tool_instance():
-    tool = SpeechToTextTool()
-    assert tool.name == "speech_to_text"
-    assert "temp_input" in tool.arguments or "audio_path" in tool.arguments
+class TestSpeechToTextTool(unittest.TestCase):
+    def setUp(self):
+        self.tool = SpeechToTextTool()
 
-def test_stt_tool_execution_no_file():
-    tool = SpeechToTextTool()
-    result = tool.execute(audio_path="non_existent_file.wav")
-    data = json.loads(result)
-    assert "error" in data
-    # Support both English and Portuguese error messages
-    err = data["error"].lower()
-    assert "not found" in err or "não encontrado" in err
+    def test_instance(self):
+        self.assertEqual(self.tool.name, "speech_to_text")
+        self.assertTrue("temp_input" in self.tool.arguments or "audio_path" in self.tool.arguments)
 
-def test_stt_tool_binary_check():
-    # If binary is missing, it should return a helpful error
-    tool = SpeechToTextTool()
-    # Create a dummy file to pass the file check
-    with open("dummy.wav", "w") as f:
-        f.write("dummy")
-    
-    result = tool.execute(temp_input="dummy.wav")
-    data = json.loads(result)
-    
-    os.remove("dummy.wav")
-    
-    app_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    if not os.path.exists(os.path.join(app_root, "libs", "whisper.cpp", "build", "bin", "whisper-cli")):
-        assert "error" in data
+    def test_execution_no_file(self):
+        result = self.tool.execute(audio_path="non_existent_file.wav")
+        data = json.loads(result)
+        self.assertIn("error", data)
         err = data["error"].lower()
-        assert "install_whisper.sh" in err or "whisper" in err
+        self.assertTrue("not found" in err or "não encontrado" in err)
+
+    def test_binary_check(self):
+        with tempfile.NamedTemporaryFile(suffix=".wav") as temp_file:
+            temp_file.write(b"dummy")
+            temp_file.flush()
+
+            result = self.tool.execute(temp_input=temp_file.name)
+            data = json.loads(result)
+
+            app_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+            whisper_cli_path = os.path.join(app_root, "libs", "whisper.cpp", "build", "bin", "whisper-cli")
+
+            if not os.path.exists(whisper_cli_path):
+                self.assertIn("error", data)
+                err = data["error"].lower()
+                self.assertTrue("install_whisper.sh" in err or "whisper" in err)
 
 if __name__ == "__main__":
-    print("Running STT Tool Tests...")
-    try:
-        test_stt_tool_instance()
-        print("✓ test_stt_tool_instance passed")
-        test_stt_tool_execution_no_file()
-        print("✓ test_stt_tool_execution_no_file passed")
-        test_stt_tool_binary_check()
-        print("✓ test_stt_tool_binary_check passed")
-        print("\nAll baseline tests passed!")
-    except AssertionError as e:
-        print(f"✗ Test failed: {e}")
-        sys.exit(1)
-    except Exception as e:
-        print(f"✗ Unexpected error: {e}")
-        sys.exit(1)
+    unittest.main()
