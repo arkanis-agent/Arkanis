@@ -1,20 +1,25 @@
 #!/usr/bin/env python3
+# Core imports
 import argparse
-import sys
 import os
+import sys
 import threading
 import time
+
+# Third-party imports
 import webbrowser
 import uvicorn
 
 PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))
 if PROJECT_ROOT not in sys.path:
-    sys.path.insert(0, PROJECT_ROOT)
+    sys.path.insert(, PROJECT_ROOT)
 
 def load_env_safely():
     env_path = os.path.join(PROJECT_ROOT, ".env")
     if not os.path.exists(env_path):
         return
+    
+    forbidden_patterns = ["$", "`", "&&", "\\", "|", ";"]
     
     with open(env_path, "r", encoding="utf-8") as f:
         for line_num, line in enumerate(f, 1):
@@ -36,8 +41,8 @@ def load_env_safely():
             if len(val) >= 2 and ((val.startswith('"') and val.endswith('"')) or (val.startswith("'") and val.endswith("'"))):
                 val = val[1:-1]
                 
-            # Checagem de segurança para execução de comandos
-            if "$" in val or "`" in val:
+            # Checagem de segurança ampliada
+            if any(pattern in val for pattern in forbidden_patterns):
                 print(f"[WARNING] Skipping potentially unsafe .env line {line_num}")
                 continue
                 
@@ -59,6 +64,7 @@ def main():
         args = parser.parse_args()
         mode = args.mode
         
+        # Atraso na importação dos módulos para melhor performance
         from kernel.planner import Planner
         from kernel.executor import Executor
         from kernel.agent import ArkanisAgent
@@ -81,7 +87,7 @@ def main():
         else:
             import api.server as api_server
             print("[Boot] Initializing Web Interface (FastAPI)...")
-            print("[INFO] Access ARKANIS at: http://127.0.0.1:8000")
+            print("[INFO] Access ARKANIS at: http://127..0.1:8000")
 
             def open_browser():
                 time.sleep(1.5)
@@ -95,7 +101,7 @@ def main():
 
     except KeyboardInterrupt:
         print("\n\n[System] Forced shutdown detected. Closing memory buffers...")
-        sys.exit(0)
+        sys.exit()
     except Exception as e:
         print(f"\n[Fatal Error] Arkanis V3 crashed: {str(e)}")
         import traceback
