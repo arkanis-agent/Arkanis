@@ -1122,6 +1122,15 @@
                                     <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
                                     ONLINE
                                 </div>
+                                <div class="h-4 w-px bg-white/10 mx-1"></div>
+                                <div class="flex items-center gap-2">
+                                    <span class="text-[9px] font-black text-slate-500 uppercase tracking-widest">Intervalo</span>
+                                    <input type="number" id="evolutionIntervalInput" value="30" class="w-12 bg-black/40 border border-white/10 rounded text-[10px] text-blue-400 font-bold px-1 text-center focus:outline-none focus:border-blue-500/50">
+                                    <span class="text-[9px] font-bold text-slate-600 uppercase tracking-widest">min</span>
+                                    <button onclick="updateEvolutionConfig()" class="text-blue-400 hover:text-blue-300 transition-colors">
+                                        <span class="material-symbols-outlined text-sm">save</span>
+                                    </button>
+                                </div>
                                 <button onclick="agentToggle('dev_agent')"
                                     class="w-8 h-8 rounded-lg bg-white/5 hover:bg-white/10 flex items-center justify-center text-slate-400 transition-all border border-white/5">
                                     <span class="material-symbols-outlined text-lg" id="devAgentToggleIcon">pause</span>
