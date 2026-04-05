@@ -139,14 +139,14 @@ class ModelStrategy:
                 
             mid = m["id"]
             
-            if provider in ["ollama", "lm_studio", "vllm"] or ":free" in mid.lower():
-                tiers["FREE"].append(mid)
-            elif mid in self.CLOUD_TIERS["HIGH PERFORMANCE"]:
+            if mid in self.CLOUD_TIERS["HIGH PERFORMANCE"]:
                 tiers["HIGH PERFORMANCE"].append(mid)
             elif mid in self.CLOUD_TIERS["BALANCED"]:
                 tiers["BALANCED"].append(mid)
             elif mid in self.CLOUD_TIERS["LOW COST"]:
                 tiers["LOW COST"].append(mid)
+            elif provider in ["ollama", "lm_studio", "vllm"] or ":free" in mid.lower():
+                tiers["FREE"].append(mid)
             else:
                 # If unmapped cloud model, assume balanced for safety
                 tiers["BALANCED"].append(mid)
