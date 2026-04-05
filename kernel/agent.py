@@ -46,12 +46,6 @@ class ArkanisAgent:
         self.architect = ArchitectAgent() # The Master Architect (Maestro)
         self.scheduler = SchedulerAgent(self) # The Agenda & Reminder Manager
         
-        # Start background autonomous loops
-        self.sentinel.start_loop()
-        self.dev_agent.start_loop()
-        self.architect.start_loop()
-        self.scheduler.start_loop()
-        
         self.memory = session_memory
         
         # Agent Control State
@@ -90,6 +84,12 @@ class ArkanisAgent:
         agent_bus.register_agent("memory_agent", VirtualAgent("memory_agent", "idle", "AUTO", 0))
         agent_bus.register_agent("goal_agent", VirtualAgent("goal_agent", "idle", "AUTO", 0))
         agent_bus.register_agent("tool_agent", VirtualAgent("tool_agent", "idle", "AUTO", 0))
+        
+        # Start background autonomous loops
+        self.sentinel.start_loop()
+        self.dev_agent.start_loop()
+        self.architect.start_loop()
+        self.scheduler.start_loop()
         
     def __del__(self):
         try:
