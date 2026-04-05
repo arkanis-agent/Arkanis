@@ -1,9 +1,1 @@
-"""
-Arkanis Memory Subsystem.
-Includes Short-term (Session), Long-term (Persistent), Vector, and Semantic Cache.
-"""
-
-from .short_term import session_memory
-from .long_term import long_term_memory
-from .vector import VectorMemory, chronos_memory
-from core.semantic_cache import semantic_cache
+"""\nArkanis Memory Subsystem - Version 3.1\n\nThis module provides the core memory management system for Arkanis, including:\n- Short-term/Session Memory: Temporary state management\n- Long-term/Persistent Memory: Permanent data storage\n- Vector Memory: High-dimensional data processing\n- Semantic Cache: Contextual understanding layer\n\nUsage:\n    >>> from modules.memory import session_memory, long_term_memory\n    >>> session_memory.store('key', 'value')\n"""\n\n# Public API definition\n__all__ = [\n    'session_memory',\n    'long_term_memory',\n    'VectorMemory',\n    'chronos_memory',\n    'semantic_cache'\n]\n\n# Local imports\nfrom .short_term import session_memory\nfrom .long_term import long_term_memory\nfrom .vector import VectorMemory, chronos_memory\n\n# Core imports\nfrom core.semantic_cache import semantic_cache
