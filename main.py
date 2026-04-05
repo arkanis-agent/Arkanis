@@ -1,1 +1,85 @@
-#!/usr/bin/env python3\nimport sys\nimport os\n\n# Adjusting python path to allow internal imports relative to /V3\nsys.path.append(os.path.dirname(os.path.abspath(__file__)))\n\n# Safer .env loader with validation\ndef load_env_safely():\n    env_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".env")\n    if os.path.exists(env_path):\n        with open(env_path, "r") as f:\n            for line in f:\n                line = line.strip()\n                if line and not line.startswith("#"):\n                    if "=" in line:\n                        key, val = line.split("=", 1)\n                        key = key.strip()\n                        val = val.strip()\n                        # Basic security validation\n                        if not key.isidentifier() or any(c in val for c in ["$", "`", "\\", "(", ")"]):\n                            print(f"[WARNING] Skipping potentially unsafe .env line: {line}")\n                            continue\n                        os.environ[key] = val\n\nload_env_safely()\n\nfrom kernel.agent import ArkanisAgent\nfrom interfaces.cli import ArkanisCLI\n\ndef main():\n    """\n    Initializes and starts the Arkanis V3 AI Agent OS.\n    """\n    try:\n        from kernel.planner import Planner\n        from kernel.executor import Executor\n        \n        # 1. Initialize core components (DI Lite)\n        planner = Planner()\n        executor = Executor()\n        \n        # 2. Start the Kernel\n        agent = ArkanisAgent(planner=planner, executor=executor)\n        \n        # 2. Interface Selection (Default to Web, or CLI/Telegram)\n        arg = sys.argv[1].lower() if len(sys.argv) > 1 else ""\n        \n        if arg == "--telegram":\n            from interfaces.telegram import TelegramInterface\n            print("\\n[Boot] Initializing Telegram Interface...")\n            ui = TelegramInterface(agent)\n            ui.start_loop()\n        elif arg == "--cli":\n            from interfaces.cli import ArkanisCLI\n            print("\\n[Boot] Initializing Standard CLI...")\n            ui = ArkanisCLI(agent)\n            ui.start_loop()\n        else:\n            # Default to WEB\n            import uvicorn\n            import webbrowser\n            import api.server as api_server\n            from api.server import app\n            \n            print("\\n[Boot] Initializing Web Interface (FastAPI)...")\n            print("[INFO] Access ARKANIS at: http://127.0.0.1:8000")\n            \n            # Auto-open browser in a separate thread to not block server startup\n            def open_browser():\n                import time\n                time.sleep(1.5)\n                webbrowser.open("http://127.0.0.1:8000")\n            \n            import threading\n            threading.Thread(target=open_browser, daemon=True).start()\n            \n            uvicorn.run("api.server:app", host="0.0.0.0", port=8000, reload=True)\n        \n    except KeyboardInterrupt:\n        print("\\n\\n[System] Forced shutdown detected. Closing memory buffers...")\n        sys.exit(0)\n    except Exception as e:\n        print(f"\\n[Fatal Error] Arkanis V3 crashed: {str(e)}")\n        sys.exit(1)\n\nif __name__ == "__main__":\n    main()
+#!/usr/bin/env python3
+import sys
+import os
+import threading
+import time
+import webbrowser
+import uvicorn
+
+PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))
+if PROJECT_ROOT not in sys.path:
+    sys.path.insert(0, PROJECT_ROOT)
+
+def load_env_safely():
+    env_path = os.path.join(PROJECT_ROOT, ".env")
+    if not os.path.exists(env_path):
+        return
+    with open(env_path, "r") as f:
+        for line_num, line in enumerate(f, 1):
+            line = line.strip()
+            if not line or line.startswith("#"):
+                continue
+            if "=" not in line:
+                print(f"[WARNING] Skipping malformed .env line {line_num}: {line}")
+                continue
+            key, val = line.split("=", 1)
+            key = key.strip()
+            val = val.strip()
+            if not key.isidentifier():
+                print(f"[WARNING] Skipping invalid key at line {line_num}: {key}")
+                continue
+            if "$(" in val or "\`" in val:
+                print(f"[WARNING] Skipping potentially unsafe .env line {line_num}")
+                continue
+            os.environ[key] = val
+
+load_env_safely()
+
+def main():
+    try:
+        from kernel.planner import Planner
+        from kernel.executor import Executor
+        from kernel.agent import ArkanisAgent
+
+        planner = Planner()
+        executor = Executor()
+        agent = ArkanisAgent(planner=planner, executor=executor)
+
+        arg = sys.argv[1].lower() if len(sys.argv) > 1 else ""
+
+        if arg == "--telegram":
+            from interfaces.telegram import TelegramInterface
+            print("\n[Boot] Initializing Telegram Interface...")
+            ui = TelegramInterface(agent)
+            ui.start_loop()
+        elif arg == "--cli":
+            from interfaces.cli import ArkanisCLI
+            print("\n[Boot] Initializing Standard CLI...")
+            ui = ArkanisCLI(agent)
+            ui.start_loop()
+        else:
+            import api.server as api_server
+            print("\n[Boot] Initializing Web Interface (FastAPI)...")
+            print("[INFO] Access ARKANIS at: http://127.0.0.1:8000")
+
+            def open_browser():
+                time.sleep(1.5)
+                webbrowser.open("http://127.0.0.1:8000")
+
+            if os.environ.get("ARKANIS_AUTO_OPEN_BROWSER", "true").lower() == "true":
+                threading.Thread(target=open_browser, daemon=True).start()
+
+            reload_mode = os.environ.get("ARKANIS_DEBUG", "false").lower() == "true"
+            uvicorn.run("api.server:app", host="0.0.0.0", port=8000, reload=reload_mode)
+
+    except KeyboardInterrupt:
+        print("\n\n[System] Forced shutdown detected. Closing memory buffers...")
+        sys.exit(0)
+    except Exception as e:
+        print(f"\n[Fatal Error] Arkanis V3 crashed: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        sys.exit(1)
+
+if __name__ == "__main__":
+    main()

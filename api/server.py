@@ -707,7 +707,11 @@ async def get_history_timeline():
 @app.get("/suggestions")
 async def get_suggestions(filter: str = "pending"):
     """Fetch system improvements with stats."""
-    suggestions = agent.get_suggestions()
+    agent_instance = agent_bus.get_agent("dev_agent") or agent_bus.get_agent("architect_agent")
+    if not agent_instance:
+        return {"suggestions": [], "stats": {"pending": 0, "applied": 0, "rejected": 0, "total": 0}}
+        
+    suggestions = agent_instance.get_suggestions()
     
     # Calculate stats
     stats = {

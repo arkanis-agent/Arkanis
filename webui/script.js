@@ -3915,7 +3915,40 @@ async function loadEvolutionLogs() {
     try {
         const response = await fetch('/logs/evolution');
         const data = await response.json();
-        container.textContent = data.content;
+        const rawLogs = data.content || '';
+        
+        // Parse and style the logs instead of raw dump
+        const styledLogs = rawLogs.split('\n').filter(l => l.trim().length > 0).map(line => {
+             let htmlLine = line.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+             // Style Timestamp
+             htmlLine = htmlLine.replace(/^(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2},\d{3})/, '<span class="text-slate-500 font-mono text-[9px]">$1</span>');
+             
+             // Style Tags
+             if (htmlLine.includes('[INFO]')) {
+                 htmlLine = htmlLine.replace('[INFO]', '<span class="text-blue-400 font-bold">[INFO]</span>');
+             } else if (htmlLine.includes('[ERROR]')) {
+                 htmlLine = htmlLine.replace('[ERROR]', '<span class="text-rose-500 font-bold">[ERROR]</span>');
+             } else if (htmlLine.includes('[WARNING]')) {
+                 htmlLine = htmlLine.replace('[WARNING]', '<span class="text-amber-400 font-bold">[WARN]</span>');
+             } else if (htmlLine.includes('🧠')) {
+                 htmlLine = htmlLine.replace('🧠', '<span class="text-purple-400">🧠</span>');
+             }
+             
+             // Highlight specific keywords
+             if (htmlLine.includes('[DRY-RUN]')) htmlLine = htmlLine.replace('[DRY-RUN]', '<span class="text-slate-400 border border-slate-500/30 px-1 rounded text-[9px] bg-slate-500/10">[DRY-RUN]</span>');
+             if (htmlLine.includes('Applying')) htmlLine = htmlLine.replace('Applying', '<span class="text-emerald-400 animate-pulse">Applying</span>');
+             if (htmlLine.includes('FAILED')) htmlLine = htmlLine.replace('FAILED', '<span class="text-rose-500 font-black">FAILED</span>');
+             
+             return `<div class="mb-1 leading-relaxed border-b border-white/5 pb-1 last:border-0 hover:bg-white/5 px-2 -mx-2 rounded transition-colors">${htmlLine}</div>`;
+        }).join('');
+
+        // If completely empty:
+        if (!styledLogs) {
+             container.innerHTML = '<div class="text-slate-500 italic text-center py-4">Nenhum log de evolução encontrado.</div>';
+        } else {
+             container.innerHTML = styledLogs;
+        }
+        
         container.scrollTop = container.scrollHeight;
     } catch (e) {
         console.warn('Failed to load evolution logs', e);
