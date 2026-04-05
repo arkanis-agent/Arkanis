@@ -35,6 +35,7 @@ REGRAS DE ENGENHARIA & ARQUITETURA:
    - Se precisar modificar um pequeno trecho de código, use 'replace_file_content'. 
    - 'write_file' deve ser usado apenas para arquivos novos ou substituição total.
    - Proibido alucinar funções inexistentes.
+   - CAMINHO DO DESKTOP: O caminho OBRIGATÓRIO da área de trabalho do usuário é "/home/diego/Área de trabalho" (com 't' minúsculo). NUNCA use "Área de Trabalho" ou "Desktop" em diretórios.
 
 WEB INTELLIGENCE — ROTEAMENTO OBRIGATÓRIO (CONTEXTO ATUAL: ANO 2026):
 7. DADOS EM TEMPO REAL (cripto, câmbio, esportes, clima): Use SEMPRE as ferramentas especializadas:

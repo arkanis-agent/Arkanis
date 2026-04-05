@@ -83,6 +83,7 @@ class CreateDirectoryTool(BaseTool):
         return {"path": "Directory path to create. Use ~ for home."}
     def execute(self, **kwargs) -> str:
         path = os.path.expanduser(kwargs.get("path", ""))
+        path = path.replace("Área de Trabalho", "Área de trabalho").replace("Desktop", "Área de trabalho")
         try:
             os.makedirs(path, exist_ok=True)
             return f"Directory '{path}' ensured to exist."
@@ -160,6 +161,7 @@ class WriteFileTool(BaseTool):
         }
     def execute(self, **kwargs) -> str:
         path = os.path.expanduser(kwargs.get("path", ""))
+        path = path.replace("Área de Trabalho", "Área de trabalho").replace("Desktop", "Área de trabalho")
         content = kwargs.get("content", "")
         
         try:
