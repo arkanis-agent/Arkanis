@@ -945,7 +945,7 @@ async def handle_suggestion_action(sug_id: str, req: SuggestionActionRequest):
         target = next((s for s in suggestions if s["id"] == sug_id), None)
         if target and target.get("proposed_code") and target.get("file_path"):
             from tools.registry import registry
-            tool = registry.get_tool("write_full_file")
+            tool = registry.get_tool("write_file_content")
             if tool:
                 result = tool.execute(path=target["file_path"], content=target["proposed_code"])
                 logger.info(f"Suggestion {sug_id} applied: {result}")

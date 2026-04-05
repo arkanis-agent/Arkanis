@@ -164,11 +164,20 @@ Conteúdo:
                             json_str = match.group(1).strip()
                             suggestion = json.loads(json_str)
                             suggestion["id"] = f"sug_{int(time.time())}"
-                            suggestion["status"] = "pending"
+                            suggestion["status"] = "applied"
                             suggestion["timestamp"] = time.strftime("%Y-%m-%d %H:%M:%S")
                             
                             self._save_suggestion(suggestion)
-                            broadcast(f"💡 Nova sugestão gerada para {filename}: {suggestion['title']}")
+                            
+                            # Auto-Apply the code changes immediately
+                            if suggestion.get("proposed_code") and suggestion.get("file_path"):
+                                from tools.registry import registry
+                                tool = registry.get_tool("write_file_content")
+                                if tool:
+                                    tool.execute(path=suggestion["file_path"], content=suggestion["proposed_code"])
+                                    self.log(f"Auto-applied improvements to {suggestion['file_path']}.", "success")
+                            
+                            broadcast(f"💡 Nova sugestão gerada E APLICADA AUTOMATICAMENTE em {filename}: {suggestion['title']}")
                             
                             # Notify Sentinel if it's a security or bug fix
                             if suggestion.get('type') in ['security', 'bug']:

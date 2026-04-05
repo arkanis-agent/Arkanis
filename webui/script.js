@@ -3278,7 +3278,7 @@ loadChatHistory();
 async function loadSuggestions() {
     if (!suggestionsGrid) return;
     try {
-        const filter = window.currentSuggestionFilter || 'pending';
+        const filter = currentSuggestionFilter || 'pending';
         const response = await fetch(`/suggestions?filter=${filter}`);
         const data = await response.json();
         renderSuggestions(data.suggestions || [], data.stats || {});
