@@ -1,0 +1,6 @@
+{
+    "interval_seconds": 1800,
+    "enabled": true,
+    "last_run": null,
+    "limit_per_cycle": 3
+}

@@ -704,6 +704,77 @@ async def get_history_timeline():
     timeline = [s for s in all_suggestions if s.get("status") == "applied"]
     return {"timeline": timeline}
 
+@app.get("/suggestions")
+async def get_suggestions(filter: str = "pending"):
+    """Fetch system improvements with stats."""
+    suggestions = agent.get_suggestions()
+    
+    # Calculate stats
+    stats = {
+        "pending": len([s for s in suggestions if s.get("status") == "pending"]),
+        "applied": len([s for s in suggestions if s.get("status") == "applied"]),
+        "rejected": len([s for s in suggestions if s.get("status") == "rejected"]),
+        "total": len(suggestions)
+    }
+    
+    # Filter
+    filtered = [s for s in suggestions if s.get("status") == filter]
+    return {"suggestions": filtered, "stats": stats}
+
+@app.get("/logs/evolution")
+async def get_evolution_logs():
+    """Read the last 100 lines of the evolution log."""
+    log_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "logs", "evolution.log")
+    if not os.path.exists(log_path):
+        return {"content": "Nenhum log de evolução encontrado ainda."}
+    
+    with open(log_path, "r") as f:
+        lines = f.readlines()
+        content = "".join(lines[-100:])
+    return {"content": content}
+
+def start_evolution_worker():
+    """Background worker that periodically triggers autonomous evolution."""
+    config_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "config", "evolution.json")
+    script_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "scripts", "autonomous_evolution.py")
+    
+    def worker_loop():
+        import json
+        import subprocess
+        import time
+        
+        while True:
+            try:
+                if os.path.exists(config_path):
+                    with open(config_path, "r") as f:
+                        conf = json.load(f)
+                    
+                    if conf.get("enabled"):
+                        interval = conf.get("interval_seconds", 1800)
+                        limit = conf.get("limit_per_cycle", 3)
+                        
+                        logger.info(f"Worker: Starting autonomous evolution cycle (limit={limit})...")
+                        # Run the script as a subprocess to ensure it's isolated
+                        subprocess.run([sys.executable, script_path, "--limit", str(limit)], check=False)
+                        
+                        logger.info(f"Worker: Cycle complete. Sleeping for {interval}s")
+                        time.sleep(interval)
+                    else:
+                        time.sleep(60) # Check config again in a minute
+                else:
+                    time.sleep(60)
+            except Exception as e:
+                logger.error(f"Evolution Worker Error: {e}")
+                time.sleep(300) # Wait 5m on error
+                
+    threading.Thread(target=worker_loop, daemon=True, name="ArkanisEvolution").start()
+
+# Start the worker on app start
+@app.on_event("startup")
+async def startup_event():
+    logger.info("ARKANIS V3: System starting up...")
+    start_evolution_worker()
+
 
 # --- Multi-Channel Background Services ---
 def start_telegram():
