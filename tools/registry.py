@@ -31,7 +31,12 @@ class ToolRegistry:
         "write_file": "tools.file_tools",
         "list_files": "tools.file_tools",
         "dev_suggestion_tool": "tools.dev_tools",
-        "telegram_notifier": "tools.telegram_tools"
+        "telegram_notifier": "tools.telegram_tools",
+        "save_credential": "tools.vault_tools",
+        "get_credential": "tools.vault_tools",
+        "create_reminder": "tools.reminder_tools",
+        "list_reminders": "tools.reminder_tools",
+        "delete_reminder": "tools.reminder_tools"
     }
 
     def __new__(cls):
