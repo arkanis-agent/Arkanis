@@ -1,81 +1,87 @@
 import os
 import json
 import re
+from pathlib import Path
 
 def normalize(text):
     """Normalize text for better matching by removing whitespace, comments, and special characters."""
-    text = re.sub(r'#.*', '', text)  # Remove comments
-    text = re.sub(r'\W+', '', text)  # Remove all non-alphanumeric characters
+    text = re.sub(r'#.*', '', text)
+    text = re.sub(r'\W+', '', text)
     return text.lower().strip()
 
 def main():
-    project_root = "/home/diego/Área de trabalho/Arkanis_V3.1"
-    suggestions_file = os.path.join(project_root, "data", "suggestions.json")
+    # Use dynamic path detection to avoid hardcoding
+    project_root = Path(os.getenv("ARKANIS_ROOT", Path(__file__).parents[1]))
+    suggestions_file = project_root / "data" / "suggestions.json"
     
-    if not os.path.exists(suggestions_file):
+    if not suggestions_file.exists():
         print(f"File not found: {suggestions_file}")
         return
 
-    with open(suggestions_file, "r", encoding="utf-8") as f:
-        suggestions = json.load(f)
+    try:
+        with open(suggestions_file, "r", encoding="utf-8") as f:
+            suggestions = json.load(f)
+    except (json.JSONDecodeError, IOError) as e:
+        print(f"Error loading suggestions file: {e}")
+        return
 
     if not isinstance(suggestions, list):
-        print("Invalid suggestions format.")
+        print("Invalid suggestions format: Expected a list.")
         return
 
     print(f"Auditing {len(suggestions)} suggestions...")
     cleaned_count = 0
     total_audited = 0
 
+    # Map of title keywords to code signatures for Logic Match
+    logic_matches = {
+        "hot-reload": "reload=True",
+        "suggestionactionrequest": "SuggestionActionRequest"
+    }
+
     for s in suggestions:
         if s.get("status") != "pending":
             continue
             
         total_audited += 1
-        file_path = s.get("file_path")
-        if not file_path:
+        file_path_str = s.get("file_path")
+        if not file_path_str:
             continue
             
-        # Ensure path is absolute and within root
-        if not os.path.isabs(file_path):
-            abs_path = os.path.join(project_root, file_path)
-        else:
-            abs_path = file_path
+        abs_path = Path(file_path_str)
+        if not abs_path.is_absolute():
+            abs_path = project_root / file_path_str
             
-        if not os.path.exists(abs_path):
+        if not abs_path.exists():
             continue
             
         try:
-            with open(abs_path, "r", encoding="utf-8") as f:
-                current_content = f.read()
-            
+            current_content = abs_path.read_text(encoding="utf-8")
             proposed = s.get("proposed_code", "")
-            if not proposed:
-                continue
-                
+            title = s.get("title", "").lower()
+
+            is_applied = False
+
             # Heuristic 1: Exact snippet match (normalized)
-            norm_proposed = normalize(proposed)
-            norm_content = normalize(current_content)
+            if proposed and normalize(proposed) in normalize(current_content):
+                is_applied = True
+                reason = "Snippet Match"
             
-            if norm_proposed in norm_content:
+            # Heuristic 2: Dynamic Logic Match
+            else:
+                for keyword, signature in logic_matches.items():
+                    if keyword in title and signature in current_content:
+                        is_applied = True
+                        reason = f"Logic Match ({keyword})"
+                        break
+
+            if is_applied:
                 s["status"] = "applied"
                 cleaned_count += 1
-                print(f" [✓] Marked as Applied: {s['title']} ({os.path.basename(abs_path)})")
-            
-            # Heuristic 2: Title based implementation check
-            # (e.g. if title is "Enable Hot-Reload" and main.py has reload=True)
-            elif "hot-reload" in s["title"].lower() and "reload=True" in current_content:
-                s["status"] = "applied"
-                cleaned_count += 1
-                print(f" [✓] Marked as Applied (Logic Match): {s['title']}")
-                
-            elif "suggestionactionrequest" in s["title"].lower() and "SuggestionActionRequest" in current_content:
-                s["status"] = "applied"
-                cleaned_count += 1
-                print(f" [✓] Marked as Applied (Logic Match): {s['title']}")
+                print(f" [✓] Marked as Applied: {s.get('title')} -> {reason} ({abs_path.name})")
 
         except Exception as e:
-            print(f" [!] Error auditing {file_path}: {e}")
+            print(f" [!] Error auditing {file_path_str}: {e}")
 
     # Save results
     with open(suggestions_file, "w", encoding="utf-8") as f:
