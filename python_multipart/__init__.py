@@ -1,4 +1,5 @@
 # This is the canonical package information.
+"""Arkanis V3 Wrapper for python-multipart."""
 __author__ = "Andrew Dunham"
 __license__ = "Apache"
 __copyright__ = "Copyright (c) 2012-2013, Andrew Dunham"

@@ -6,6 +6,7 @@ Inherits from ArkanisAgent but restricts tools and injects a custom role/persona
 import threading
 import time
 import os
+import re
 from typing import List, Optional
 from kernel.agent import ArkanisAgent
 from core.agent_bus import agent_bus
@@ -35,33 +36,66 @@ class CustomAgent(ArkanisAgent):
         
         # Custom flags
         self.is_custom = True
-        self.role = role
-        self.persona = persona
+        self.role = self._sanitize_input(role)
+        self.persona = self._sanitize_input(persona)
         self.allowed_tools = allowed_tools or []
         self.current_action = "Idle"
+        self._last_tools_check = time.time()
+        self._filtered_tools_cache: str = ""
 
-        # Override planner identity with persona if provided
-        if persona:
+        # Override planner identity with persona if provided and planner exists
+        if hasattr(self, 'planner') and persona:
             self.planner.agent_identity = (
-                f"[ROLE: {role}]\n"
+                f"[ROLE: {self.role}]\n"
                 f"[PERSONA]: {persona}\n\n"
                 f"Você é um agente especializado do ecossistema ARKANIS. "
-                f"Seu papel é: {role}. Siga as instruções da persona acima."
+                f"Seu papel é: {self.role}. Siga as instruções da persona acima."
             )
 
+    @staticmethod
+    def _sanitize_input(text: str) -> str:
+        """Sanitize user input to prevent injection attacks."""
+        if not text:
+            return ""
+        # Remove potential command injection characters
+        text = re.sub(r'[;|&$`]', '', text)
+        return text.strip()[:500]  # Limit length for safety
+
     def _get_filtered_tools_description(self) -> str:
-        """Return only the tools this agent is allowed to use."""
-        if not self.allowed_tools:
+        """Return only the tools this agent is allowed to use with caching."""
+        # Check if cache is valid (within 60 seconds)
+        if self._filtered_tools_cache and (time.time() - self._last_tools_check) < 60:
+            return self._filtered_tools_cache
+        
+        if not isinstance(self.allowed_tools, list) or not self.allowed_tools:
             # No restriction — all tools
             return ""
         
         all_tools = registry.list_tools()
-        filtered = {k: v for k, v in all_tools.items() if k in self.allowed_tools}
+        filtered = {}
+        validated_tools = []
+        
+        for tool_name in self.allowed_tools:
+            if tool_name in all_tools:
+                filtered[tool_name] = all_tools[tool_name]
+                validated_tools.append(tool_name)
+            else:
+                self._warn_unused_tool(tool_name)
+        
         if not filtered:
+            self._filtered_tools_cache = ""
+            self._last_tools_check = time.time()
             return ""
         
         lines = [f"- {name}: {desc}" for name, desc in filtered.items()]
-        return "\n".join(lines)
+        self._filtered_tools_cache = "\n".join(lines)
+        self._last_tools_check = time.time()
+        return self._filtered_tools_cache
+
+    def _warn_unused_tool(self, tool_name: str) -> None:
+        """Log warning for non-existent tool."""
+        import logging
+        logging.warning(f"[CustomAgent {self.agent_id}] Tool '{tool_name}' not found in registry.")
 
     @classmethod
     def create(
@@ -71,18 +105,28 @@ class CustomAgent(ArkanisAgent):
         persona: str = "",
         allowed_tools: Optional[List[str]] = None,
     ) -> "CustomAgent":
-        """Factory method to create and register a new custom agent."""
-        # Prevent duplicate IDs
-        if agent_bus.get_agent(agent_id):
-            raise ValueError(f"Agente com ID '{agent_id}' já existe.")
-
+        """Factory method to create, validate, and register a new custom agent."""
+        agent_bus.validate_agent_id(agent_id)
+        
         agent = cls(
             agent_id=agent_id,
             role=role,
             persona=persona,
             allowed_tools=allowed_tools,
         )
+        
+        # CRITICAL: Register the agent to make it functional
+        agent_bus.register_agent(agent)
+        
         return agent
+
+    @classmethod
+    def exists(cls, agent_id: str) -> bool:
+        """Check if a custom agent with this ID already exists."""
+        try:
+            return agent_bus.get_agent(agent_id) is not None
+        except Exception:
+            return False
 
     def to_dict(self) -> dict:
         """Serialize for API responses."""
@@ -94,5 +138,5 @@ class CustomAgent(ArkanisAgent):
             "status": self.status,
             "mode": self.mode,
             "current_action": self.current_action,
-            "is_custom": True,
+            "is_custom": self.is_custom,
         }

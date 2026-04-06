@@ -1,33 +1,58 @@
 import os
 import shutil
 import json
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 from tools.base_tool import BaseTool
 from tools.registry import registry
 from core.logger import logger
 
+# Security settings
+MAX_FILE_SIZE = 10 * 1024 * 1024  # 10MB default
+SAFE_WORK_DIR = os.path.expanduser("~")  # Default safe directory
+
+def _validate_path(path: str, for_writing: bool = False) -> Optional[str]:
+    """Securely validate and normalize a file path."""
+    if not path or not isinstance(path, str):
+        return None
+    
+    path = os.path.expanduser(path)
+    
+    # Prevent path traversal
+    normalized = os.path.normpath(path)
+    if normalized.startswith('..') or normalized.startswith('/'):
+        return None
+    
+    # For writing, ensure path is within home directory
+    if for_writing:
+        real_path = os.path.realpath(normalized)
+        if not real_path.startswith(SAFE_WORK_DIR):
+            return None
+    
+    return normalized
+
 def get_desktop_path() -> str:
     user_home = os.path.expanduser("~")
-    # try reading ~/.config/user-dirs.dirs for locale-aware desktop path
     config_path = os.path.join(user_home, ".config", "user-dirs.dirs")
     if os.path.exists(config_path):
         try:
             with open(config_path, "r", encoding="utf-8") as f:
                 for line in f:
                     if line.startswith("XDG_DESKTOP_DIR="):
-                        path = line.split("=")[1].strip().strip('"')
+                        path = line.split("=", 1)[1].strip().strip('"')
                         return path.replace("$HOME", user_home)
-        except Exception:
+        except Exception as e:
+            logger.warning(f"Failed to read desktop config: {e}")
             pass
     
-    # Fallbacks in case config doesn't exist
-    for cand in ["Área de trabalho", "Desktop", "Área de Trabalho", "Escritorio", 
-                 "OneDrive/Desktop", "OneDrive/Área de trabalho", 
-                 "OneDrive/Área de Trabalho", "OneDrive/Escritorio"]:
+    fallbacks = ["Área de trabalho", "Desktop", "Área de Trabalho", "Escritorio"]
+    for cand in fallbacks:
         p = os.path.join(user_home, *cand.split("/"))
-        if os.path.exists(p):
+        if os.path.exists(p) and os.path.isdir(p):
             return p
-    return os.path.join(user_home, "Desktop")
+    
+    desktop_path = os.path.join(user_home, "Desktop")
+    logger.debug(f"Using fallback desktop path: {desktop_path}")
+    return desktop_path
 
 
 class GetDesktopDirectoryTool(BaseTool):
@@ -38,7 +63,11 @@ class GetDesktopDirectoryTool(BaseTool):
     @property
     def arguments(self) -> Dict[str, str]: return {}
     def execute(self, **kwargs) -> str:
-        return get_desktop_path()
+        try:
+            return get_desktop_path()
+        except Exception as e:
+            logger.error(f"get_desktop_directory failed: {e}")
+            return f"Error retrieving desktop path: {str(e)}"
 
 
 class ListDirectoryTool(BaseTool):
@@ -51,25 +80,36 @@ class ListDirectoryTool(BaseTool):
         return {"path": "Directory path to list."}
     def execute(self, **kwargs) -> str:
         path = kwargs.get("path", "")
-        if path.upper() == "DESKTOP":
-            path = get_desktop_path()
-        else:
-            path = os.path.expanduser(path)
+        try:
+            if path and path.upper() == "DESKTOP":
+                path = get_desktop_path()
+            else:
+                validated = _validate_path(path)
+                if not validated:
+                    return "Error: Invalid or unsafe path provided."
+                path = validated
+        except Exception as e:
+            logger.error(f"Directory listing error: {e}")
+            return f"Error processing path: {str(e)}"
             
-        if not os.path.exists(path):
-            return f"Error: Path '{path}' does not exist."
-        if not os.path.isdir(path):
-            return f"Error: Path '{path}' is not a directory."
+        expanded_path = os.path.expanduser(path)
+        if not os.path.exists(expanded_path):
+            return f"Error: Path '{expanded_path}' does not exist."
+        if not os.path.isdir(expanded_path):
+            return f"Error: Path '{expanded_path}' is not a directory."
             
         items = []
         try:
-            for item in os.listdir(path):
-                full_path = os.path.join(path, item)
+            for item in os.listdir(expanded_path):
+                full_path = os.path.join(expanded_path, item)
                 item_type = "DIR" if os.path.isdir(full_path) else ("FILE" if os.path.isfile(full_path) else "OTHER")
                 size = os.path.getsize(full_path) if item_type == "FILE" else 0
                 items.append({"name": item, "type": item_type, "size_bytes": size})
             return json.dumps(items, ensure_ascii=False)
+        except PermissionError:
+            return "Error: Access denied to directory."
         except Exception as e:
+            logger.error(f"ListDirectoryTool failed: {e}")
             return f"Error reading directory: {str(e)}"
 
 
@@ -82,12 +122,17 @@ class CreateDirectoryTool(BaseTool):
     def arguments(self) -> Dict[str, str]:
         return {"path": "Directory path to create. Use ~ for home."}
     def execute(self, **kwargs) -> str:
-        path = os.path.expanduser(kwargs.get("path", ""))
-        path = path.replace("Área de Trabalho", "Área de trabalho").replace("Desktop", "Área de trabalho")
+        path = kwargs.get("path", "")
+        validated = _validate_path(path, for_writing=True)
+        if not validated:
+            return "Error: Invalid or unsafe path provided."
         try:
-            os.makedirs(path, exist_ok=True)
-            return f"Directory '{path}' ensured to exist."
+            os.makedirs(validated, exist_ok=True)
+            return f"Directory '{validated}' ensured to exist."
+        except PermissionError:
+            return f"Failed: Permission denied for path: {validated}."
         except Exception as e:
+            logger.error(f"CreateDirectoryTool failed: {e}")
             return f"Failed to create directory: {str(e)}"
 
 
@@ -100,16 +145,26 @@ class RemoveItemTool(BaseTool):
     def arguments(self) -> Dict[str, str]:
         return {"path": "Path to the file or directory to delete."}
     def execute(self, **kwargs) -> str:
-        path = os.path.expanduser(kwargs.get("path", ""))
-        if not os.path.exists(path):
+        path = kwargs.get("path", "")
+        validated = _validate_path(path)
+        if not validated:
+            return "Error: Invalid or unsafe path provided."
+            
+        expanded_path = os.path.expanduser(path)
+        if not os.path.exists(expanded_path):
             return "Error: Path does not exist."
         try:
-            if os.path.isfile(path) or os.path.islink(path):
-                os.remove(path)
-            elif os.path.isdir(path):
-                shutil.rmtree(path)
-            return f"Successfully deleted '{path}'."
+            if os.path.isfile(expanded_path) or os.path.islink(expanded_path):
+                os.remove(expanded_path)
+                logger.info(f"Removed file: {expanded_path}")
+            elif os.path.isdir(expanded_path):
+                shutil.rmtree(expanded_path)
+                logger.info(f"Removed directory: {expanded_path}")
+            return f"Successfully deleted '{expanded_path}'."
+        except PermissionError:
+            return f"Error: Permission denied for '{expanded_path}'."
         except Exception as e:
+            logger.error(f"RemoveItemTool failed: {e}")
             return f"Failed to delete item: {str(e)}"
 
 
@@ -126,14 +181,19 @@ class ReplaceFileContentTool(BaseTool):
             "replacement": "The new text to insert in its place."
         }
     def execute(self, **kwargs) -> str:
-        path = os.path.expanduser(kwargs.get("path", ""))
+        path = kwargs.get("path", "")
         target = kwargs.get("target", "")
         replacement = kwargs.get("replacement", "")
+        validated = _validate_path(path)
         
+        if not path:
+            return "Error: Path is required."
         if not os.path.exists(path):
             return "Error: File does not exist."
         if not os.path.isfile(path):
             return "Error: Path is not a file."
+        if not target:
+            return "Error: Target text cannot be empty."
             
         try:
             with open(path, "r", encoding="utf-8") as f:
@@ -141,10 +201,16 @@ class ReplaceFileContentTool(BaseTool):
             if target not in content:
                 return "Error: Target text not found in the file! String matching must be exact."
             new_content = content.replace(target, replacement)
+            max_size_check = len(new_content.encode("utf-8")) <= MAX_FILE_SIZE
+            if not max_size_check:
+                return f"Error: New file content exceeds maximum size limit ({MAX_FILE_SIZE} bytes)."
             with open(path, "w", encoding="utf-8") as f:
                 f.write(new_content)
-            return f"Successfully replaced occurrences of the text in '{path}'."
+            return f"Successfully replaced in '{path}'."
+        except PermissionError:
+            return f"Error: Permission denied for '{path}'."
         except Exception as e:
+            logger.error(f"ReplaceFileContentTool failed: {e}")
             return f"Failed to modify file: {str(e)}"
 
 
@@ -160,18 +226,30 @@ class WriteFileTool(BaseTool):
             "content": "The full text content to write."
         }
     def execute(self, **kwargs) -> str:
-        path = os.path.expanduser(kwargs.get("path", ""))
-        path = path.replace("Área de Trabalho", "Área de trabalho").replace("Desktop", "Área de trabalho")
+        path = kwargs.get("path", "")
         content = kwargs.get("content", "")
+        validated = _validate_path(path)
         
+        if not validated:
+            return "Error: Invalid or unsafe path provided."
+            
         try:
-            # Ensure folder exists
-            os.makedirs(os.path.dirname(os.path.abspath(path)), exist_ok=True)
-            with open(path, "w", encoding="utf-8") as f:
+            dir_path = os.path.dirname(validated)
+            if dir_path and dir_path not in ("", "."):
+                os.makedirs(dir_path, exist_ok=True)
+            file_size = len(content.encode("utf-8"))
+            if file_size > MAX_FILE_SIZE:
+                return f"Error: Content exceeds maximum size limit ({MAX_FILE_SIZE} bytes)."
+            with open(validated, "w", encoding="utf-8") as f:
                 f.write(content)
-            return f"Successfully wrote {len(content)} characters to '{path}'."
+            logger.info(f"WriteFileTool success: {validated} ({file_size} bytes)")
+            return f"Successfully wrote {file_size} characters to '{validated}'."
+        except PermissionError:
+            return f"Error: Permission denied for '{validated}'."
         except Exception as e:
+            logger.error(f"WriteFileTool failed: {e}")
             return f"Failed to write to file: {str(e)}"
+
 
 # Register all tools
 registry.register(GetDesktopDirectoryTool())

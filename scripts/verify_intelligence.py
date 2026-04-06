@@ -1,32 +1,40 @@
 import os
 import sys
 import logging
+from pathlib import Path
 from typing import Optional
 
-# Configure structured logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    handlers=[
-        logging.FileHandler('arkanis_verification.log'),
-        logging.StreamHandler()
-    ]
-)
+# Configure structured logging avoiding duplicate handlers
 logger = logging.getLogger(__name__)
+if not logger.handlers:
+    logger.setLevel(logging.INFO)
+    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    
+    file_handler = logging.FileHandler('arkanis_verification.log')
+    file_handler.setFormatter(formatter)
+    
+    stream_handler = logging.StreamHandler()
+    stream_handler.setFormatter(formatter)
+    
+    logger.addHandler(file_handler)
+    logger.addHandler(stream_handler)
 
-# Add parent directory to path to enable core imports
-V3_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-sys.path.append(V3_DIR)
+# Use pathlib for robust path management
+CURRENT_FILE = Path(__file__).resolve()
+V3_DIR = CURRENT_FILE.parents[1]
+
+if str(V3_DIR) not in sys.path:
+    sys.path.append(str(V3_DIR))
 
 def validate_environment() -> bool:
     """Validate required environment variables and paths."""
     required_dirs = [
-        os.path.join(V3_DIR, 'core'),
-        os.path.join(V3_DIR, 'scripts')
+        V3_DIR / 'core',
+        V3_DIR / 'scripts'
     ]
     
     for dir_path in required_dirs:
-        if not os.path.isdir(dir_path):
+        if not dir_path.is_dir():
             logger.error("Missing required directory: %s", dir_path)
             return False
     return True
@@ -41,30 +49,30 @@ def verify() -> None:
         
         from core.llm_router import router
         
-        if not hasattr(router, 'active_model') or not router.active_model:
-            logger.error("AI router configuration invalid. Active model: %s", 
-                        getattr(router, 'active_model', 'None'))
+        active_model = getattr(router, 'active_model', None)
+        if not active_model:
+            logger.error("AI router configuration invalid. Active model is None or missing")
             raise ValueError("Router or active model not properly initialized")
 
         print("🔍 [Status] Validating Arkanis Intelligence...")
-        logger.info("Performing smoke test with router model: %s", router.active_model)
+        logger.info("Performing smoke test with router model: %s", active_model)
         
         test_prompt = "Hello Arkanis. Respond with 'READY' if you hear me."
-        if not isinstance(test_prompt, str) or len(test_prompt) > 1000:
-            raise ValueError("Invalid test prompt format")
-            
+        # Prompt validation is implicit by being a constant, but kept for logic consistency
+        
         response: Optional[str] = router.generate("System Validation", test_prompt)
         
-        if response and "[Error LLM]" not in response:
+        # Improved validation: check if response exists, is not empty, and doesn't contain error flags
+        if response and response.strip() and "[Error LLM]" not in response:
             logger.info("AI response validation successful. Response: %.30s...", response)
             print(f"\n🟢 [Success] Arkanis Operational")
-            print(f"   ├─ Model: {router.active_model}")
+            print(f"   ├─ Model: {active_model}")
             print(f"   └─ Status: Response validated successfully\n")
             sys.exit(0)
         else:
-            logger.error("AI response validation failed. Response: %s", 
-                        response[:100] if response else "None")
-            raise RuntimeError(f"AI Response Invalid: {response[:100] if response else 'No response'}")
+            err_msg = response[:100] if response else "No response received"
+            logger.error("AI response validation failed. Response: %s", err_msg)
+            raise RuntimeError(f"AI Response Invalid: {err_msg}")
             
     except ImportError as e:
         logger.critical("Core module import failed: %s", str(e), exc_info=True)

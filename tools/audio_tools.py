@@ -5,11 +5,28 @@ import uuid
 import asyncio
 import logging
 import time
-from typing import Dict, Any
+import threading
+import queue
+import shlex
+from pathlib import Path
+from typing import Dict, Any, Optional
 from tools.base_tool import BaseTool
 from tools.registry import registry
+from concurrent.futures import ThreadPoolExecutor
 
 logger = logging.getLogger("uvicorn")
+
+# Configurações ajustáveis via ambiente
+def _get_audio_workers() -> int:
+    return int(os.environ.get("AUDIO_WORKERS", "4"))
+
+def _get_whisper_threads() -> int:
+    threads = int(os.environ.get("WHISPER_THREADS", "2"))
+    return min(threads, os.cpu_count() or 4)
+
+AUDIO_EXECUTOR = ThreadPoolExecutor(max_workers=_get_audio_workers(), thread_name_prefix="audio_task")
+
+ALLOWED_EXTENSIONS = {".wav", ".mp3", ".ogg", ".m4a", ".flac", ".webm"}
 
 class SpeechToTextTool(BaseTool):
     """
@@ -20,10 +37,11 @@ class SpeechToTextTool(BaseTool):
     
     def __init__(self):
         super().__init__()
-        # Determine paths relative to project root
-        app_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-        self.binary_path = os.path.join(app_root, "libs", "whisper.cpp", "build", "bin", "whisper-cli")
-        self.model_path = os.path.join(app_root, "libs", "whisper.cpp", "models", "ggml-base.bin")
+        self._app_root = Path(__file__).resolve().parent.parent.parent
+        self._tmp_root = self._app_root / "tmp"
+        self.binary_path = self._app_root / "libs" / "whisper.cpp" / "build" / "bin" / "whisper-cli"
+        self.model_path = self._app_root / "libs" / "whisper.cpp" / "models" / "ggml-base.bin"
+        self.process_timeout = int(os.environ.get("AUDIO_PROCESS_TIMEOUT", "300"))
 
     @property
     def name(self) -> str:
@@ -38,149 +56,143 @@ class SpeechToTextTool(BaseTool):
         return {
             "temp_input": "Path to the temporary audio file to transcribe."
         }
-
+    
+    def _validate_path(self, path: str) -> Optional[Path]:
+        """Security: Validate path does not escape allowed directories."""
+        try:
+            validated = Path(path).resolve()
+            root_prefix = self._tmp_root
+            
+            if not str(validated).startswith(str(root_prefix)): 
+                logger.warning(f"Path traversal attempt: {path}")
+                return None
+            
+            return validated
+        except (ValueError, TypeError):
+            return None
+    
+    def _validate_extension(self, path: Path) -> bool:
+        return path.suffix.lower() in ALLOWED_EXTENSIONS
+    
     def execute(self, **kwargs) -> str:
         """
         Standard sync wrapper for tool registry compatibility.
-        Ensures execution works even if called from within another event loop.
+        Uses thread pool to prevent blocking the event loop.
         """
         try:
             try:
                 loop = asyncio.get_running_loop()
             except RuntimeError:
-                loop = None
-
-            if loop and loop.is_running():
-                # We are unfortunately inside an active loop. To avoid deadlocking FastAPI,
-                # we must spawn a fire-and-forget thread that creates its own loop safely without waiting.
-                # However, since tools expect a sync string return, we'll offload safely:
-                import threading
-                import queue
-                
-                result_queue = queue.Queue()
-                
-                def _run_isolated():
-                    try:
-                        new_loop = asyncio.new_event_loop()
-                        asyncio.set_event_loop(new_loop)
-                        res = new_loop.run_until_complete(self.execute_async(**kwargs))
-                        result_queue.put(res)
-                    except Exception as ex:
-                        result_queue.put({"error": str(ex), "status": "failed"})
-                    finally:
-                        if 'new_loop' in locals():
-                            new_loop.close()
-                
-                t = threading.Thread(target=_run_isolated, daemon=True)
-                t.start()
-                t.join(timeout=300) # Prevents indefinite hangout
-                
-                if t.is_alive():
-                    return json.dumps({"error": "Transição de áudio excedeu o tempo limite (Timeout).", "status": "failed"})
-                return json.dumps(result_queue.get())
-            else:
-                # No loop running, safe to use asyncio.run
                 return json.dumps(asyncio.run(self.execute_async(**kwargs)))
+            
+            result = loop.run_in_executor(AUDIO_EXECUTOR, self._execute_sync, **kwargs)
+            return json.dumps(asyncio.new_event_loop().run_until_complete(result))
         except Exception as e:
-            logger.error(f"Critical STT Execution Error: {str(e)}")
-            return json.dumps({"error": f"Erro crítico na execução: {str(e)}", "status": "failed"})
+            logger.error(f"Critical STT Execution Error")
+            return json.dumps({"error": "Erro crítico na execução", "status": "failed"})
+    
+    def _execute_sync(self, **kwargs) -> str:
+        return json.dumps(asyncio.run(self.execute_async(**kwargs)))
 
     async def execute_async(self, **kwargs) -> Dict[str, Any]:
         """Async execution with robust logging and error handling."""
         temp_input = kwargs.get("temp_input") or kwargs.get("audio_path")
+        
         if not temp_input:
-            return {"error": "Missing input file path.", "status": "failed"}
+            return {"error": "Missing input file path", "status": "failed"}
+        
+        input_path = self._validate_path(str(temp_input))
+        if not input_path or not input_path.exists():
+            return {"error": "Arquivo de entrada não encontrado", "status": "failed"}
+        
+        if not self._validate_extension(input_path):
+            return {"error": "Formato de arquivo não suportado", "status": "failed"}
+
+        unique_id = str(uuid.uuid4())[:12]
+        temp_wav = input_path.parent / f"{input_path.stem}_{unique_id}_converted.wav"
 
         start_time = time.time()
-        temp_wav = temp_input + ".converted.wav"
-        
+
         try:
-            # 0. Pre-flight checks
-            if not os.path.exists(temp_input):
-                return {"error": f"Arquivo de entrada não encontrado: {temp_input}", "status": "failed"}
+            if not self.binary_path.exists():
+                return {"error": "Subsistema Whisper não encontrado", "status": "failed"}
 
-            if not os.path.exists(self.binary_path):
-                return {"error": "Subsistema Whisper não encontrado. Reinstale as dependências.", "status": "failed"}
+            if not self.model_path.exists():
+                return {"error": "Modelo Whisper não encontrado", "status": "failed"}
 
-            # 1. Convert to 16kHz WAV Mono (Whisper Requirement)
+            # 1. Convert to 16kHz WAV Mono
             conv_process = await asyncio.create_subprocess_exec(
-                'ffmpeg', '-y', '-i', temp_input,
-                '-ar', '16000', '-ac', '1', '-c:a', 'pcm_s16le',
+                'ffmpeg',
+                '-y',
+                '-i', input_path,
+                '-ar', '16000',
+                '-ac', '1',
+                '-c:a', 'pcm_s16le',
                 temp_wav,
                 stdin=asyncio.subprocess.DEVNULL,
                 stdout=asyncio.subprocess.PIPE,
-                stderr=asyncio.subprocess.PIPE
+                stderr=asyncio.subprocess.PIPE,
+                timeout=self.process_timeout
             )
-            stdout, stderr = await conv_process.communicate()
-            
+            try:
+                stdout, stderr = await conv_process.communicate()
+            except asyncio.TimeoutError:
+                conv_process.kill()
+                return {"error": "Timeout na conversão de áudio", "status": "failed"}
+
             if conv_process.returncode != 0:
-                err_msg = stderr.decode().strip()
-                logger.error(f"FFMPEG Error: {err_msg}")
-                return {"error": f"Erro na conversão de áudio: {err_msg[:100]}", "status": "failed"}
+                return {"error": "Erro na conversão de áudio", "status": "failed"}
 
             # 2. Transcribe with whisper.cpp
-            if not os.path.exists(self.model_path):
-                return {"error": f"Modelo Whisper não encontrado em {self.model_path}", "status": "failed"}
-                
-            # Limit to max 2 threads to prevent 100% CPU lockup freezing WebUI
-            cpu_cores = os.cpu_count() or 4
-            threads = 2 if cpu_cores >= 4 else 1 
-            
-            # Correct paths for whisper.cpp shared libraries found in libs/whisper.cpp/build/
-            build_path = os.path.dirname(os.path.dirname(self.binary_path))
-            
-            # Setup environment with local library paths
-            src_path = os.path.join(build_path, "src")
-            ggml_src_path = os.path.join(build_path, "ggml", "src")
+            threads = _get_whisper_threads()
+            build_path = self.binary_path.parent.parent
+            src_path = build_path / "src"
+            ggml_src_path = build_path / "ggml" / "src"
             env = os.environ.copy()
             new_ld = f"{src_path}:{ggml_src_path}"
-            env["LD_LIBRARY_PATH"] = new_ld + (f":{env.get('LD_LIBRARY_PATH', '')}" if env.get('LD_LIBRARY_PATH') else "")
+            existing_ld = env.get("LD_LIBRARY_PATH", "")
+            env["LD_LIBRARY_PATH"] = new_ld + (f":{existing_ld}" if existing_ld else "")
             
             whisper_process = await asyncio.create_subprocess_exec(
-                self.binary_path, 
-                '-m', self.model_path,
-                '-f', temp_wav,
-                '-nt', # No timestamps
+                shlex.split(str(self.binary_path)),
+                '-m', str(self.model_path),
+                '-f', str(temp_wav),
+                '-nt',
                 '-t', str(threads),
-                '-l', 'pt', # Force Portuguese for STT stability
+                '-l', 'pt',
                 stdin=asyncio.subprocess.DEVNULL,
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.PIPE,
-                env=env
+                env=env,
+                timeout=self.process_timeout
             )
-            w_stdout, w_stderr = await whisper_process.communicate()
-            
-            if whisper_process.returncode != 0:
-                err_msg = w_stderr.decode().strip()
-                logger.error(f"Whisper Error: {err_msg}")
-                return {"error": f"Erro na transcrição: {err_msg[:100]}", "status": "failed"}
+            try:
+                w_stdout, w_stderr = await whisper_process.communicate()
+            except asyncio.TimeoutError:
+                whisper_process.kill()
+                return {"error": "Timeout na transcrição", "status": "failed"}
 
             transcription = w_stdout.decode().strip()
-            
-            # 3. Clean up VAD artifacts / system noises
             clean_text = transcription.replace("[BLANK_AUDIO]", "").replace("[SILENCE]", "").strip()
             
-            duration = time.time() - start_time
             return {
                 "text": clean_text,
                 "status": "success",
                 "metrics": {
-                    "duration": round(duration, 2),
+                    "duration": round(time.time() - start_time, 2),
                     "model": "whisper-base-cpp",
-                    "threads": threads
+                    "threads": threads,
+                    "file_id": unique_id
                 }
             }
 
         except Exception as e:
-            logger.error(f"STT Tool Exception: {str(e)}")
-            return {"error": str(e), "status": "failed"}
+            logger.error(f"STT Tool Exception")
+            return {"error": "Erro na execução", "status": "failed"}
+        
         finally:
-            # Cleanup only the converted wav
-            if os.path.exists(temp_wav):
+            if temp_wav.exists():
                 try:
-                    os.remove(temp_wav)
-                except:
+                    temp_wav.unlink()
+                except Exception:
                     pass
-
-# Auto-registration
-registry.register(SpeechToTextTool())

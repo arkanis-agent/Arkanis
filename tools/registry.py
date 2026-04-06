@@ -1,18 +1,20 @@
-from typing import Dict, Optional, List
+from typing import Dict, Optional, List, Callable
 import importlib
+import threading
 from .base_tool import BaseTool
+from typing import Final
 
 class ToolRegistry:
     """
     ARKANIS V3.1 - Managed Tool Registry (Lazy Loading)
-    A singleton class to manage the registration and discovery of tools.
-    Supports lazy loading to reduce boot-up time and memory footprint.
+    Single instance to manage registration and discovery of tools.
     """
-    _instance = None
+    _instance: Optional['ToolRegistry'] = None
     _tools: Dict[str, BaseTool] = {}
-    
-    # Mapping of tool names to their containing modules for lazy loading
-    _LAZY_MAP = {
+    _lock = threading.Lock()
+    _lazy_callbacks: Dict[str, List[Callable]] = {}
+
+    _LAZY_MAP: Final[Dict[str, str]] = {
         "autonomous_browser": "tools.browser_tools",
         "deep_researcher": "tools.research_tools",
         "quick_web_search": "tools.research_tools",
@@ -36,55 +38,107 @@ class ToolRegistry:
         "get_credential": "tools.vault_tools",
         "create_reminder": "tools.reminder_tools",
         "list_reminders": "tools.reminder_tools",
-        "delete_reminder": "tools.reminder_tools"
+        "delete_reminder": "tools.reminder_tools",
+        "forge_agent": "tools.forge_agent_tool"
     }
 
-    def __new__(cls):
+    def __new__(cls) -> 'ToolRegistry':
         if cls._instance is None:
-            cls._instance = super(ToolRegistry, cls).__new__(cls)
+            with cls._lock:
+                if cls._instance is None:
+                    cls._instance = super().__new__(cls)
+                    cls._instance._initialized = False
+                    cls._instance._init_callbacks = {}
         return cls._instance
 
-    def register(self, tool: BaseTool):
-        """Register a tool instance."""
-        self._tools[tool.name] = tool
-        # print(f"[Registry] Plugin Active: {tool.name}") # Silent for performance
+    def register(self, tool: BaseTool) -> None:
+        """Registrar uma ferramenta."""
+        with self._lock:
+            self._tools[tool.name] = tool
+            if not self._initialized:
+                from core.logger import logger
+                logger.info(f"Ferramenta Registrada: {tool.name}")
+
+    def unregister(self, name: str) -> bool:
+        """Remover uma ferramenta do registro."""
+        with self._lock:
+            if name in self._tools:
+                del self._tools[name]
+                return True
+            return False
+
+    def on_lazy_load(self, tool_name: str, callback: Callable) -> None:
+        """Register callback for when tool is lazily loaded."""
+        with self._lock:
+            self._lazy_callbacks.setdefault(tool_name, []).append(callback)
 
     def get_tool(self, name: str) -> Optional[BaseTool]:
-        """Retrieve a tool by name, loading it lazily if necessary."""
-        # 1. Check if already loaded
+        """Recuperar ferramenta por nome, carregando se necessário."""
         if name in self._tools:
             return self._tools[name]
-        
-        # 2. Check if we know where it is
-        module_path = self._LAZY_MAP.get(name)
-        if module_path:
+
+        with self._lock:
+            if name in self._tools:
+                return self._tools[name]
+
+            if name not in self._LAZY_MAP:
+                return None
+
+            module_path = self._LAZY_MAP[name]
             try:
-                # print(f"[Registry] Lazy loading plugin: {module_path}...")
-                importlib.import_module(module_path)
-                return self._tools.get(name)
+                imported_module = importlib.import_module(module_path)
+                
+                if not hasattr(imported_module, tool_registry_callback_name := "__register_tools__"):
+                    raise AttributeError(f"Module {module_path} missing __register_tools__ hook")
+                
+                imported_module.__register_tools__()  
+
+                if name in self._tools:
+                    callback_list = self._lazy_callbacks.get(name, [])
+                    for cb in callback_list:
+                        try:
+                            cb(self._tools[name])
+                        except Exception:
+                            pass
+                    return self._tools[name]
             except Exception as e:
                 from core.logger import logger
-                logger.error(f"Failed to lazy load tool '{name}': {str(e)}")
-        
+                logger.error(f"Falha ao carregar ferramenta '{name}': {str(e)}")
+
         return None
 
     def list_tools(self) -> Dict[str, str]:
-        """Return a dictionary of tool names and their descriptions."""
-        # Note: In lazy mode, descriptions might not be available until loaded.
-        # But for the Router, we usually need the names first.
-        # We ensure standard tools are pre-loaded or use the names from the map.
-        tools_list = {name: "Plugin (Pendente carregar)" for name in self._LAZY_MAP.keys()}
-        # Update with actual descriptions for loaded tools
-        for name, tool in self._tools.items():
-            tools_list[name] = tool.description
-        return tools_list
+        """Retorna nome e descrição de todas as ferramentas."""
+        result: Dict[str, str] = {}
+        self._load_all_lazy = True
+        with self._lock:
+            result = {
+                name: "Lazily Loaded" if name in self._LAZY_MAP else "Unknown"
+                for name in self._LAZY_MAP
+            }
+            for name, tool in self._tools.items():
+                result[name] = tool.description
+            self._load_all_lazy = False
+        return result
 
     def get_all_tools(self) -> List[BaseTool]:
-        """Forces loading of all known tools and returns them."""
-        for name, mod in self._LAZY_MAP.items():
-            if name not in self._tools:
+        """Força carregamento de todas as ferramentas conhecidas."""
+        with self._lock:
+            for name in self._LAZY_MAP.keys():
                 self.get_tool(name)
+            self._initialized = True
         return list(self._tools.values())
 
-# Global registry instance
+    @classmethod
+    def reset_instance(cls) -> None:
+        """Reseta singleton para testes."""
+        with cls._lock:
+            cls._instance = None
+            cls._tools = {}
+            cls._lazy_callbacks = {}
+
+    @property
+    def is_initialized(self) -> bool:
+        return getattr(self, '_initialized', False)
+
 registry = ToolRegistry()

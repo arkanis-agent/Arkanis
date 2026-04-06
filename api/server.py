@@ -359,6 +359,23 @@ async def handle_message(request: MessageRequest):
         # Run in dedicated agent executor — never blocks uvicorn polling threads
         # Propagate text, images and universal file attachments
         response = await run_agent(agent.handle_input, request.text, images=request.images, files=request.files)
+        
+        # --- FORGE INTERCEPT: Detect if any underlying tool issued a FORGE_REQUEST ---
+        # The forge_agent tool returns a string starting with FORGE_REQUEST:<json>
+        # We scan the raw response and extract it before the SOUL formatter buries it.
+        FORGE_PREFIX = "FORGE_REQUEST:"
+        if FORGE_PREFIX in str(response):
+            try:
+                # Extract the JSON payload after the prefix
+                forge_start = str(response).find(FORGE_PREFIX) + len(FORGE_PREFIX)
+                forge_json_str = str(response)[forge_start:].strip()
+                # Only take up to the first newline or end
+                forge_json_str = forge_json_str.split("\n")[0].strip()
+                forge_data = json.loads(forge_json_str)
+                return {"response": response, "forge_request": forge_data}
+            except (json.JSONDecodeError, ValueError):
+                pass  # Fall through to normal response if parsing fails
+        
         return {"response": response}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

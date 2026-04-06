@@ -159,6 +159,25 @@ async function sendMessage(textOverride = null) {
         
         const data = await response.json();
         const thinkingMsg = document.getElementById(thinkingId);
+
+        // ─── FORGE INTERCEPT ───────────────────────────────────────────────
+        // If the agent proposed creating a new sub-agent, open permission modal
+        if (data.forge_request) {
+            if (thinkingMsg) {
+                const contentDiv = thinkingMsg.querySelector('[id^="bot-content-"]');
+                const confirmMsg = `🔩 <strong>Agent Forge solicitado.</strong> Abri o painel de <strong>Revisão de Permissões</strong> para você confirmar antes de ativar o novo especialista.`;
+                if (contentDiv) {
+                    contentDiv.innerHTML = "";
+                    await typeWriter(contentDiv, confirmMsg);
+                } else {
+                    thinkingMsg.innerHTML = confirmMsg;
+                }
+            }
+            openAgentForgeModal(data.forge_request);
+            return;
+        }
+        // ──────────────────────────────────────────────────────────────────
+
         if (thinkingMsg) {
             // Use the typewriter effect for a natural feel
             const contentDiv = thinkingMsg.querySelector('[id^="bot-content-"]');
@@ -400,11 +419,11 @@ async function typeWriter(element, html, append = false) {
                 scrollDown();
                 
                 // Human-like cadence
-                let delay = 15 + Math.random() * 20;
+                let delay = 1 + Math.random() * 5;
                 
                 // Reflection Pauses (periods, commas, etc.)
-                if (char === '.' || char === '!' || char === '?') delay += 400;
-                else if (char === ',' || char === ':' || char === ';') delay += 200;
+                if (char === '.' || char === '!' || char === '?') delay += 40;
+                else if (char === ',' || char === ':' || char === ';') delay += 20;
                 
                 await new Promise(resolve => setTimeout(resolve, delay));
             }
@@ -4057,3 +4076,214 @@ setInterval(() => {
 setInterval(pollEvolutionState, 5000);
 pollEvolutionState(); // initial call
 loadEvolutionConfig(); // pre-fill interval input on page load
+
+// =============================================================
+// AGENT FORGE MODAL — Permission Review System
+// =============================================================
+
+// Tool metadata for permission display
+const TOOL_PERMISSION_META = {
+    'web_search':      { label: 'Busca na Internet',    icon: 'search',          risk: 'low',    desc: 'Pesquisar na web em tempo real' },
+    'fetch_url':       { label: 'Leitura de URLs',      icon: 'link',            risk: 'low',    desc: 'Acessar e ler conteúdo de páginas web' },
+    'autonomous_browser':{ label: 'Navegador Autônomo', icon: 'open_in_browser', risk: 'high',   desc: 'Controlar um browser real, fazer login e navegar' },
+    'python_executor': { label: 'Executor Python',      icon: 'code',            risk: 'high',   desc: 'Executar código Python arbitrário no sistema' },
+    'write_file':      { label: 'Escrita de Arquivos',  icon: 'edit_document',   risk: 'high',   desc: 'Criar e modificar arquivos no sistema de arquivos' },
+    'read_file':       { label: 'Leitura de Arquivos',  icon: 'folder_open',     risk: 'medium', desc: 'Ler arquivos do sistema de arquivos' },
+    'save_credential': { label: 'Salvar Credencial',    icon: 'key',             risk: 'high',   desc: 'Armazenar senhas e logins no cofre criptografado' },
+    'get_credential':  { label: 'Ler Credencial',       icon: 'key',             risk: 'high',   desc: 'Acessar usuários e senhas salvas no Vault' },
+    'system_monitor':  { label: 'Monitor do Sistema',   icon: 'monitor_heart',   risk: 'low',    desc: 'Verificar CPU, RAM e métricas do sistema' },
+    'swarm_coordinator':{ label: 'Coordenador de Swarm',icon: 'hub',             risk: 'medium', desc: 'Coordenar múltiplos agentes em paralelo' },
+    'telegram_notifier':{ label: 'Notificações Telegram',icon: 'send',           risk: 'medium', desc: 'Enviar mensagens via Telegram' },
+    'file_op':         { label: 'Operações de Arquivo', icon: 'folder',          risk: 'medium', desc: 'Copiar, mover ou deletar arquivos' },
+};
+
+const RISK_CONFIG = {
+    low:    { label: 'BAIXO',  icon: 'shield',    color: 'text-emerald-400', bg: 'bg-emerald-500/10 border-emerald-500/20', badgeBg: 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30', desc: 'Este agente tem permissões de leitura e busca apenas.' },
+    medium: { label: 'MÉDIO',  icon: 'warning',   color: 'text-amber-400',   bg: 'bg-amber-500/10 border-amber-500/20',     badgeBg: 'bg-amber-500/20 text-amber-400 border-amber-500/30',     desc: 'Este agente solicita permissões sensíveis. Revise abaixo.' },
+    high:   { label: 'ALTO',   icon: 'gpp_bad',   color: 'text-rose-400',    bg: 'bg-rose-500/10 border-rose-500/20',       badgeBg: 'bg-rose-500/20 text-rose-400 border-rose-500/30',         desc: 'Este agente solicita acesso de alto risco. Confirme com cuidado.' },
+};
+
+let _forgePermissionsState = {}; // { tool_name: true/false }
+
+function openAgentForgeModal(forgeData) {
+    const modal = document.getElementById('agentForgeModal');
+    if (!modal) return;
+
+    // Pre-fill fields
+    const idField = document.getElementById('forgeAgentId');
+    const roleField = document.getElementById('forgeAgentRole');
+    const personaField = document.getElementById('forgeAgentPersona');
+    if (idField) idField.value = forgeData.agent_id || '';
+    if (roleField) roleField.value = forgeData.role || '';
+    if (personaField) personaField.value = forgeData.persona || '';
+
+    // Build permission state from proposed permissions
+    const proposedPermissions = forgeData.permissions || [];
+    _forgePermissionsState = {};
+    proposedPermissions.forEach(p => { _forgePermissionsState[p] = true; });
+
+    // Render permission list
+    renderForgePermissions(proposedPermissions);
+
+    // Calculate and render security level
+    updateForgeSecurityLevel(proposedPermissions);
+
+    // Show/hide vault warning
+    const credentialTools = ['save_credential', 'get_credential'];
+    const hasVaultAccess = proposedPermissions.some(p => credentialTools.includes(p));
+    const vaultWarning = document.getElementById('forgeCredentialWarning');
+    if (vaultWarning) vaultWarning.classList.toggle('hidden', !hasVaultAccess);
+    if (vaultWarning) vaultWarning.classList.toggle('flex', hasVaultAccess);
+
+    // Show modal
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+}
+
+function closeAgentForgeModal() {
+    const modal = document.getElementById('agentForgeModal');
+    if (modal) {
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+    }
+}
+
+function renderForgePermissions(permissions) {
+    const list = document.getElementById('forgePermissionList');
+    if (!list) return;
+    list.innerHTML = '';
+
+    if (!permissions || permissions.length === 0) {
+        list.innerHTML = '<p class="text-xs text-slate-600 italic">Nenhuma ferramenta específica solicitada. O agente operará com acesso padrão de conversa.</p>';
+        return;
+    }
+
+    permissions.forEach(toolName => {
+        const meta = TOOL_PERMISSION_META[toolName] || {
+            label: toolName, icon: 'build', risk: 'medium', desc: 'Ferramenta personalizada'
+        };
+        const riskCfg = RISK_CONFIG[meta.risk] || RISK_CONFIG.medium;
+        const isActive = _forgePermissionsState[toolName] !== false;
+
+        const item = document.createElement('div');
+        item.id = `forge-perm-${toolName}`;
+        item.className = `flex items-center gap-3 p-3 rounded-xl border transition-all cursor-pointer ${isActive ? 'bg-slate-800/60 border-white/10' : 'bg-slate-900/40 border-white/5 opacity-40'}`;
+        item.innerHTML = `
+            <div class="w-8 h-8 rounded-lg ${isActive ? riskCfg.bg : 'bg-slate-800 border-slate-700'} border flex items-center justify-center transition-all shrink-0">
+                <span class="material-symbols-outlined text-[16px] ${isActive ? riskCfg.color : 'text-slate-600'}">${meta.icon}</span>
+            </div>
+            <div class="flex-1 min-w-0">
+                <p class="text-xs font-bold text-slate-200">${meta.label}</p>
+                <p class="text-[10px] text-slate-500 truncate">${meta.desc}</p>
+            </div>
+            <div class="flex items-center gap-2 shrink-0">
+                <span class="text-[8px] font-black px-1.5 py-0.5 rounded-full border ${riskCfg.badgeBg} uppercase tracking-widest">${riskCfg.label}</span>
+                <span class="material-symbols-outlined text-sm ${isActive ? 'text-emerald-400' : 'text-slate-600'} perm-check">${isActive ? 'check_circle' : 'cancel'}</span>
+            </div>`;
+
+        item.addEventListener('click', () => toggleForgePermission(toolName, item, meta, riskCfg));
+        list.appendChild(item);
+    });
+}
+
+function toggleForgePermission(toolName, itemEl, meta, riskCfg) {
+    _forgePermissionsState[toolName] = !(_forgePermissionsState[toolName] !== false);
+    const isActive = _forgePermissionsState[toolName];
+
+    // Update item visuals
+    itemEl.className = `flex items-center gap-3 p-3 rounded-xl border transition-all cursor-pointer ${isActive ? 'bg-slate-800/60 border-white/10' : 'bg-slate-900/40 border-white/5 opacity-40'}`;
+    const icon = itemEl.querySelector('.material-symbols-outlined:first-child');
+    const check = itemEl.querySelector('.perm-check');
+    if (icon) { icon.className = `material-symbols-outlined text-[16px] ${isActive ? riskCfg.color : 'text-slate-600'}`; }
+    if (check) { check.textContent = isActive ? 'check_circle' : 'cancel'; check.className = `material-symbols-outlined text-sm ${isActive ? 'text-emerald-400' : 'text-slate-600'} perm-check`; }
+
+    // Recalculate security level
+    const activeTools = Object.keys(_forgePermissionsState).filter(k => _forgePermissionsState[k]);
+    updateForgeSecurityLevel(activeTools);
+
+    // Update vault warning
+    const credentialTools = ['save_credential', 'get_credential'];
+    const hasVaultAccess = activeTools.some(p => credentialTools.includes(p));
+    const vaultWarning = document.getElementById('forgeCredentialWarning');
+    if (vaultWarning) { vaultWarning.classList.toggle('hidden', !hasVaultAccess); vaultWarning.classList.toggle('flex', hasVaultAccess); }
+}
+
+function updateForgeSecurityLevel(activeTools) {
+    let maxRisk = 'low';
+    activeTools.forEach(t => {
+        const meta = TOOL_PERMISSION_META[t];
+        if (meta?.risk === 'high') maxRisk = 'high';
+        else if (meta?.risk === 'medium' && maxRisk !== 'high') maxRisk = 'medium';
+    });
+
+    const cfg = RISK_CONFIG[maxRisk];
+    const banner = document.getElementById('forgeSecurityBanner');
+    const iconEl = document.getElementById('forgeSecurityIcon');
+    const labelEl = document.getElementById('forgeSecurityLabel');
+    const descEl = document.getElementById('forgeSecurityDesc');
+    const badgeEl = document.getElementById('forgeSecurityBadge');
+
+    if (banner) banner.className = `relative z-10 flex items-center gap-3 px-4 py-3 rounded-xl border mb-4 shrink-0 ${cfg.bg}`;
+    if (iconEl) { iconEl.textContent = cfg.icon; iconEl.className = `material-symbols-outlined ${cfg.color}`; }
+    if (labelEl) { labelEl.textContent = `Nível de Acesso: ${cfg.label}`; labelEl.className = `text-[10px] font-black ${cfg.color} uppercase tracking-widest`; }
+    if (descEl) descEl.textContent = cfg.desc;
+    if (badgeEl) { badgeEl.textContent = cfg.label; badgeEl.className = `ml-auto text-[8px] font-black px-2 py-1 rounded-full border uppercase tracking-widest ${cfg.badgeBg}`; }
+}
+
+async function submitAgentForge() {
+    const btn = document.getElementById('submitForgeBtn');
+    const agentId = document.getElementById('forgeAgentId')?.value.trim();
+    const role = document.getElementById('forgeAgentRole')?.value.trim();
+    const persona = document.getElementById('forgeAgentPersona')?.value.trim();
+
+    if (!agentId || !role) {
+        showToast('ID do agente e Papel são obrigatórios.', 'rose');
+        return;
+    }
+
+    // Get approved tools (only active ones)
+    const approvedTools = Object.keys(_forgePermissionsState).filter(k => _forgePermissionsState[k]);
+
+    const originalHtml = btn.innerHTML;
+    btn.innerHTML = '<span class="material-symbols-outlined text-sm animate-spin">sync</span> Iniciando Forge...';
+    btn.disabled = true;
+
+    try {
+        const response = await fetch('/agents/create', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                agent_id: agentId,
+                role: role,
+                persona: persona,
+                allowed_tools: approvedTools
+            })
+        });
+
+        const data = await response.json();
+        if (response.ok && data.status === 'success') {
+            closeAgentForgeModal();
+            showToast(`✅ Agente "${role}" forjado com sucesso! (${approvedTools.length} ferramentas aprovadas)`, 'purple');
+            // Refresh observability if panel is open
+            if (typeof fetchObservabilityData === 'function') fetchObservabilityData();
+        } else {
+            throw new Error(data.detail || 'Falha ao criar agente.');
+        }
+    } catch (e) {
+        showToast(`Erro ao forjar agente: ${e.message}`, 'rose');
+        btn.innerHTML = originalHtml;
+        btn.disabled = false;
+    }
+}
+
+// Wire up modal events (runs after DOM is ready)
+document.addEventListener('DOMContentLoaded', () => {
+    document.getElementById('closeAgentForgeModalBtn')?.addEventListener('click', closeAgentForgeModal);
+    document.getElementById('cancelForgeBtn')?.addEventListener('click', closeAgentForgeModal);
+    document.getElementById('submitForgeBtn')?.addEventListener('click', submitAgentForge);
+
+    // Close on backdrop click
+    document.getElementById('agentForgeModal')?.addEventListener('click', (e) => {
+        if (e.target === document.getElementById('agentForgeModal')) closeAgentForgeModal();
+    });
+});

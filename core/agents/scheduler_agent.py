@@ -2,8 +2,10 @@ import os
 import json
 import time
 import datetime
+import tempfile
+import threading
 from threading import Thread
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 
 class SchedulerAgent:
     """
@@ -11,21 +13,28 @@ class SchedulerAgent:
     Continuously monitors the pending reminders database and dispatches notifications
     when a scheduled time is reached.
     """
-    def __init__(self, kernel):
+    def __init__(self, kernel, check_interval: int = 60):
         self.kernel = kernel
         self.reminders_file = os.path.join("data", "reminders.json")
         self.running = False
+        self._lock = threading.Lock()
+        self._check_interval = check_interval
         
     def start_loop(self):
         """Starts the background checking thread."""
-        self.running = True
+        with self._lock:
+            if self.running:
+                return
+            self.running = True
+        
         thread = Thread(target=self._monitor_loop, daemon=True)
         thread.start()
         self.kernel.log("Scheduler Agent initialized and tracking temporal events.", "system")
         
     def stop_loop(self):
-        """Stops the background loop."""
-        self.running = False
+        """Stops the background loop gracefully."""
+        with self._lock:
+            self.running = False
 
     def _monitor_loop(self):
         while self.running:
@@ -34,45 +43,71 @@ class SchedulerAgent:
             except Exception as e:
                 self.kernel.log(f"Scheduler Agent error: {e}", "error")
                 
-            # Sleep for 60 seconds (1 minute interval checking)
-            time.sleep(60)
-            
+            # Sleep with interruption support
+            for _ in range(self._check_interval):
+                if not self.running:
+                    break
+                time.sleep(1)
+                
     def _check_reminders(self):
         if not os.path.exists(self.reminders_file):
             return
             
-        with open(self.reminders_file, "r", encoding="utf-8") as f:
-            try:
-                reminders = json.load(f)
-            except json.JSONDecodeError:
-                return # Empty or malformed
+        reminders = None
+        with self._lock:
+            with open(self.reminders_file, "r", encoding="utf-8") as f:
+                try:
+                    reminders = json.load(f)
+                except json.JSONDecodeError:
+                    reminders = {}
                 
-        now = datetime.datetime.now()
-        has_changes = False
+                now = datetime.datetime.now()
+                has_changes = False
+                pending_updates = []
+                
+                for r_id, r_data in reminders.items():
+                    if r_data.get("status") != "pending":
+                        continue
+                    
+                    trigger_time_str = r_data.get("trigger_time")
+                    if not trigger_time_str:
+                        continue
+                        
+                    try:
+                        trigger_time = datetime.datetime.strptime(trigger_time_str, "%Y-%m-%d %H:%M:%S")
+                    except ValueError:
+                        continue
+                        
+                    if now >= trigger_time:
+                        pending_updates.append(r_id)
+                        has_changes = True
+                        
+                # Apply updates with proper locking
+                r_id_queue = []
+                for r_id in pending_updates:
+                    r_data = reminders.get(r_id)
+                    if r_data:
+                        r_data["status"] = "completed"
+                        r_data["completed_at"] = now.strftime("%Y-%m-%d %H:%M:%S")
+                        self._dispatch_notification(r_data)
+                
+        # Atomic write outside lock
+        if has_changes and reminders is not None:
+            self._atomic_write(json.dumps(reminders, indent=4, ensure_ascii=False))
+
+    def _atomic_write(self, content: str):
+        """Write JSON data atomically using temp file + rename."""
+        dir_path = os.path.dirname(self.reminders_file)
+        with tempfile.NamedTemporaryFile(
+            mode='w',
+            encoding='utf-8',
+            dir=dir_path,
+            delete=False
+        ) as temp_f:
+            temp_path = temp_f.name
+            temp_f.write(content)
         
-        for r_id, r_data in list(reminders.items()):
-            if r_data.get("status") != "pending":
-                continue
-                
-            trigger_time_str = r_data.get("trigger_time")
-            if not trigger_time_str:
-                continue
-                
-            try:
-                trigger_time = datetime.datetime.strptime(trigger_time_str, "%Y-%m-%d %H:%M:%S")
-            except ValueError:
-                continue # Bad format
-                
-            if now >= trigger_time:
-                # Time to trigger!
-                self._dispatch_notification(r_data)
-                r_data["status"] = "completed"
-                r_data["completed_at"] = now.strftime("%Y-%m-%d %H:%M:%S")
-                has_changes = True
-                
-        if has_changes:
-            with open(self.reminders_file, "w", encoding="utf-8") as f:
-                json.dump(reminders, f, indent=4, ensure_ascii=False)
+        os.replace(temp_path, self.reminders_file)
 
     def _dispatch_notification(self, reminder_data: Dict[str, Any]):
         desc = reminder_data.get("description", "Notificação do Sistema")
@@ -82,17 +117,17 @@ class SchedulerAgent:
         self.kernel.log(log_msg, "system")
         
         # Dispatch via Telegram if configured
-        import requests
         telegram_token = os.environ.get("TELEGRAM_BOT_TOKEN")
         telegram_admin = os.environ.get("TELEGRAM_ADMIN_ID")
         
         if telegram_token and telegram_admin:
-            msg = f"🔔 *Arkanis Lembrete Ativo*\n\n_Agendado para agora:_\n{desc}\n\n\\(Criado em: {created}\\)"
-            url = f"https://api.telegram.org/bot{telegram_token}/sendMessage"
             try:
+                import requests
+                msg = f"🔔 *Arkanis Lembrete Ativo*\n\n_Agendado para agora:_\n{desc}\n\n(Create in: {created})"
+                url = f"https://api.telegram.org/bot{telegram_token}/sendMessage"
                 requests.post(url, json={
                     "chat_id": telegram_admin,
-                    "text": msg,
+                    "text": str(msg),
                     "parse_mode": "MarkdownV2"
                 }, timeout=10)
             except Exception as e:

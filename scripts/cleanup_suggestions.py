@@ -5,12 +5,13 @@ from pathlib import Path
 
 def normalize(text):
     """Normalize text for better matching by removing whitespace, comments, and special characters."""
+    if not text:
+        return ""
     text = re.sub(r'#.*', '', text)
     text = re.sub(r'\W+', '', text)
     return text.lower().strip()
 
 def main():
-    # Use dynamic path detection to avoid hardcoding
     project_root = Path(os.getenv("ARKANIS_ROOT", Path(__file__).parents[1]))
     suggestions_file = project_root / "data" / "suggestions.json"
     
@@ -32,8 +33,8 @@ def main():
     print(f"Auditing {len(suggestions)} suggestions...")
     cleaned_count = 0
     total_audited = 0
+    changes_made = False
 
-    # Map of title keywords to code signatures for Logic Match
     logic_matches = {
         "hot-reload": "reload=True",
         "suggestionactionrequest": "SuggestionActionRequest"
@@ -61,14 +62,18 @@ def main():
             title = s.get("title", "").lower()
 
             is_applied = False
+            reason = ""
 
             # Heuristic 1: Exact snippet match (normalized)
-            if proposed and normalize(proposed) in normalize(current_content):
-                is_applied = True
-                reason = "Snippet Match"
+            if proposed:
+                norm_proposed = normalize(proposed)
+                norm_content = normalize(current_content)
+                if norm_proposed and norm_proposed in norm_content:
+                    is_applied = True
+                    reason = "Snippet Match"
             
             # Heuristic 2: Dynamic Logic Match
-            else:
+            if not is_applied:
                 for keyword, signature in logic_matches.items():
                     if keyword in title and signature in current_content:
                         is_applied = True
@@ -78,16 +83,20 @@ def main():
             if is_applied:
                 s["status"] = "applied"
                 cleaned_count += 1
+                changes_made = True
                 print(f" [✓] Marked as Applied: {s.get('title')} -> {reason} ({abs_path.name})")
 
         except Exception as e:
             print(f" [!] Error auditing {file_path_str}: {e}")
 
-    # Save results
-    with open(suggestions_file, "w", encoding="utf-8") as f:
-        json.dump(suggestions, f, indent=4)
+    if changes_made:
+        with open(suggestions_file, "w", encoding="utf-8") as f:
+            json.dump(suggestions, f, indent=4)
+        print("\nChanges saved to suggestions.json.")
+    else:
+        print("\nNo changes detected. File not updated.")
 
-    print(f"\nAudit complete!")
+    print(f"Audit complete!")
     print(f"Total Audited: {total_audited}")
     print(f"Already Implemented: {cleaned_count}")
     print(f"Remaining Pending: {total_audited - cleaned_count}")

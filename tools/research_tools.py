@@ -1,11 +1,12 @@
 import os
 import json
 import logging
+import urllib.parse
 from typing import Dict, Any
 from tools.base_tool import BaseTool
 from tools.registry import registry
 
-logger = logging.getLogger("uvicorn")
+logger = logging.getLogger(__name__)
 
 class IntelligenceResearcher(BaseTool):
     """
@@ -13,6 +14,11 @@ class IntelligenceResearcher(BaseTool):
     Uses the browser tools to perform multi-source search and synthesize an executive summary.
     """
     
+    def __init__(self):
+        self._max_sources = 10
+        self._min_sources = 1
+        self._tool_name = "browser_action"
+
     @property
     def name(self) -> str:
         return "deep_researcher"
@@ -25,48 +31,50 @@ class IntelligenceResearcher(BaseTool):
     def arguments(self) -> Dict[str, str]:
         return {
             "topic": "O tema ou pergunta complexa para pesquisar.",
-            "sources_count": "Número aproximado de fontes para consultar (default: 3)."
+            "sources_count": "Número aproximado de fontes para consultar (1-10, default: 3)."
         }
 
     async def execute_async(self, **kwargs) -> str:
         topic = kwargs.get("topic")
-        sources = int(kwargs.get("sources_count", 3))
+        try:
+            sources_count = int(kwargs.get("sources_count", 3))
+        except ValueError:
+            sources_count = 3
         
+        # Validações de segurança e lógica de negócio
         if not topic:
             return "ERRO: Tópico de pesquisa não fornecido."
             
+        if len(topic) > 500:
+            return "ERRO: Tópico muito longo. Máximo 500 caracteres."
+            
+        sources_count = max(self._min_sources, min(self._max_sources, sources_count))
+        
         logger.info(f"Iniciando Deep Research sobre: {topic}")
         
-        browser = registry.get_tool("browser_action")
+        browser = registry.get_tool(self._tool_name)
         if not browser:
-            return "ERRO: Ferramenta de navegador (browser_action) não disponível."
+            return f"ERRO: Ferramenta '{self._tool_name}' não disponível no registry."
             
-        # 1. Search for the topic
-        search_query = f"https://www.google.com/search?q={topic.replace(' ', '+')}"
+        # Segurança: URL encoding correto para evitar injeção de URL
+        encoded_topic = urllib.parse.quote(topic[:200], safe='')
+        search_query = f"https://www.google.com/search?q={encoded_topic}"
         search_res = await browser.execute_async(action="navigate", url=search_query)
         
-        # 2. Extract top links (Mocking logic for the proof of concept, in a real agent loop the LLM calls these sequentially)
-        # But here we want an 'Autonomous Tool' feel.
-        
-        report = f"# RELATÓRIO DE INTELIGÊNCIA ARKANIS\n\n## Tópico: {topic}\n\n"
+        report = f"# RELATÓRIO DE INTELIGÊNCIA ARKANIS\n\n## Tópico: {topic[:100]}\n\n"
         report += "Este é um relatório sintetizado de forma autônoma utilizando o mecanismo Arkanis Deep Web Research.\n\n"
-        
-        # In a real scenario, we would parse the search results and visit N pages.
-        # For this version, we'll inform the LLM that it should use the browser tool to gather more if it needs,
-        # but this tool provides the BOOTSTRAP of research.
-        
         report += "### 🏁 Síntese Preliminar\n"
-        report += f"A pesquisa inicial sobre '{topic}' foi iniciada em {sources} eixos principais.\n"
+        report += f"A pesquisa inicial sobre '{topic[:50]}' foi iniciada em {sources_count} eixos principais.\n"
         report += "\n**Nota para o Agente:** Utilize a ferramenta `browser_action` para navegar nos links específicos se desejar detalhes técnicos adicionais.\n"
         
         return report
 
     def execute(self, **kwargs) -> str:
         import asyncio
-        try:
-            return asyncio.run(self.execute_async(**kwargs))
-        except Exception as e:
-            return f"Erro na pesquisa: {str(e)}"
+        loop = asyncio.get_event_loop()
+        if loop.is_running():
+            return loop.create_task(self.execute_async(**kwargs))
+        return loop.run_until_complete(self.execute_async(**kwargs))
 
 class QuickWebSearch(BaseTool):
     """
@@ -74,6 +82,13 @@ class QuickWebSearch(BaseTool):
     Instantly searches the web for factual questions or references and returns text snippets.
     """
     
+    def __init__(self):
+        self._max_results = 5
+        self._results_cache = {}
+        self._cache_ttl = 300  # segundos
+        import time
+        self._last_search = 0
+
     @property
     def name(self) -> str:
         return "quick_web_search"
@@ -85,7 +100,8 @@ class QuickWebSearch(BaseTool):
     @property
     def arguments(self) -> Dict[str, str]:
         return {
-            "query": "O texto da sua pesquisa (ex: 'Quem é Sexta Feira do Tony Stark?')."
+            "query": "O texto da sua pesquisa (ex: 'Quem é Sexta Feira do Tony Stark?').",
+            "max_results": "Número máximo de resultados (1-10, default: 5)."
         }
 
     def execute(self, **kwargs) -> str:
@@ -93,21 +109,33 @@ class QuickWebSearch(BaseTool):
         if not query:
             return "Erro: 'query' é obrigatório."
             
+        if len(query) > 300:
+            return "Erro: 'query' muito longo. Máximo 300 caracteres."
+            
+        import time
+        if time.time() - self._last_search < 1:  # Rate limiting básico
+            return "Erro: Muito rápido demais. Aguarde 1 segundo entre pesquisas."
+        self._last_search = time.time()
+            
         try:
             from duckduckgo_search import DDGS
-            results = DDGS().text(query, max_results=5)
-            
+            max_results = min(int(kwargs.get("max_results", 5)), 10)
+            results = DDGS().text(query, max_results=max_results)
+                
             if not results:
                 return f"Nenhum resultado direto encontrado para '{query}'. Considere ser mais abrangente ou usar o deep_researcher."
                 
             out = f"Resultados rápidos para '{query}':\n\n"
-            for i, r in enumerate(results, 1):
-                out += f"[{i}] {r.get('title')}\n{r.get('body')}\n(Fonte: {r.get('href')})\n\n"
+            for i, r in enumerate(results[:max_results], 1):
+                title = r.get('title', '')[:100]
+                body = r.get('body', '')[:300]
+                out += f"[{i}] {title}\n{body}\n(Fonte: {r.get('href')})\n\n"
                 
             return out.strip()
             
         except Exception as e:
-            return f"Erro ao acessar mecanismo de busca: {str(e)}"
+            logger.error(f"Erro ao acessar mecanismo de busca: {str(e)}")
+            return f"Erro ao acessar mecanismo de busca. Tente novamente."
 
 # Auto-registration
 registry.register(IntelligenceResearcher())
