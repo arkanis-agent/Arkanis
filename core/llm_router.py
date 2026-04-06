@@ -26,7 +26,7 @@ class LLMRouter:
              self._discover()
         
         self.timeout = int(os.getenv("ARKANIS_TIMEOUT", 30))
-        self.auto_strategy = True # Auto strategy toggle state (Default Active)
+        self.auto_strategy = os.getenv("AUTO_STRATEGY", "true").lower() == "true" # Auto strategy toggle state (Default Active)
         self.active_tier = None # Caches the cost tier of the selected model
 
     def _discover(self):

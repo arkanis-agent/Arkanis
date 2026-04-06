@@ -2378,91 +2378,8 @@ if (showCreateGoalModalBtn) {
     showCreateGoalModalBtn.addEventListener('click', createGoal);
 }
 
-const showAgentForgeModalBtn = document.getElementById('showAgentForgeModalBtn');
-const closeAgentForgeModalBtn = document.getElementById('closeAgentForgeModalBtn');
-const agentForgeModal = document.getElementById('agentForgeModal');
-const agentForgeForm = document.getElementById('agentForgeForm');
+// Old Agent Forge logic removed to avoid conflict with the new Permission Review system.
 
-if (showAgentForgeModalBtn) {
-    showAgentForgeModalBtn.addEventListener('click', async () => {
-        // Load tools list for checkboxes
-        const toolsList = document.getElementById('forgeAgentToolsList');
-        if(toolsList) {
-            toolsList.innerHTML = '<span class="text-xs text-slate-500">Montando...</span>';
-            try {
-                const res = await fetch('/tools/available');
-                const data = await res.json();
-                if(data.tools) {
-                    let html = '';
-                    data.tools.forEach(t => {
-                        html += `
-                            <label class="flex items-center gap-2 bg-black/40 border border-white/5 rounded-lg px-2 py-1.5 cursor-pointer hover:bg-white/5 transition-colors">
-                                <input type="checkbox" value="${t.name}" class="forge-tool-cb rounded text-purple-600 focus:ring-purple-500 focus:ring-1 bg-black border-white/20">
-                                <span class="text-[10px] text-white font-mono">${t.name}</span>
-                            </label>
-                        `;
-                    });
-                    toolsList.innerHTML = html;
-                }
-            } catch(e) {
-                toolsList.innerHTML = `<span class="text-xs text-rose-500">Erro: ${e.message}</span>`;
-            }
-        }
-        
-        agentForgeModal.classList.remove('hidden');
-        setTimeout(() => {
-            agentForgeModal.classList.remove('opacity-0');
-            document.getElementById('agentForgeModalContent').classList.remove('scale-95');
-        }, 10);
-    });
-}
-
-if (closeAgentForgeModalBtn) {
-    closeAgentForgeModalBtn.addEventListener('click', () => {
-        agentForgeModal.classList.add('opacity-0');
-        document.getElementById('agentForgeModalContent').classList.add('scale-95');
-        setTimeout(() => agentForgeModal.classList.add('hidden'), 300);
-    });
-}
-
-if (agentForgeForm) {
-    agentForgeForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        
-        const agent_id = document.getElementById('forgeAgentId').value.trim();
-        const role = document.getElementById('forgeAgentRole').value.trim();
-        const persona = document.getElementById('forgeAgentPersona').value.trim();
-        
-        const cbs = document.querySelectorAll('.forge-tool-cb:checked');
-        const allowed_tools = Array.from(cbs).map(cb => cb.value);
-        
-        const btn = agentForgeForm.querySelector('button[type="submit"]');
-        const origText = btn.innerHTML;
-        btn.innerHTML = '<span class="material-symbols-outlined animate-spin text-[14px]">sync</span>';
-        btn.disabled = true;
-        
-        try {
-            const res = await fetch('/agents/create', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ agent_id, role, persona, allowed_tools })
-            });
-            const data = await res.json();
-            
-            if(!res.ok) throw new Error(data.detail || "Erro desconhecido");
-            
-            agentForgeForm.reset();
-            closeAgentForgeModalBtn.click();
-            loadCustomAgents(); // Refresh the list
-            
-        } catch(err) {
-            alert("Falha: " + err.message);
-        } finally {
-            btn.innerHTML = origText;
-            btn.disabled = false;
-        }
-    });
-}
 
 
 if (saveConfigBtn) {
@@ -4084,17 +4001,22 @@ loadEvolutionConfig(); // pre-fill interval input on page load
 // Tool metadata for permission display
 const TOOL_PERMISSION_META = {
     'web_search':      { label: 'Busca na Internet',    icon: 'search',          risk: 'low',    desc: 'Pesquisar na web em tempo real' },
+    'quick_web_search':{ label: 'Busca Rápida Web',     icon: 'search',          risk: 'low',    desc: 'Busca otimizada por velocidade' },
     'fetch_url':       { label: 'Leitura de URLs',      icon: 'link',            risk: 'low',    desc: 'Acessar e ler conteúdo de páginas web' },
+    'deep_researcher': { label: 'Pesquisa Profunda',    icon: 'manage_search',   risk: 'medium', desc: 'Análise detalhada de tópicos complexos' },
     'autonomous_browser':{ label: 'Navegador Autônomo', icon: 'open_in_browser', risk: 'high',   desc: 'Controlar um browser real, fazer login e navegar' },
     'python_executor': { label: 'Executor Python',      icon: 'code',            risk: 'high',   desc: 'Executar código Python arbitrário no sistema' },
-    'write_file':      { label: 'Escrita de Arquivos',  icon: 'edit_document',   risk: 'high',   desc: 'Criar e modificar arquivos no sistema de arquivos' },
+    'llm_code_executor':{ label: 'Executor AI Code',    icon: 'smart_toy',       risk: 'high',   desc: 'Geração e execução de código via LLM' },
+    'write_file':      { label: 'Escrita de Arquivos',  icon: 'edit_document',   risk: 'high',   desc: 'Criar e modificar arquivos no sistema' },
     'read_file':       { label: 'Leitura de Arquivos',  icon: 'folder_open',     risk: 'medium', desc: 'Ler arquivos do sistema de arquivos' },
-    'save_credential': { label: 'Salvar Credencial',    icon: 'key',             risk: 'high',   desc: 'Armazenar senhas e logins no cofre criptografado' },
+    'file_op':         { label: 'Operações de Disco',   icon: 'folder',          risk: 'medium', desc: 'Copiar, mover ou deletar diretórios' },
+    'save_credential': { label: 'Salvar Credencial',    icon: 'key',             risk: 'high',   desc: 'Armazenar senhas no cofre criptografado' },
     'get_credential':  { label: 'Ler Credencial',       icon: 'key',             risk: 'high',   desc: 'Acessar usuários e senhas salvas no Vault' },
-    'system_monitor':  { label: 'Monitor do Sistema',   icon: 'monitor_heart',   risk: 'low',    desc: 'Verificar CPU, RAM e métricas do sistema' },
-    'swarm_coordinator':{ label: 'Coordenador de Swarm',icon: 'hub',             risk: 'medium', desc: 'Coordenar múltiplos agentes em paralelo' },
-    'telegram_notifier':{ label: 'Notificações Telegram',icon: 'send',           risk: 'medium', desc: 'Enviar mensagens via Telegram' },
-    'file_op':         { label: 'Operações de Arquivo', icon: 'folder',          risk: 'medium', desc: 'Copiar, mover ou deletar arquivos' },
+    'system_monitor':  { label: 'Monitor do Sistema',   icon: 'monitor_heart',   risk: 'low',    desc: 'Verificar CPU, RAM e integridade' },
+    'swarm_coordinator':{ label: 'Coordenador Swarm',   icon: 'hub',             risk: 'medium', desc: 'Delegar tarefas para outros sub-agentes' },
+    'telegram_notifier':{ label: 'Bot do Telegram',     icon: 'send',           risk: 'medium', desc: 'Enviar status e notificações externas' },
+    'terminal_access': { label: 'Acesso ao Terminal',   icon: 'terminal',        risk: 'high',   desc: 'Executar comandos de shell no sistema' },
+    'transcriber':     { label: 'Transcrição Audio',    icon: 'mic',             risk: 'low',    desc: 'Converte áudio em texto (STT)' },
 };
 
 const RISK_CONFIG = {
@@ -4118,7 +4040,13 @@ function openAgentForgeModal(forgeData) {
     if (personaField) personaField.value = forgeData.persona || '';
 
     // Build permission state from proposed permissions
-    const proposedPermissions = forgeData.permissions || [];
+    let proposedPermissions = forgeData.permissions || [];
+    
+    // Robust parsing: convert comma-string to array if needed
+    if (typeof proposedPermissions === 'string') {
+        proposedPermissions = proposedPermissions.split(',').map(s => s.trim()).filter(s => s.length > 0);
+    }
+    
     _forgePermissionsState = {};
     proposedPermissions.forEach(p => { _forgePermissionsState[p] = true; });
 
@@ -4264,7 +4192,9 @@ async function submitAgentForge() {
         if (response.ok && data.status === 'success') {
             closeAgentForgeModal();
             showToast(`✅ Agente "${role}" forjado com sucesso! (${approvedTools.length} ferramentas aprovadas)`, 'purple');
-            // Refresh observability if panel is open
+            
+            // Refresh ALL potential UI lists
+            if (typeof loadCustomAgents === 'function') loadCustomAgents();
             if (typeof fetchObservabilityData === 'function') fetchObservabilityData();
         } else {
             throw new Error(data.detail || 'Falha ao criar agente.');
@@ -4281,6 +4211,31 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('closeAgentForgeModalBtn')?.addEventListener('click', closeAgentForgeModal);
     document.getElementById('cancelForgeBtn')?.addEventListener('click', closeAgentForgeModal);
     document.getElementById('submitForgeBtn')?.addEventListener('click', submitAgentForge);
+
+    // Manual Forge Button (Sidebar)
+    const manualBtn = document.getElementById('showAgentForgeModalBtn');
+    if (manualBtn) {
+        manualBtn.addEventListener('click', async () => {
+            // Reset state
+            const list = document.getElementById('forgePermissionList');
+            if (list) list.innerHTML = '<p class="text-[10px] text-slate-500 italic animate-pulse">Consultando arsenal do Arkanis...</p>';
+            
+            // Try to fetch all available tools to populate for manual forge
+            try {
+                const r = await fetch('/tools/available');
+                const data = await r.json();
+                const tools = data.tools ? data.tools.map(t => t.name) : [];
+                openAgentForgeModal({
+                    agent_id: '',
+                    role: '',
+                    persona: '',
+                    permissions: tools
+                });
+            } catch (e) {
+                openAgentForgeModal({ agent_id: '', role: '', persona: '', permissions: [] });
+            }
+        });
+    }
 
     // Close on backdrop click
     document.getElementById('agentForgeModal')?.addEventListener('click', (e) => {

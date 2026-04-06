@@ -1,5 +1,5 @@
 import re
-import cache
+import time
 import os
 import requests
 from typing import List, Dict, Tuple, Optional
@@ -59,6 +59,7 @@ class ModelStrategy:
                 "qwen/qwen-2-72b-instruct:free"
             ],
             "BALANCED": [
+                "qwen/qwen3.6-plus:free",
                 "anthropic/claude-3.5-sonnet",
                 "anthropic/claude-3-sonnet",
                 "google/gemini-1.5-pro",
@@ -67,6 +68,7 @@ class ModelStrategy:
                 "meta-llama/llama-3.1-70b-instruct"
             ],
             "HIGH_PERFORMANCE": [
+                "qwen/qwen3.6-plus:free",
                 "anthropic/claude-3.5-opus",
                 "openai/o1-mini",
                 "openai/o1-preview"
@@ -122,7 +124,7 @@ class ModelStrategy:
 
     def _group_enabled_models(self, enabled_models: List[Dict]) -> Dict[str, List[str]]:
         """Caches model grouping with TTL and hash-based invalidation."""
-        current_time: float = cache.current_time()
+        current_time: float = time.time()
         models_key: str = str(sorted(m.get("id", "") for m in enabled_models))
         
         # Validate cache TTL

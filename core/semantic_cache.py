@@ -214,3 +214,6 @@ class SemanticCacheManager:
 def get_semantic_cache() -> SemanticCache:
     """Returns the singleton instance safely."""
     return SemanticCacheManager()
+
+# Export singleton instance
+semantic_cache = get_semantic_cache()

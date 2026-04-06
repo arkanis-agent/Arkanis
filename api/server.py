@@ -366,13 +366,27 @@ async def handle_message(request: MessageRequest):
         FORGE_PREFIX = "FORGE_REQUEST:"
         if FORGE_PREFIX in str(response):
             try:
-                # Extract the JSON payload after the prefix
-                forge_start = str(response).find(FORGE_PREFIX) + len(FORGE_PREFIX)
-                forge_json_str = str(response)[forge_start:].strip()
-                # Only take up to the first newline or end
-                forge_json_str = forge_json_str.split("\n")[0].strip()
-                forge_data = json.loads(forge_json_str)
-                return {"response": response, "forge_request": forge_data}
+                # Find the JSON content after the prefix
+                forge_raw = str(response).split(FORGE_PREFIX, 1)[1].strip()
+                
+                # Robust extraction: find first '{' and the last '}' that could be the JSON object
+                start_idx = forge_raw.find('{')
+                if start_idx != -1:
+                    last_brace = -1
+                    brace_count = 0
+                    for i in range(start_idx, len(forge_raw)):
+                        if forge_raw[i] == '{': brace_count += 1
+                        elif forge_raw[i] == '}': 
+                            brace_count -= 1
+                            if brace_count == 0:
+                                last_brace = i
+                                break
+                    
+                    if last_brace != -1:
+                        forge_json_str = forge_raw[start_idx:last_brace+1]
+                        forge_data = json.loads(forge_json_str)
+                        # We return both the full response for soul-formatting and the request payload
+                        return {"response": response, "forge_request": forge_data}
             except (json.JSONDecodeError, ValueError):
                 pass  # Fall through to normal response if parsing fails
         

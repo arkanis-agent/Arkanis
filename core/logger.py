@@ -36,13 +36,13 @@ class ArkanisLogger:
 
     # Fixed: Removed space in variable name (SYMBOLS not SYMB OS)
     SYMBOLS = {
-        "info": "\ud83e\uddd1",
-        "success": "\ud83d\udfe2",
-        "warning": "\u26a0\ufe0f",
-        "error": "\ud83d\udd34",
-        "critic": "\ud83d\udee1\ufe0f",
-        "request_start": "\ud83e\uddd1",
-        "request_end": "\ud83d\udce9"
+        "info": "🧑",
+        "success": "🟢",
+        "warning": "⚠️",
+        "error": "🔴",
+        "critic": "🛡️",
+        "request_start": "🧑",
+        "request_end": "📩"
     }
 
     def __init__(self, log_dir: Optional[str] = None, max_bytes: int = 10 * 1024 * 1024, backup_count: int = 5):
@@ -116,48 +116,57 @@ class ArkanisLogger:
         reset = self.COLORS.get("default", "")
         return f"{color}{symbol} {msg}{reset}"
 
-    def info(self, msg: str, symbol: str = "\ud83e\uddd1"):
+    def _safe_print(self, msg: str):
+        """Prints to console with fallback for encoding errors."""
+        try:
+            print(msg)
+        except UnicodeEncodeError:
+            # Fallback: remove non-encodable characters
+            safe_msg = msg.encode('ascii', 'replace').decode('ascii')
+            print(safe_msg)
+
+    def info(self, msg: str, symbol: str = "ℹ️"):
         """User-friendly information log."""
-        print(self._print_colored("info", f"{symbol} {msg}"))
+        self._safe_print(self._print_colored("info", f"{symbol} {msg}"))
         self._write_system_log("info", msg)
 
-    def success(self, msg: str, symbol: str = "\ud83d\udfe2"):
+    def success(self, msg: str, symbol: str = "✅"):
         """User-friendly success log."""
-        print(self._print_colored("success", f"{symbol} {msg}"))
+        self._safe_print(self._print_colored("success", f"{symbol} {msg}"))
         self._write_system_log("success", msg)
 
-    def warning(self, msg: str, symbol: str = "\u26a0\ufe0f"):
+    def warning(self, msg: str, symbol: str = "⚠️"):
         """User-friendly warning log."""
-        print(self._print_colored("warning", f"{symbol} {msg}"))
+        self._safe_print(self._print_colored("warning", f"{symbol} {msg}"))
         self._write_system_log("warning", msg)
 
-    def error(self, msg: str, fix: Optional[str] = None, symbol: str = "\ud83d\udd34"):
+    def error(self, msg: str, fix: Optional[str] = None, symbol: str = "❌"):
         """User-friendly error log with optional fix suggestion."""
-        print(self._print_colored("error", f"{symbol} {msg}"))
+        self._safe_print(self._print_colored("error", f"{symbol} {msg}"))
         if fix:
-            print(f"   \ud83d\udc49 Fix: {fix}")
+            self._safe_print(f"   👉 Fix: {fix}")
         self._write_system_log("error", msg, {"fix_suggestion": fix} if fix else None)
 
-    def critic(self, msg: str, symbol: str = "\ud83d\udee1\ufe0f"):
+    def critic(self, msg: str, symbol: str = "🛡️"):
         """User-friendly critic/auditor log."""
-        print(self._print_colored("critic", f"{symbol} {msg}"))
+        self._safe_print(self._print_colored("critic", f"{symbol} {msg}"))
         self._write_system_log("critic", msg)
 
     def request(self, provider: str, model: str):
         """Specific lifecycle log for LLM request start."""
         msg = f"Using {provider.title()} AI ({model})"
-        print(self._print_colored("info", f"\ud83e\uddd1 {msg}"))
-        print("\ud83d\udce8 Sending request...")
+        self._safe_print(self._print_colored("info", f"🧑 {msg}"))
+        self._safe_print("📩 Sending request...")
         self._write_system_log("request_start", msg, {"provider": provider, "model": model})
 
-    def response(self, success: bool = True, duration: Optional[float] = None, symbol: str = "\ud83d\udce9"):
+    def response(self, success: bool = True, duration: Optional[float] = None, symbol: str = "📩"):
         """Specific lifecycle log for LLM response end."""
         if success:
             dur_str = f" ({duration:.1f}s)" if duration else ""
-            print(self._print_colored("success", f"{symbol} Response received successfully{dur_str}"))
+            self._safe_print(self._print_colored("success", f"{symbol} Response received successfully{dur_str}"))
             self._write_system_log("request_end", "Success", {"duration": duration})
         else:
-            print(self._print_colored("error", "\u274c Response failed"))
+            self._safe_print(self._print_colored("error", "❌ Response failed"))
             self._write_system_log("request_end", "Failed")
 
     def close(self):
@@ -217,4 +226,5 @@ def get_logger():
 
 
 # Initialize singleton at module import
-ArkanisLogger.logger = get_logger()
+logger = get_logger()
+ArkanisLogger.logger = logger
