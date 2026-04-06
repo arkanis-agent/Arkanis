@@ -53,7 +53,7 @@ Você DEVE retornar SEMPRE um bloco de código JSON com a seguinte estrutura:
 
     def __init__(self, api_key: Optional[str] = None):
         from kernel.executor import Executor
-        self.llm = LLMClient(api_key=api_key)
+        self.llm = LLMClient()
         self.executor = Executor() # Sentinel can now actually FIX things
         self.id = "auto_heal_agent"
         self.role = "Engenheiro de Manutenção (Sentinel)"

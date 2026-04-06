@@ -41,7 +41,7 @@ Apenas gere a sugestão se for realmente valiosa.
 """
 
     def __init__(self, api_key: Optional[str] = None):
-        self.llm = LLMClient(api_key=api_key)
+        self.llm = LLMClient()
         self.id = "dev_agent"
         self.role = "Agente Desenvolvedor Chefe"
         self.status = "idle"

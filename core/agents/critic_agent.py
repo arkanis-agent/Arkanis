@@ -56,13 +56,26 @@ SEGURANÇA: Bloqueie caminhos como /etc, /root, /bin ou comandos destrutivos sem
 """
 
     def __init__(self, api_key: Optional[str] = None):
-        self.llm = LLMClient(api_key=api_key)
+        self.llm = LLMClient()
         self.memory = CriticMemory()
         
     def evaluate_plan(self, goal: str, plan: List[Dict[str, Any]], context: str, soul: str) -> Dict[str, Any]:
         """
         Audit a proposed action plan before execution.
         """
+        # Bypass switch for the user
+        if os.getenv("ARKANIS_AUDIT_ENABLED", "true").lower() == "false":
+            logger.info("Auditoria pausada pelo usuário. APROVANDO AUTOMATICAMENTE.", symbol="⏸️")
+            return {
+                "decision": "approve",
+                "quality_score": 10,
+                "risk_level": "low",
+                "reasoning": "Auditoria desativada por configuração do usuário (ARKANIS_AUDIT_ENABLED=false).",
+                "issues": [],
+                "improvements": [],
+                "final_suggestion": "Aprovado via Bypass Manual."
+            }
+            
         logger.info("Critic analisando plano de ação...", symbol="🛡️")
         
         system_prompt = self.SYSTEM_PROMPT.format(

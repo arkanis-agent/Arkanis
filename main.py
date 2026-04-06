@@ -12,7 +12,7 @@ import uvicorn
 
 PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))
 if PROJECT_ROOT not in sys.path:
-    sys.path.insert(, PROJECT_ROOT)
+    sys.path.insert(0, PROJECT_ROOT)
 
 def load_env_safely():
     env_path = os.path.join(PROJECT_ROOT, ".env")

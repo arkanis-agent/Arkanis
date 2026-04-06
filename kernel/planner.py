@@ -83,7 +83,7 @@ FORMATO EXIGIDO:
     def __init__(self, api_key: Optional[str] = None):
         self.registry = registry
         # Initialize the real LLM client
-        self.llm = LLMClient(api_key=api_key)
+        self.llm = LLMClient()
         self.agent_identity = self._load_soul()
 
     def _load_soul(self) -> str:

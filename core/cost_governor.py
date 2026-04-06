@@ -38,6 +38,10 @@ class CostGovernor:
         self.llm_call_timestamps = deque()
         self._fallback_active = False
         self._last_cleanup = 0
+        
+    @property
+    def fallback_active(self) -> bool:
+        return self._fallback_active
         self._metrics = {
             'total_calls': 0,
             'blocked_calls': 0,

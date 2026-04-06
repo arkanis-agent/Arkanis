@@ -45,7 +45,7 @@ Seja o "Maestro" preciso e magistral que o usuário espera.
 """
 
     def __init__(self, api_key: Optional[str] = None):
-        self.llm = LLMClient(api_key=api_key)
+        self.llm = LLMClient()
         self.id = "architect_agent"
         self.role = "Arquiteto Maestro"
         self.status = "idle"

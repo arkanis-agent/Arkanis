@@ -50,7 +50,7 @@ class AskLLMTool(BaseTool):
             logging.warning("OPENROUTER_API_KEY not found. AskLLMTool may not function correctly.")
             self.llm = None
         else:
-            self.llm = LLMClient(api_key=api_key)
+            self.llm = LLMClient()
             
         # Class-level cache shared across instances
         self._cache = _llm_cache
