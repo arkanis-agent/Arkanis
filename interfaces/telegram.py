@@ -17,7 +17,7 @@ AUDIO_DOWNLOAD_TIMEOUT = 30
 # Pattern to strip potentially dangerous characters from error messages
 def sanitize_error_message(text: str) -> str:
     """Remove Python exception details that could expose internal system info."""
-    return re.sub(r"\bException\b|\bError\b|\bTraceback\b|\bFile \"[^"]*\"\b|\bLine \d+\b", "", str(text), flags=re.IGNORECASE)
+    return re.sub(r'\bException\b|\bError\b|\bTraceback\b|\bFile "[^"]*"\b|\bLine \d+\b', "", str(text), flags=re.IGNORECASE)
 
 class TelegramInterface:
     """

@@ -27,14 +27,14 @@ def is_safe_command(command: str) -> bool:
         if pattern in command:
             return False
     # Check for dangerous redirects and pipes
-    if re.search(r\"[>|;]&\", command):
+    if re.search(r"[>|;]&", command):
         return False
     return True
 
 def validate_path(path: str) -> bool:
     """Validate that path is within allowed directories."""
     for denied in DENIED_PATHS:
-        if path.startswith(denied) or f\"/{denended}\" in path:
+        if path.startswith(denied) or f"/{denied}" in path:
             return False
     for allowed in ALLOWED_PATHS:
         if allowed in path:
@@ -180,7 +180,7 @@ class PatchFileLineTool(BaseTool):
     @property
     def name(self) -> str: return "patch_file_line"
     @property
-    def description(self) -> str: return "Replaces a specific line number in a file with new content.""
+    def description(self) -> str: return "Replaces a specific line number in a file with new content."
     @property
     def arguments(self) -> Dict[str, str]:
         return {"path": "Path to file", "line_number": "Line to replace (1-indexed)", "new_content": "New line text"}
@@ -227,7 +227,7 @@ class InstallPythonPackageTool(BaseTool):
     @property
     def name(self) -> str: return "install_python_package"
     @property
-    def description(self) -> str: return "Installs a Python package using pip.""
+    def description(self) -> str: return "Installs a Python package using pip."
     @property
     def arguments(self) -> Dict[str, str]:
         return {"package": "Package name to install (e.g. 'requests==2.31.0')"}
@@ -257,7 +257,7 @@ class GetProcessInfoTool(BaseTool):
     @property
     def name(self) -> str: return "get_process_info"
     @property
-    def description(self) -> str: return "Returns a list of active processes matching a name pattern.""
+    def description(self) -> str: return "Returns a list of active processes matching a name pattern."
     @property
     def arguments(self) -> Dict[str, str]:
         return {"pattern": "Process name or pattern to search for."}
@@ -290,7 +290,7 @@ class WriteFullFileTool(BaseTool):
     @property
     def name(self) -> str: return "write_full_file"
     @property
-    def description(self) -> str: return "Overwrites an entire file with the provided content. USE WITH EXTREME CARE.""
+    def description(self) -> str: return "Overwrites an entire file with the provided content. USE WITH EXTREME CARE."
     @property
     def arguments(self) -> Dict[str, str]:
         return {"path": "Path to file", "content": "New content for the file"}

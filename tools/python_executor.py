@@ -128,11 +128,11 @@ globals()['save_plot'] = save_plot
             logger.info(f"Return code: {process.returncode}")
             
             if stdout.strip():
-                result_parts.append(f\"STDOUT:\n{stdout.strip()}\")
+                result_parts.append(f"STDOUT:\n{stdout.strip()}")
             if stderr.strip():
-                result_parts.append(f\"STDERR:\n{stderr.strip()}\")
+                result_parts.append(f"STDERR:\n{stderr.strip()}")
             if process.returncode != 0:
-                result_parts.append(f\"ERROR: Exit code {process.returncode}\")
+                result_parts.append(f"ERROR: Exit code {process.returncode}")
 
             return "\n".join(result_parts) if result_parts else "Execution successful, no output returned."
 

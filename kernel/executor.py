@@ -42,7 +42,7 @@ class Executor:
             # --- LAZY PLACEHOLDER RESOLUTION (For tools called via {{}} but NOT in the plan) ---
             if isinstance(args.get(key), str):
                 # Search for any remaining {{ tool }} that were not in execution_context
-                missing_placeholders = re.findall(r"{{{{?\s*(\w+)\s*}}}}?", args[key])
+                missing_placeholders = re.findall(r'\{\{?\s*(\w+)\s*\}\}?', args[key])
                 for tool_id in missing_placeholders:
                     # If it's a simple tool (no required args), try lazy execution
                     actual_tool = registry.get_tool(tool_id) or registry.get_tool(f"get_{tool_id}")
