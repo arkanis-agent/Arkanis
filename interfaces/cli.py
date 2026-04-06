@@ -144,16 +144,11 @@ class ArkanisCLI:
                     response = self.agent.handle_input(sanitized_input)
                 except Exception as e:
                     logger.error(f'Agent Error: {str(e)}', exc_info=True)
-                    response = f'
-[red][Kernel Error] {str(e)}[/red]
-'
+                    response = f"\n[red][Kernel Error] {str(e)}[/red]\n"
                     
                 progress.remove_task(task)
                     
-                self.console.print(f'
-[blue]ARKANIS FINAL REPORT[/blue]
-{Panel(response, border_style='blue')}
-')
+                self.console.print(f"\n[blue]ARKANIS FINAL REPORT[/blue]\n" + str(Panel(response, border_style='blue')) + "\n")
                 
             except KeyboardInterrupt:
                 logger.warning('User interrupted with Ctrl+C')
@@ -162,8 +157,7 @@ class ArkanisCLI:
                 break
             except Exception as e:
                 logger.error(f'CLI Error: {str(e)}', exc_info=True)
-                self.console.print(f'
-[red]Unexpected error: {str(e)}[/red]\n')
+                self.console.print(f"\n[red]Unexpected error: {str(e)}[/red]\n")
                 
     def cleanup(self):
         """Perform any necessary cleanup before shutdown."""
