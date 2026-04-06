@@ -117,13 +117,32 @@ class QuickWebSearch(BaseTool):
             return "Erro: Muito rápido demais. Aguarde 1 segundo entre pesquisas."
         self._last_search = time.time()
             
+    async def execute_async(self, **kwargs) -> str:
+        query = kwargs.get("query")
+        if not query:
+            return "Erro: 'query' é obrigatório."
+            
+        import time
+        if time.time() - self._last_search < 1:
+            return "Erro: Muito rápido. Aguarde."
+        self._last_search = time.time()
+            
         try:
             from duckduckgo_search import DDGS
             max_results = min(int(kwargs.get("max_results", 5)), 10)
-            results = DDGS().text(query, max_results=max_results)
+            
+            # Executa DuckDuckGo em um thread para não bloquear o loop async
+            import asyncio
+            loop = asyncio.get_event_loop()
+            def _search():
+                with DDGS() as ddgs:
+                    return [r for r in ddgs.text(query, max_results=max_results)]
+            
+            results = await loop.run_in_executor(None, _search)
                 
             if not results:
-                return f"Nenhum resultado direto encontrado para '{query}'. Considere ser mais abrangente ou usar o deep_researcher."
+                logger.warning(f"DDG zero results for '{query}'. Starting browser fallback...")
+                return await self._fallback_search_async(query)
                 
             out = f"Resultados rápidos para '{query}':\n\n"
             for i, r in enumerate(results[:max_results], 1):
@@ -134,8 +153,40 @@ class QuickWebSearch(BaseTool):
             return out.strip()
             
         except Exception as e:
-            logger.error(f"Erro ao acessar mecanismo de busca: {str(e)}")
-            return f"Erro ao acessar mecanismo de busca. Tente novamente."
+            logger.error(f"DDG Error: {str(e)}. Starting fallback...")
+            return await self._fallback_search_async(query)
+
+    def execute(self, **kwargs) -> str:
+        import asyncio
+        import threading
+        
+        try:
+            loop = asyncio.get_event_loop()
+        except RuntimeError:
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+
+        if loop.is_running():
+            # Se já estamos em um loop, não podemos usar run_until_complete.
+            # No contexto do Arkanis, ferramentas devem ser chamadas via execute_async se possível.
+            # Como fallback sync, retornamos um aviso ou tentamos rodar em thread (complexo).
+            # Para simplificar e resolver o erro do usuário:
+            return asyncio.run_coroutine_threadsafe(self.execute_async(**kwargs), loop).result(timeout=120)
+        
+        return loop.run_until_complete(self.execute_async(**kwargs))
+
+    async def _fallback_search_async(self, query: str) -> str:
+        """Fallback assíncrono para o Deep Researcher."""
+        try:
+            from tools.registry import registry
+            researcher = registry.get_tool("deep_researcher")
+            if researcher:
+                # IntelligenceResearcher.execute_async garante o retorno da string
+                res = await researcher.execute_async(topic=query, sources_count=1)
+                return f"Nota: Pesquisa rápida indisponível. Resultados via Deep Research para '{query}':\n\n{res}"
+            return "Erro: Nenhum mecanismo de busca disponível."
+        except Exception as e:
+            return f"Erro no fallback: {str(e)}"
 
 # Auto-registration
 registry.register(IntelligenceResearcher())

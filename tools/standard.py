@@ -157,7 +157,7 @@ class ListFilesTool(BaseTool):
     @property
     def arguments(self) -> Dict[str, str]:
         return {
-            "path": "The directory path (default: ').'")
+            "path": "The directory path (default: '.')"
         }
 
     def execute(self, **kwargs) -> str:
