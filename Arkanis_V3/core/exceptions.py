@@ -1,3 +1,6 @@
+Here's the merged content with the improvements incorporated while maintaining all existing functionality:
+
+```python
 class NetworkException(Exception):
     """Base para todos os erros de rede no sistema.
     
@@ -8,6 +11,10 @@ class NetworkException(Exception):
     
     Example:
         >>> raise NetworkException('Falha na conexão', code=503, details={'port': 8080})
+    
+    Exceção base para erros relacionados à rede.
+    Esta exceção deve ser lançada quando ocorrer um problema de comunicação
+    na rede, como falha de conexão, timeout, erro de protocolo, etc.
     """
     def __init__(self, message, code=500, details=None):
         super().__init__(message)
@@ -42,6 +49,10 @@ class SystemCritical(Exception):
     
     Example:
         >>> raise SystemCritical('Falha no subsistema', 'storage', severity=5)
+    
+    Exceção para falhas críticas que exigem reinício do sistema.
+    Esta exceção deve ser lançada quando ocorrer um erro grave que comprometa
+    o funcionamento do sistema e requeira um reinício para recuperação.
     """
     def __init__(self, message, component, severity=5):
         super().__init__(message)
@@ -64,3 +75,4 @@ class DatabaseFailure(SystemCritical):
             component="database",
             severity=5
         )
+```
